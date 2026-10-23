@@ -12,6 +12,83 @@ _document_store: Dict[str, List[Dict]] = {}
 _files_meta_store: Dict[str, Dict] = {}
 _search_index: Dict[str, Dict] = {}
 
+
+def _load_user_rag_records(user_id: str) -> List[Dict[str, Any]]:
+    """Load durable document chunks and metadata from the configured database."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT filename, chunks_json, metadata_json FROM rag_documents WHERE user_id = ? ORDER BY created_at, filename",
+            (user_id,)
+        )
+        return [
+            {
+                "filename": row["filename"],
+                "chunks": json.loads(row["chunks_json"]),
+                "metadata": json.loads(row["metadata_json"]),
+            }
+            for row in cur.fetchall()
+        ]
+    finally:
+        conn.close()
+
+
+def _save_user_rag_record(
+    user_id: str,
+    file_id: str,
+    filename: str,
+    chunks: List[Dict],
+    metadata: Dict[str, Any],
+) -> None:
+    """Persist one document's RAG chunks and metadata in the configured database."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM rag_documents WHERE user_id = ? AND (id = ? OR filename = ?)",
+            (user_id, file_id, filename)
+        )
+        cur.execute(
+            "INSERT INTO rag_documents (id, user_id, filename, chunks_json, metadata_json) VALUES (?, ?, ?, ?, ?)",
+            (
+                file_id,
+                user_id,
+                filename,
+                json.dumps(chunks, ensure_ascii=False),
+                json.dumps(metadata, ensure_ascii=False),
+            )
+        )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def _delete_user_rag_records(user_id: str, file_id: str, filenames: set) -> None:
+    """Remove durable RAG rows for a file and its legacy filename aliases."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM rag_documents WHERE user_id = ? AND id = ?",
+            (user_id, file_id)
+        )
+        for filename in filenames:
+            cur.execute(
+                "DELETE FROM rag_documents WHERE user_id = ? AND filename = ?",
+                (user_id, filename)
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
 def _get_storage_path(user_id: str) -> str:
     """Get storage path for user document chunks"""
     os.makedirs(os.path.dirname(CHROMA_PATH) or ".", exist_ok=True)
@@ -23,7 +100,19 @@ def _get_files_meta_path(user_id: str) -> str:
     return os.path.join(os.path.dirname(CHROMA_PATH), f"user_{user_id}_files.json")
 
 def _load_user_documents(user_id: str) -> List[Dict]:
-    """Load user document chunks from file"""
+    """Load user document chunks from the database, then legacy local files."""
+    records = _load_user_rag_records(user_id)
+    if records:
+        docs = [
+            chunk
+            for record in records
+            for chunk in record["chunks"]
+        ]
+        return [
+            doc for doc in docs
+            if "placeholder for PDF text extraction" not in doc.get("text", "")
+        ]
+
     path = _get_storage_path(user_id)
     if os.path.exists(path):
         try:
@@ -49,7 +138,14 @@ def _save_user_documents(user_id: str, documents: List[Dict]) -> None:
         print(f"Error saving documents: {e}")
 
 def _load_user_files_meta(user_id: str) -> Dict[str, Any]:
-    """Load user file-level metadata (full texts, outlines, page counts)"""
+    """Load file metadata from the database, then legacy local files."""
+    records = _load_user_rag_records(user_id)
+    if records:
+        return {
+            record["filename"]: record["metadata"]
+            for record in records
+        }
+
     path = _get_files_meta_path(user_id)
     if os.path.exists(path):
         try:
@@ -131,8 +227,6 @@ def index_chunks(
         })
         
     documents.extend(new_chunks)
-    _save_user_documents(user_id, documents)
-    _document_store[user_id] = documents
     
     # Save file-level metadata for whole-file queries
     char_len = len(full_text) if full_text else sum(len(c) for c in chunks)
@@ -144,7 +238,10 @@ def index_chunks(
         "full_text": full_text or "\n\n".join(chunks),
         "outline": outline or []
     }
+    _save_user_rag_record(user_id, file_id, filename, new_chunks, files_meta[filename])
+    _save_user_documents(user_id, documents)
     _save_user_files_meta(user_id, files_meta)
+    _document_store[user_id] = documents
     _files_meta_store[user_id] = files_meta
 
     # Synchronize to database
@@ -438,7 +535,7 @@ def delete_file_chunks(user_id: str, file_id: str, filename: Optional[str] = Non
     Permanently delete all chunks and metadata for a specific file across:
     1. In-memory stores (_document_store, _files_meta_store)
     2. Disk JSON files (user_{user_id}_docs.json, user_{user_id}_files.json)
-    3. MySQL / MariaDB database (documents table)
+    3. The configured database (RAG chunks and document metadata)
     """
     documents = _document_store.get(user_id) or _load_user_documents(user_id) or []
     files_meta = _files_meta_store.get(user_id) or _load_user_files_meta(user_id) or {}
@@ -478,6 +575,7 @@ def delete_file_chunks(user_id: str, file_id: str, filename: Optional[str] = Non
         and (not filename or d.get("filename", "").lower() != filename.lower())
     ]
     
+    _delete_user_rag_records(user_id, file_id, target_filenames)
     _save_user_documents(user_id, new_documents)
     _save_user_files_meta(user_id, files_meta)
     _document_store[user_id] = new_documents
@@ -560,6 +658,36 @@ def sync_initial_documents_to_db():
     """Ensure all existing documents are synced into the database table on startup"""
     try:
         import uuid
+        storage_dir = os.path.dirname(CHROMA_PATH) or "."
+        if os.path.isdir(storage_dir):
+            for entry in os.listdir(storage_dir):
+                if not entry.startswith("user_") or not entry.endswith("_docs.json"):
+                    continue
+
+                user_id = entry[len("user_"):-len("_docs.json")]
+                docs_path = os.path.join(storage_dir, entry)
+                meta_path = _get_files_meta_path(user_id)
+                try:
+                    with open(docs_path, "r", encoding="utf-8") as f:
+                        legacy_docs = json.load(f)
+                    with open(meta_path, "r", encoding="utf-8") as f:
+                        legacy_meta = json.load(f)
+                except FileNotFoundError:
+                    continue
+
+                saved_filenames = {
+                    record["filename"] for record in _load_user_rag_records(user_id)
+                }
+                for filename, meta in legacy_meta.items():
+                    if filename in saved_filenames:
+                        continue
+                    file_id = meta.get("file_id") or str(uuid.uuid4())
+                    chunks = [
+                        doc for doc in legacy_docs
+                        if doc.get("file_id") == file_id or doc.get("filename") == filename
+                    ]
+                    _save_user_rag_record(user_id, file_id, filename, chunks, meta)
+
         conn = get_connection()
         cur = conn.cursor()
         cur.execute("SELECT filename FROM documents")

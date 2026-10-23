@@ -42,7 +42,7 @@ KeepAI now includes a **complete student portal** with registration, login, and 
 The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs`, which reads `VITE_API_URL` at build time, writes it into the shared frontend config, and outputs the deployable site to `dist/`. Local builds fall back to `http://localhost:8000`; deployment builds require an HTTPS `VITE_API_URL`.
 
 1. Use the Neon project `keepai-userdb` in AWS US West 2 (Oregon) for persistent PostgreSQL storage. Set its pooled connection string as the Render `DATABASE_URL` secret; never commit the URL.
-2. Configure Render with `DB_TYPE=postgres`, then redeploy. PostgreSQL stores accounts and application records across free-service restarts. The free Render filesystem remains temporary; uploaded materials, embeddings, and extracted-text files can still be lost until file storage is moved to a persistent object store.
+2. Configure Render with `DB_TYPE=postgres` and the Neon `DATABASE_URL`, then redeploy. PostgreSQL stores accounts, extracted study text, and embeddings across free-service restarts. The original uploaded file itself is not retained; re-upload it if you need the original file again.
 3. In Vercel, set `VITE_API_URL` to the Render backend origin (for example, `https://keep-ai-api.onrender.com`, without `/api`), then redeploy. Vercel builds fail intentionally if this variable is missing.
 4. Keep `ALLOWED_ORIGINS` on Render set to `https://keep-ai-app.vercel.app` and any local development origins needed. Separate origins with commas.
 

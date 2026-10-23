@@ -240,8 +240,21 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_documents (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            filename VARCHAR(255) NOT NULL,
+            chunks_json TEXT NOT NULL,
+            metadata_json TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
         )
         conn.commit()
         conn.close()
@@ -293,6 +306,17 @@ def init_db():
             INDEX idx_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_documents (
+            id VARCHAR(255) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            filename VARCHAR(255) NOT NULL,
+            chunks_json LONGTEXT NOT NULL,
+            metadata_json LONGTEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_rag_documents_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
         conn.commit()
         conn.close()
         print(f"[KeepAI] Connected to MariaDB / MySQL database: '{DB_NAME}' at {DB_HOST}:{DB_PORT}")
@@ -342,6 +366,19 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS rag_documents (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            chunks_json TEXT NOT NULL,
+            metadata_json TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
+        )
         conn.commit()
         conn.close()
         print(f"[KeepAI] Connected to SQLite database: {DB_PATH}")
