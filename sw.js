@@ -1,5 +1,5 @@
-// Westmead IS KeepAI Service Worker for Progressive Web App (PWA)
-const CACHE_NAME = 'keepai-pwa-v5';
+// KeepAI service worker for Progressive Web App (PWA)
+const CACHE_NAME = 'keepai-pwa-v6';
 
 const STATIC_ASSETS = [
   './',
@@ -9,14 +9,13 @@ const STATIC_ASSETS = [
   './admin_dashboard.html',
   './admin_panel.html',
   './manifest.json',
-  './icons/favicon.svg',
   './icons/favicon-32.png',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
-  './assets/images/westmead-logo.png'
+  './assets/images/keepai-logo.png'
 ];
 
 self.addEventListener('install', event => {

@@ -1,7 +1,7 @@
 {
-  "name": "KeepAI — Westmead International School",
+  "name": "KeepAI — Your Simple AI Study Assistant",
   "short_name": "KeepAI",
-  "description": "AI-Powered Academic Learning Workspace & Study Assistant for Westmead International School",
+  "description": "Your simple AI study assistant for lessons, notes, and practice.",
   "start_url": "student_login.html",
   "scope": "./",
   "display": "standalone",
@@ -35,9 +35,9 @@
       "purpose": "maskable"
     },
     {
-      "src": "icons/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml"
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
   ],
   "shortcuts": [

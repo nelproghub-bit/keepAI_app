@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-    <title>KEEP-AI — Student Dashboard</title>
+    <title>KeepAI — Your Simple AI Study Assistant | Student Dashboard</title>
 
     <!-- PWA & Mobile Web App Meta Tags -->
     <meta name="theme-color" content="#7D1D1D">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Westmead IS">
-    <meta name="application-name" content="Westmead IS Student Dashboard">
-    <meta name="description" content="Simple and smart study assistant for Westmead International School students.">
+    <meta name="apple-mobile-web-app-title" content="KeepAI">
+    <meta name="application-name" content="KeepAI">
+    <meta name="description" content="Your simple AI study assistant for lessons, notes, and practice.">
 
     <!-- PWA Manifest & Icons -->
     <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
     <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
@@ -30,7 +30,7 @@
 
     <style>
         :root {
-            /* Brand Primary Palette - Westmead International School Maroon & Burgundy */
+            /* Brand primary palette - maroon and burgundy */
             --primary: #7D1D1D;
             --primary-hover: #651818;
             --primary-dark: #4A0E0E;
@@ -1790,7 +1790,7 @@
             <div class="sidebar-header">
                 <a href="#" class="brand" onclick="showSection('workspaces'); return false;">
                     <div class="brand-mark">
-                        <img src="assets/images/westmead-logo.png" alt="Westmead International School Logo" onerror="this.src='icons/favicon.svg'">
+                        <img src="assets/images/keepai-logo.png" alt="KeepAI — Your Simple AI Study Assistant" onerror="this.src='icons/icon-512.png'">
                     </div>
                     <span class="brand-text">KEEP-AI</span>
                 </a>
@@ -1861,7 +1861,7 @@
 
                     <div class="topbar-title-wrap">
                         <h2 id="topbar-title">Student Dashboard</h2>
-                        <div class="breadcrumbs" id="topbar-breadcrumb">Westmead Study Helper • My Workspaces</div>
+                        <div class="breadcrumbs" id="topbar-breadcrumb">Your Simple AI Study Assistant • My Workspaces</div>
                     </div>
                 </div>
 
@@ -2016,7 +2016,7 @@
                         <div class="chat-top-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                             <div style="display: flex; align-items: center; gap: 8px;">
                                 <span class="status-dot"></span>
-                                <strong style="font-size: 13px; color: var(--text-main);">Westmead Study Helper</strong>
+                                <strong style="font-size: 13px; color: var(--text-main);">KeepAI Study Assistant</strong>
                             </div>
                             <div id="tutor-active-preferences-chip" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; background: var(--bg-subtle); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border);" title="Active Teaching Style &amp; Course Level. Change in Settings.">
                                 <i class="fas fa-sliders-h" style="color: var(--primary); font-size: 11px;"></i>
@@ -2031,7 +2031,7 @@
                                 <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                                     <i class="fas fa-graduation-cap"></i>
                                 </div>
-                                <h4 style="color: var(--text-main); font-weight: 800;">Westmead Study Helper Ready</h4>
+                                <h4 style="color: var(--text-main); font-weight: 800;">Your AI Study Assistant is ready</h4>
                                 <p style="font-size: 13px; max-width: 320px; margin: 6px auto 0;">Ask anything about your lessons, notes, or homework in simple, everyday words.</p>
                             </div>
                         </div>
@@ -2577,7 +2577,7 @@
                     <i class="fas fa-times"></i>
                 </button>
                 <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-                    <img src="assets/images/westmead-logo.png" alt="KeepAI" style="width: 100%; height: 100%; object-fit: contain;">
+                    <img src="assets/images/keepai-logo.png" alt="KeepAI logo" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
                 <h3 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: white;">Install KeepAI</h3>
                 <p style="font-size: 12.5px; opacity: 0.9; margin: 0; color: #f1f5f9;">Add KeepAI to your home screen or desktop for quick access.</p>
@@ -3004,7 +3004,7 @@
 
             // Update topbar breadcrumbs
             const titleMap = {
-                'workspaces': { title: 'Student Dashboard', breadcrumb: 'Westmead Study Helper • My Workspaces' },
+                'workspaces': { title: 'Student Dashboard', breadcrumb: 'Your Simple AI Study Assistant • My Workspaces' },
                 'documents': { title: 'Study Documents', breadcrumb: 'Lesson Library • Uploaded Documents' },
                 'tutor': { title: 'AI Study Tutor', breadcrumb: 'Ask Questions • Simple Study Assistant' },
                 'learning': { title: 'Learning Tools', breadcrumb: 'Flashcards, Summaries & Practice Quizzes' },
