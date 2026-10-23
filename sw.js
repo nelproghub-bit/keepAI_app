@@ -1,5 +1,5 @@
 // KeepAI service worker for Progressive Web App (PWA)
-const CACHE_NAME = 'keepai-pwa-v6';
+const CACHE_NAME = 'keepai-pwa-__APP_VERSION__';
 
 const STATIC_ASSETS = [
   './',
