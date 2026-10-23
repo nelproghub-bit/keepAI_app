@@ -2044,9 +2044,12 @@
                             <h2>AI Tutor</h2>
                             <div class="sub">Your friendly study helper. Ask questions about your uploaded lessons in simple, easy-to-understand words.</div>
                         </div>
-                        <div style="display: flex; gap: 8px;">
+                        <div style="display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px;">
+                            <button class="btn btn-plain btn-sm" onclick="openTutorHistory()">
+                                <i class="fas fa-clock-rotate-left"></i> Chat History
+                            </button>
                             <button class="btn btn-plain btn-sm" onclick="clearChatHistory()">
-                                <i class="fas fa-trash-alt"></i> Clear Chat
+                                <i class="fas fa-plus"></i> New Chat
                             </button>
                             <button class="btn btn-primary btn-sm" onclick="showUploadDocumentModal()">
                                 <i class="fas fa-upload"></i> Attach Document
@@ -2105,6 +2108,26 @@
                         </div>
                     </div>
                 </section>
+
+                <div class="modal-overlay" id="tutor-history-modal" onclick="if(event.target === this) closeTutorHistory()">
+                    <div class="modal-content" style="max-width: 620px; max-height: min(80vh, 720px); display: flex; flex-direction: column;">
+                        <div class="modal-header">
+                            <div>
+                                <h3>Chat History</h3>
+                                <p style="margin-top: 4px; color: var(--text-muted); font-size: 12px;">Your saved AI Tutor conversations</p>
+                            </div>
+                            <button class="modal-close" type="button" onclick="closeTutorHistory()" aria-label="Close chat history">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div style="display: flex; justify-content: flex-end; margin: -4px 0 12px;">
+                            <button class="btn btn-plain btn-sm" type="button" onclick="clearTutorHistory()">
+                                <i class="fas fa-trash-alt"></i> Clear History
+                            </button>
+                        </div>
+                        <div id="tutor-history-list" aria-live="polite" style="overflow-y: auto; display: flex; flex-direction: column; gap: 8px; min-height: 100px;"></div>
+                    </div>
+                </div>
 
                 <!-- ==================== 4. LEARNING TOOLS SECTION ==================== -->
                 <section id="learning-section" class="section">
@@ -2713,6 +2736,7 @@
         let announcementPollTimer = null;
         let announcementHasLoaded = false;
         let knownAnnouncementIds = new Set();
+        let currentTutorConversationId = null;
 
         // Flashcards state
         const sampleFlashcards = [
@@ -4051,18 +4075,154 @@
             input.value = '';
         }
 
-        function clearChatHistory() {
+        function renderEmptyTutorChat() {
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = `
                 <div class="text-center py-5" style="color: var(--text-muted); margin: auto;">
                     <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
-                    <h4 style="color: var(--text-main); font-weight: 800;">Westmead AI Tutor Ready</h4>
-                    <p style="font-size: 13px; max-width: 320px; margin: 6px auto 0;">Ask anything regarding your IoT lessons, assignments, or study guides.</p>
+                    <h4 style="color: var(--text-main); font-weight: 800;">Your AI Study Assistant is ready</h4>
+                    <p style="font-size: 13px; max-width: 320px; margin: 6px auto 0;">Ask anything about your lessons, notes, or homework in simple, everyday words.</p>
                 </div>
             `;
-            showToast('Chat history cleared.', 'info');
+        }
+
+        function clearChatHistory() {
+            currentTutorConversationId = null;
+            renderEmptyTutorChat();
+            showToast('Started a new chat. Your saved conversations are still in Chat History.', 'info');
+        }
+
+        function closeTutorHistory() {
+            document.getElementById('tutor-history-modal').classList.remove('show');
+        }
+
+        async function openTutorHistory() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showToast('Sign in to view saved chat history.', 'warning');
+                return;
+            }
+            document.getElementById('tutor-history-modal').classList.add('show');
+            await loadTutorHistory();
+        }
+
+        async function loadTutorHistory() {
+            const list = document.getElementById('tutor-history-list');
+            const token = localStorage.getItem('access_token');
+            list.innerHTML = '<p style="color: var(--text-muted);">Loading chat history…</p>';
+            try {
+                const response = await fetch(`${API_BASE}/tutor/history`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not load your chat history.');
+
+                const conversations = Array.isArray(data.conversations) ? data.conversations : [];
+                if (!conversations.length) {
+                    list.innerHTML = '<p style="padding: 18px; text-align: center; color: var(--text-muted);">No saved chats yet. Your conversations will appear here.</p>';
+                    return;
+                }
+
+                list.replaceChildren();
+                conversations.forEach(conversation => {
+                    const item = document.createElement('div');
+                    item.style.cssText = 'display:flex;align-items:center;gap:8px;padding:12px;border:1px solid var(--border);border-radius:12px;background:var(--bg-surface);';
+
+                    const openButton = document.createElement('button');
+                    openButton.type = 'button';
+                    openButton.style.cssText = 'flex:1;min-width:0;text-align:left;border:0;background:transparent;color:var(--text-main);cursor:pointer;';
+                    const title = document.createElement('strong');
+                    title.textContent = conversation.title || 'Untitled chat';
+                    title.style.cssText = 'display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;';
+                    const details = document.createElement('span');
+                    details.textContent = `${conversation.message_count || 0} messages · ${new Date(conversation.updated_at).toLocaleString()}`;
+                    details.style.cssText = 'display:block;margin-top:4px;color:var(--text-muted);font-size:11px;';
+                    openButton.append(title, details);
+                    openButton.addEventListener('click', () => loadTutorConversation(conversation.id));
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.type = 'button';
+                    deleteButton.className = 'btn btn-plain btn-sm';
+                    deleteButton.setAttribute('aria-label', `Delete chat: ${conversation.title || 'Untitled chat'}`);
+                    deleteButton.title = 'Delete this chat';
+                    deleteButton.innerHTML = '<i class="fas fa-trash-alt"></i>';
+                    deleteButton.addEventListener('click', () => deleteTutorConversation(conversation.id));
+                    item.append(openButton, deleteButton);
+                    list.appendChild(item);
+                });
+            } catch (error) {
+                console.error('Could not load chat history:', error);
+                list.innerHTML = '<p style="padding: 12px; color: var(--danger, #dc2626);">Chat history could not be loaded. Please try again.</p>';
+                showToast(error.message || 'Could not load chat history.', 'error');
+            }
+        }
+
+        async function loadTutorConversation(conversationId) {
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_BASE}/tutor/history/${encodeURIComponent(conversationId)}`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not open this chat.');
+
+                currentTutorConversationId = data.conversation.id;
+                const chatMessages = document.getElementById('chat-messages');
+                chatMessages.replaceChildren();
+                (data.messages || []).forEach(message => {
+                    appendChatMessage(message.content, message.role === 'user' ? 'user' : 'ai');
+                });
+                if (!data.messages?.length) renderEmptyTutorChat();
+                closeTutorHistory();
+                showSection('tutor');
+            } catch (error) {
+                console.error('Could not open saved chat:', error);
+                showToast(error.message || 'Could not open this chat.', 'error');
+            }
+        }
+
+        async function deleteTutorConversation(conversationId) {
+            if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_BASE}/tutor/history/${encodeURIComponent(conversationId)}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not delete this chat.');
+                if (currentTutorConversationId === conversationId) {
+                    currentTutorConversationId = null;
+                    renderEmptyTutorChat();
+                }
+                await loadTutorHistory();
+                showToast('Chat deleted.', 'success');
+            } catch (error) {
+                console.error('Could not delete saved chat:', error);
+                showToast(error.message || 'Could not delete this chat.', 'error');
+            }
+        }
+
+        async function clearTutorHistory() {
+            if (!window.confirm('Clear all saved chat history? This cannot be undone.')) return;
+            const token = localStorage.getItem('access_token');
+            try {
+                const response = await fetch(`${API_BASE}/tutor/history`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+                if (!response.ok) throw new Error(data.detail || 'Could not clear chat history.');
+                currentTutorConversationId = null;
+                renderEmptyTutorChat();
+                await loadTutorHistory();
+                showToast('All saved chat history was cleared.', 'success');
+            } catch (error) {
+                console.error('Could not clear chat history:', error);
+                showToast(error.message || 'Could not clear chat history.', 'error');
+            }
         }
 
         function askQuickQuestion(q) {
@@ -4074,6 +4234,7 @@
             const input = document.getElementById('tutor-input');
             const message = input.value.trim();
             if (!message) return;
+            const conversationId = currentTutorConversationId;
 
             appendChatMessage(message, 'user');
             input.value = '';
@@ -4111,7 +4272,7 @@
                     const res = await fetch(`${API_BASE}/tutor/ask`, {
                         method: 'POST',
                         headers: {
-                            'Authorization': `Bearer ${token}`,
+                            'Authorization': 'Bearer ' + token,
                             'Content-Type': 'application/json'
                         },
                         body: JSON.stringify(reqBody)
@@ -4124,6 +4285,32 @@
                     loadingDiv.remove();
                     appendChatMessage(data.answer, 'ai');
                     answered = true;
+                    if (token) {
+                        try {
+                            const saved = await fetch(`${API_BASE}/tutor/history`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    conversation_id: conversationId,
+                                    question: message,
+                                    answer: data.answer,
+                                    teaching_style: teachingStyle,
+                                    course_level: courseLevel
+                                })
+                            });
+                            const savedData = await saved.json();
+                            if (!saved.ok) throw new Error(savedData.detail || 'Could not save this conversation.');
+                            if (currentTutorConversationId === conversationId) {
+                                currentTutorConversationId = savedData.conversation_id;
+                            }
+                        } catch (saveError) {
+                            console.error('Could not save AI Tutor conversation:', saveError);
+                            showToast('The response was received, but this chat could not be saved.', 'warning');
+                        }
+                    }
                 } catch (e) {
                     console.error('Tutor request failed:', e);
                     loadingDiv.remove();
@@ -4153,7 +4340,7 @@
             const msgDiv = document.createElement('div');
             msgDiv.className = `message ${sender}`;
 
-            const formatted = text
+            const formatted = escapeHTML(String(text))
                 .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
                 .replace(/\*(.*?)\*/g, '<em>$1</em>')
                 .replace(/\n/g, '<br>');

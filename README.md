@@ -51,6 +51,8 @@ Accounts previously written to the Render free service's temporary SQLite file a
 
 KeepAI is distributed as a web app that can be installed from a supported browser.
 
+AI Tutor conversations are saved to the configured database under the signed-in student's account. Students can reopen individual conversations, delete a chat, or clear all saved chat history from the Chat History panel. The Clear Chat action starts a fresh conversation without removing saved history.
+
 Local database and document files under `data/` are ignored and no longer tracked in the current Git tree; local copies remain on disk. Earlier commits still contain those files, so sanitize Git history if this repository is public or those files contained private data.
 
 5. **For Students - Register:**

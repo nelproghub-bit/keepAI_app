@@ -289,6 +289,34 @@ def init_db():
         )
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_conversations (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            title VARCHAR(200) NOT NULL,
+            teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
+            course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_messages (
+            id VARCHAR(64) PRIMARY KEY,
+            conversation_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(64) NOT NULL,
+            role VARCHAR(16) NOT NULL,
+            message_order INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tutor_conversations_user_updated ON tutor_conversations(user_id, updated_at)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_tutor_messages_conversation_created ON tutor_messages(conversation_id, created_at)"
+        )
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS announcements (
             id VARCHAR(64) PRIMARY KEY,
             title VARCHAR(200) NOT NULL,
@@ -426,6 +454,31 @@ def init_db():
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_conversations (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            title VARCHAR(200) NOT NULL,
+            teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
+            course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_tutor_conversations_user_updated (user_id, updated_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_messages (
+            id VARCHAR(64) PRIMARY KEY,
+            conversation_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(64) NOT NULL,
+            role VARCHAR(16) NOT NULL,
+            message_order INT NOT NULL,
+            content LONGTEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_tutor_messages_conversation_created (conversation_id, created_at),
+            INDEX idx_tutor_messages_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS announcements (
             id VARCHAR(64) PRIMARY KEY,
             title VARCHAR(200) NOT NULL,
@@ -544,6 +597,30 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_conversations (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            title TEXT NOT NULL,
+            teaching_style TEXT NOT NULL DEFAULT 'simple',
+            course_level TEXT NOT NULL DEFAULT 'intermediate',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_messages (
+            id TEXT PRIMARY KEY,
+            conversation_id TEXT NOT NULL,
+            user_id TEXT NOT NULL,
+            role TEXT NOT NULL,
+            message_order INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tutor_conversations_user_updated ON tutor_conversations(user_id, updated_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_tutor_messages_conversation_created ON tutor_messages(conversation_id, created_at)")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS announcements (
             id TEXT PRIMARY KEY,

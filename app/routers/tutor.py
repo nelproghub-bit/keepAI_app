@@ -1,9 +1,11 @@
 from typing import Optional, Dict, Any
+from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import json
-from app.core.security import get_optional_current_user
+from app.core.database import get_connection
+from app.core.security import get_current_user, get_optional_current_user
 from app.services.user_service import user_service
 from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context
@@ -18,6 +20,13 @@ class AskRequest(BaseModel):
     course_level: Optional[str] = "intermediate"  # beginner | intermediate | advanced
     document_name: Optional[str] = None
     inline_context: Optional[str] = None   # Raw text content sent directly from the client (chat attach)
+
+class SaveTutorTurnRequest(BaseModel):
+    conversation_id: Optional[str] = Field(default=None, max_length=64)
+    question: str = Field(min_length=1, max_length=4000)
+    answer: str = Field(min_length=1, max_length=50000)
+    teaching_style: str = Field(default="simple", max_length=32)
+    course_level: str = Field(default="intermediate", max_length=32)
 
 TEACHING_STYLE_DIRECTIVES = {
     "simple": (
@@ -295,3 +304,188 @@ def ask_keepai(
         "teaching_style": request.teaching_style,
         "course_level": course_level
     }
+
+
+@router.get("/tutor/history")
+def list_tutor_history(current_user: Dict[str, Any] = Depends(get_current_user)):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT c.id, c.title, c.teaching_style, c.course_level, c.created_at, c.updated_at,
+                   COUNT(m.id) AS message_count
+            FROM tutor_conversations c
+            LEFT JOIN tutor_messages m ON m.conversation_id = c.id AND m.user_id = c.user_id
+            WHERE c.user_id = ?
+            GROUP BY c.id, c.title, c.teaching_style, c.course_level, c.created_at, c.updated_at
+            ORDER BY c.updated_at DESC
+            LIMIT 100
+            """,
+            (current_user["id"],),
+        )
+        return {"conversations": [dict(row) for row in cursor.fetchall()]}
+    finally:
+        conn.close()
+
+
+@router.get("/tutor/history/{conversation_id}")
+def get_tutor_conversation(
+    conversation_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT id, title, teaching_style, course_level, created_at, updated_at
+            FROM tutor_conversations
+            WHERE id = ? AND user_id = ?
+            """,
+            (conversation_id, current_user["id"]),
+        )
+        conversation = cursor.fetchone()
+        if not conversation:
+            raise HTTPException(status_code=404, detail="Chat not found.")
+
+        cursor.execute(
+            """
+            SELECT id, role, content, created_at
+            FROM tutor_messages
+            WHERE conversation_id = ? AND user_id = ?
+            ORDER BY message_order ASC
+            """,
+            (conversation_id, current_user["id"]),
+        )
+        return {
+            "conversation": dict(conversation),
+            "messages": [dict(row) for row in cursor.fetchall()],
+        }
+    finally:
+        conn.close()
+
+
+@router.post("/tutor/history", status_code=201)
+def save_tutor_turn(
+    request: SaveTutorTurnRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        conversation_id = request.conversation_id
+        if conversation_id:
+            cursor.execute(
+                "SELECT id FROM tutor_conversations WHERE id = ? AND user_id = ?",
+                (conversation_id, current_user["id"]),
+            )
+            if not cursor.fetchone():
+                raise HTTPException(status_code=404, detail="Chat not found.")
+            cursor.execute(
+                """
+                UPDATE tutor_conversations
+                SET updated_at = CURRENT_TIMESTAMP,
+                    teaching_style = ?,
+                    course_level = ?
+                WHERE id = ? AND user_id = ?
+                """,
+                (request.teaching_style, request.course_level, conversation_id, current_user["id"]),
+            )
+        else:
+            conversation_id = uuid4().hex
+            title = " ".join(request.question.split())[:200]
+            cursor.execute(
+                """
+                INSERT INTO tutor_conversations
+                    (id, user_id, title, teaching_style, course_level)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                (
+                    conversation_id,
+                    current_user["id"],
+                    title,
+                    request.teaching_style,
+                    request.course_level,
+                ),
+            )
+
+        cursor.execute(
+            "SELECT COALESCE(MAX(message_order), 0) AS last_order FROM tutor_messages WHERE conversation_id = ? AND user_id = ?",
+            (conversation_id, current_user["id"]),
+        )
+        message_order = cursor.fetchone()["last_order"]
+        cursor.execute(
+            """
+            INSERT INTO tutor_messages (id, conversation_id, user_id, role, message_order, content)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (uuid4().hex, conversation_id, current_user["id"], "user", message_order + 1, request.question),
+        )
+        cursor.execute(
+            """
+            INSERT INTO tutor_messages (id, conversation_id, user_id, role, message_order, content)
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (uuid4().hex, conversation_id, current_user["id"], "ai", message_order + 2, request.answer),
+        )
+        conn.commit()
+        return {"conversation_id": conversation_id}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+@router.delete("/tutor/history/{conversation_id}")
+def delete_tutor_conversation(
+    conversation_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM tutor_conversations WHERE id = ? AND user_id = ?",
+            (conversation_id, current_user["id"]),
+        )
+        if not cursor.fetchone():
+            raise HTTPException(status_code=404, detail="Chat not found.")
+        cursor.execute(
+            "DELETE FROM tutor_messages WHERE conversation_id = ? AND user_id = ?",
+            (conversation_id, current_user["id"]),
+        )
+        cursor.execute(
+            "DELETE FROM tutor_conversations WHERE id = ? AND user_id = ?",
+            (conversation_id, current_user["id"]),
+        )
+        conn.commit()
+        return {"deleted": True}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+@router.delete("/tutor/history")
+def clear_tutor_history(current_user: Dict[str, Any] = Depends(get_current_user)):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "DELETE FROM tutor_messages WHERE user_id = ?",
+            (current_user["id"],),
+        )
+        cursor.execute(
+            "DELETE FROM tutor_conversations WHERE user_id = ?",
+            (current_user["id"],),
+        )
+        conn.commit()
+        return {"deleted": True}
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()

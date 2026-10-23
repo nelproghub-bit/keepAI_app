@@ -139,7 +139,33 @@ CREATE TABLE IF NOT EXISTS `study_activity` (
     KEY `idx_study_activity_user_created` (`user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- 8. Creator announcements shown in student dashboards
+-- 8. AI Tutor chat history (scoped to each student account)
+CREATE TABLE IF NOT EXISTS `tutor_conversations` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `title` VARCHAR(200) NOT NULL,
+    `teaching_style` VARCHAR(32) NOT NULL DEFAULT 'simple',
+    `course_level` VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_tutor_conversations_user_updated` (`user_id`, `updated_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `tutor_messages` (
+    `id` VARCHAR(64) NOT NULL,
+    `conversation_id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `role` VARCHAR(16) NOT NULL,
+    `message_order` INT NOT NULL,
+    `content` LONGTEXT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_tutor_messages_conversation_created` (`conversation_id`, `created_at`),
+    KEY `idx_tutor_messages_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- 9. Creator announcements shown in student dashboards
 CREATE TABLE IF NOT EXISTS `announcements` (
     `id` VARCHAR(64) NOT NULL,
     `title` VARCHAR(200) NOT NULL,
