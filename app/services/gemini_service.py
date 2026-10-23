@@ -1,5 +1,6 @@
 import requests
 import json
+import logging
 import time
 from typing import Optional, List
 from app.core.config import (
@@ -8,6 +9,13 @@ from app.core.config import (
     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_EMBED_MODEL
 )
 from app.services.training_service import training_service
+
+logger = logging.getLogger(__name__)
+
+
+class AIProviderError(RuntimeError):
+    """Raised when the configured AI provider cannot generate a response."""
+
 
 # Fast response cache
 _status_cache = {"last_check": 0, "status": None, "cache_duration": 30}
@@ -22,22 +30,15 @@ class AIService:
     def generate(self, prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 
                  user_id: str = "default", teaching_style: str = "simple", 
                  has_sources: bool = False) -> str:
-        """Generate text using the configured AI provider with training-enhanced responses"""
+        """Generate text using the configured AI provider."""
+        training_info = training_service.generate_enhanced_response(
+            prompt, teaching_style, "", has_sources
+        )
+
+        if training_info['enhanced_instruction'] and not has_sources:
+            system = training_info['enhanced_instruction']
+
         try:
-            # Get training enhancement
-            training_info = training_service.generate_enhanced_response(
-                prompt, teaching_style, "", has_sources
-            )
-            
-            # Enhance system prompt with training data only when no specific lesson sources were provided
-            if training_info['enhanced_instruction'] and not has_sources:
-                system = training_info['enhanced_instruction']
-            
-            # Store conversation context
-            if user_id not in _conversation_memory:
-                _conversation_memory[user_id] = []
-            
-            # Generate response using configured AI provider
             if self.provider == "openai" and OPENAI_API_KEY:
                 response = self._generate_openai(prompt, system)
             elif self.provider == "anthropic" and ANTHROPIC_API_KEY:
@@ -45,34 +46,38 @@ class AIService:
             elif self.provider == "gemini" and GEMINI_API_KEY:
                 response = self._generate_gemini(prompt, system)
             else:
-                # Use training-enhanced academic responses
-                response = self._generate_training_enhanced_response(
-                    prompt, system, user_id, training_info
+                raise AIProviderError(
+                    f"The configured AI provider '{self.provider}' is not available."
                 )
-            
-            # Remember this conversation
-            _conversation_memory[user_id].append({
-                "prompt": prompt, 
-                "response": response,
-                "task_type": training_info['task_type'],
-                "style": training_info['style']
-            })
-            # Keep only last 5 conversations
-            _conversation_memory[user_id] = _conversation_memory[user_id][-5:]
-            
-            return response
-        except Exception as e:
-            print(f"⚠️ AI generation notice ({self.provider}): {e}")
-            # Fallback to training-enhanced response
-            training_info = training_service.generate_enhanced_response(
-                prompt, teaching_style, "", has_sources
+            if not response or not response.strip():
+                raise AIProviderError("The AI service returned an empty response.")
+        except AIProviderError:
+            raise
+        except Exception as exc:
+            status_code = getattr(getattr(exc, "response", None), "status_code", None)
+            logger.error(
+                "AI provider %s generation failed (%s, HTTP %s)",
+                self.provider,
+                type(exc).__name__,
+                status_code or "n/a",
             )
-            return self._generate_training_enhanced_response(prompt, system, user_id, training_info)
+            raise AIProviderError(
+                "The AI service could not generate a response. Please try again."
+            ) from exc
+
+        _conversation_memory.setdefault(user_id, []).append({
+            "prompt": prompt,
+            "response": response,
+            "task_type": training_info['task_type'],
+            "style": training_info['style']
+        })
+        _conversation_memory[user_id] = _conversation_memory[user_id][-5:]
+        return response
 
     def generate_stream(self, prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.",
                         user_id: str = "default", teaching_style: str = "simple",
                         has_sources: bool = False, timeout: int = 240):
-        """Stream tokens generator with ChatGPT-like token streaming and conversation memory"""
+        """Stream provider-generated tokens without substituting a canned answer."""
         full_tokens = []
         try:
             training_info = training_service.generate_enhanced_response(
@@ -92,27 +97,32 @@ class AIService:
                     full_tokens.append(part)
                     yield part
                     time.sleep(0.01)
+            elif self.provider == "anthropic" and ANTHROPIC_API_KEY:
+                response = self._generate_anthropic(prompt, system)
+                for chunk in response.split(" "):
+                    part = chunk + " "
+                    full_tokens.append(part)
+                    yield part
+                    time.sleep(0.01)
             else:
-                resp_text = self._generate_training_enhanced_response(prompt, system, user_id, training_info)
-                words = resp_text.split(" ")
-                for i, w in enumerate(words):
-                    part = w + (" " if i < len(words) - 1 else "")
-                    full_tokens.append(part)
-                    yield part
-                    time.sleep(0.015)
-        except Exception as e:
-            print(f"⚠️ AI stream notice ({self.provider}): {e}")
-            if not full_tokens:
-                training_info = training_service.generate_enhanced_response(
-                    prompt, teaching_style, "", has_sources
+                raise AIProviderError(
+                    f"The configured AI provider '{self.provider}' is not available."
                 )
-                resp_text = self._generate_training_enhanced_response(prompt, system, user_id, training_info)
-                words = resp_text.split(" ")
-                for i, w in enumerate(words):
-                    part = w + (" " if i < len(words) - 1 else "")
-                    full_tokens.append(part)
-                    yield part
-                    time.sleep(0.015)
+            if not full_tokens:
+                raise AIProviderError("The AI service returned an empty response.")
+        except Exception as e:
+            if isinstance(e, AIProviderError):
+                raise
+            status_code = getattr(getattr(e, "response", None), "status_code", None)
+            logger.error(
+                "AI provider %s streaming failed (%s, HTTP %s)",
+                self.provider,
+                type(e).__name__,
+                status_code or "n/a",
+            )
+            raise AIProviderError(
+                "The AI service could not generate a response. Please try again."
+            ) from e
 
         if full_tokens:
             final_resp = "".join(full_tokens)
@@ -692,9 +702,12 @@ I can explain this simply. For answers based directly on your class lessons, upl
         data = response.json()
         candidates = data.get("candidates", [])
         if not candidates:
-            return "No response generated."
+            raise ValueError("Gemini returned no response candidates")
         parts = candidates[0].get("content", {}).get("parts", [])
-        return "".join(part.get("text", "") for part in parts)
+        text = "".join(part.get("text", "") for part in parts)
+        if not text.strip():
+            raise ValueError("Gemini returned an empty response")
+        return text
 
     def _generate_gemini_stream(self, prompt: str, system: str, timeout: int = 60):
         """Stream tokens directly from Google Gemini API"""
@@ -808,11 +821,11 @@ For now, I can still help you organize your library and track your study progres
             if self.provider == "gemini":
                 if GEMINI_API_KEY:
                     status.update({
-                        "status": "reachable",
+                        "status": "configured",
                         "configured_chat_model": GEMINI_MODEL,
                         "configured_embed_model": GEMINI_EMBED_MODEL,
                         "installed_models": [GEMINI_MODEL, GEMINI_EMBED_MODEL],
-                        "message": "Google Gemini API connected and ready"
+                        "message": "Gemini API key is configured; generation is verified per request."
                     })
                 else:
                     status.update({

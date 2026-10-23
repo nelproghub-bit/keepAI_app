@@ -6,7 +6,7 @@ import json
 from app.core.security import get_optional_current_user
 from app.services.user_service import user_service
 from app.services.rag_service import get_tutor_context
-from app.services.gemini_service import generate, generate_stream
+from app.services.gemini_service import AIProviderError, generate, generate_stream
 
 router = APIRouter(tags=["AI Tutor"])
 
@@ -211,13 +211,16 @@ def ask_keepai(
             has_materials=True,
             sources=[fname]
         )
-        answer = generate(
-            f"Document content from '{fname}':\n{context}\n\nStudent question: {request.question}",
-            system=system,
-            user_id=uid,
-            teaching_style=request.teaching_style,
-            has_sources=True
-        )
+        try:
+            answer = generate(
+                f"Document content from '{fname}':\n{context}\n\nStudent question: {request.question}",
+                system=system,
+                user_id=uid,
+                teaching_style=request.teaching_style,
+                has_sources=True
+            )
+        except AIProviderError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         return {
             "answer": answer,
             "sources": [fname],
@@ -239,26 +242,32 @@ def ask_keepai(
             has_materials=True,
             sources=sources
         )
-        answer = generate(
-            f"Lesson material from uploaded document:\n{context}\n\nStudent question: {request.question}",
-            system=system,
-            user_id=uid,
-            teaching_style=request.teaching_style,
-            has_sources=True
-        )
+        try:
+            answer = generate(
+                f"Lesson material from uploaded document:\n{context}\n\nStudent question: {request.question}",
+                system=system,
+                user_id=uid,
+                teaching_style=request.teaching_style,
+                has_sources=True
+            )
+        except AIProviderError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
     else:
         system = build_tutor_system_prompt(
             teaching_style=request.teaching_style,
             course_level=course_level,
             has_materials=False
         )
-        answer = generate(
-            f"Student question: {request.question}",
-            system=system,
-            user_id=uid,
-            teaching_style=request.teaching_style,
-            has_sources=False
-        )
+        try:
+            answer = generate(
+                f"Student question: {request.question}",
+                system=system,
+                user_id=uid,
+                teaching_style=request.teaching_style,
+                has_sources=False
+            )
+        except AIProviderError as exc:
+            raise HTTPException(status_code=503, detail=str(exc)) from exc
         sources = []
         read_mode = "none"
     

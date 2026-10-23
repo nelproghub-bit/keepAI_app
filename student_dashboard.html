@@ -3639,24 +3639,30 @@
                         body: JSON.stringify(reqBody)
                     });
 
-                    if (res.ok) {
-                        const data = await res.json();
-                        loadingDiv.remove();
-                        appendChatMessage(data.answer, 'ai');
-                        answered = true;
+                    const data = await res.json();
+                    if (!res.ok) {
+                        throw new Error(data.detail || 'The AI service is temporarily unavailable.');
                     }
+                    loadingDiv.remove();
+                    appendChatMessage(data.answer, 'ai');
+                    answered = true;
                 } catch (e) {
-                    console.log('Using progressive local tutor response');
+                    console.error('Tutor request failed:', e);
+                    loadingDiv.remove();
+                    appendChatMessage(
+                        "I couldn't get a response from the AI service right now. Please try again in a moment.",
+                        'ai'
+                    );
+                    answered = true;
                 }
             }
 
             if (!answered) {
-                // Progressive intelligent fallback
-                setTimeout(() => {
-                    loadingDiv.remove();
-                    const simulated = generateProgressiveTutorResponse(message);
-                    appendChatMessage(simulated, 'ai');
-                }, 700);
+                loadingDiv.remove();
+                appendChatMessage(
+                    "You're offline, so I couldn't reach the AI service. Check your connection and try again.",
+                    'ai'
+                );
             }
         }
 

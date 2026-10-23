@@ -11,7 +11,7 @@ AI_PROVIDER = os.getenv("AI_PROVIDER", "gemini")  # options: gemini, openai, ant
 
 # Google Gemini Configuration (Primary AI Provider)
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 GEMINI_EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 GEMINI_PROJECT_ID = os.getenv("GEMINI_PROJECT_ID")
 
