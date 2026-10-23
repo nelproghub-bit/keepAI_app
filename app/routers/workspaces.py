@@ -1,8 +1,8 @@
 import uuid
-from typing import Optional, Dict, Any, List
+from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from app.core.security import get_optional_current_user
+from app.core.security import get_current_user
 from app.core.database import get_connection
 from app.services.progress_service import record_activity
 
@@ -16,11 +16,10 @@ class WorkspaceCreateRequest(BaseModel):
 
 @router.get("/workspaces")
 def list_workspaces(
-    user_id: Optional[str] = None,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """List workspaces for the current student from the database"""
-    uid = (current_user["id"] if current_user else None) or user_id or "student_arnel"
+    uid = current_user["id"]
     conn = get_connection()
     try:
         cur = conn.cursor()
@@ -30,8 +29,8 @@ def list_workspaces(
                    COUNT(DISTINCT d.id) as document_count
             FROM workspaces w
             LEFT JOIN workspace_documents wd ON w.id = wd.workspace_id
-            LEFT JOIN documents d ON d.id = wd.document_id
-            WHERE w.user_id = ? OR w.user_id = 'student_arnel'
+            LEFT JOIN documents d ON d.id = wd.document_id AND d.user_id = w.user_id
+            WHERE w.user_id = ?
             GROUP BY w.id
             ORDER BY w.created_at DESC
             """,
@@ -57,10 +56,10 @@ def list_workspaces(
 @router.post("/workspaces")
 def create_workspace(
     req: WorkspaceCreateRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Create a new workspace in the database"""
-    uid = (current_user["id"] if current_user else None) or "student_arnel"
+    uid = current_user["id"]
     ws_id = f"ws_{uuid.uuid4().hex[:12]}"
     conn = get_connection()
     try:
@@ -73,13 +72,12 @@ def create_workspace(
             (ws_id, uid, req.name, req.description, req.color, req.icon)
         )
         conn.commit()
-        if current_user:
-            record_activity(
-                current_user["id"],
-                "workspace_created",
-                "Created a study workspace",
-                req.name,
-            )
+        record_activity(
+            current_user["id"],
+            "workspace_created",
+            "Created a study workspace",
+            req.name,
+        )
         return {
             "id": ws_id,
             "name": req.name,
@@ -96,15 +94,15 @@ def create_workspace(
 def add_document_to_workspace(
     workspace_id: str,
     document_id: str,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Link an existing student document to a workspace exactly once."""
-    uid = (current_user["id"] if current_user else None) or "student_arnel"
+    uid = current_user["id"]
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT id FROM workspaces WHERE id = ? AND (user_id = ? OR user_id = 'student_arnel')",
+            "SELECT id FROM workspaces WHERE id = ? AND user_id = ?",
             (workspace_id, uid)
         )
         if not cur.fetchone():
@@ -132,10 +130,10 @@ def add_document_to_workspace(
 @router.delete("/workspaces/{workspace_id}")
 def delete_workspace(
     workspace_id: str,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_user)
 ):
     """Delete a workspace from the database"""
-    uid = (current_user["id"] if current_user else None) or "student_arnel"
+    uid = current_user["id"]
     conn = get_connection()
     try:
         cur = conn.cursor()

@@ -72,7 +72,7 @@ async def upload_document(
 
         if effective_workspace_id:
             cur.execute(
-                "SELECT id FROM workspaces WHERE id = ? AND (user_id = ? OR user_id = 'student_arnel')",
+                "SELECT id FROM workspaces WHERE id = ? AND user_id = ?",
                 (effective_workspace_id, uid)
             )
             if not cur.fetchone():

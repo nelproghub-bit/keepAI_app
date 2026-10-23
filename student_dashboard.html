@@ -2636,23 +2636,14 @@
 
         // In-memory & LocalStorage state
         let currentUser = {
-            id: 'student_arnel',
+            id: null,
             username: 'arnel_gubi',
             full_name: 'Arnel Gubi',
             student_id: 'C230170',
             email: 'arnel.gubi@westmead.edu.ph'
         };
 
-        let workspaces = [
-            {
-                id: 'ws_iot',
-                name: 'IoT',
-                description: 'No description',
-                icon: '💻',
-                document_count: 0,
-                updated_at: 'Just now'
-            }
-        ];
+        let workspaces = [];
 
         let documents = [];
         let activeDocument = null;
@@ -2793,21 +2784,19 @@
                 } catch (e) {}
             }
 
-            // Load workspaces
-            const savedWorkspaces = localStorage.getItem('keepai_workspaces');
+            // Keep offline workspace caches separate for each account.
+            const savedWorkspaces = localStorage.getItem(workspaceStorageKey());
             if (savedWorkspaces) {
                 try {
                     const parsed = JSON.parse(savedWorkspaces);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
+                    if (Array.isArray(parsed)) {
                         workspaces = parsed;
                     }
                 } catch (e) {}
-            } else {
-                saveWorkspacesLocally();
             }
 
-            // Load documents
-            const savedDocs = localStorage.getItem('keepai_documents');
+            // Keep offline document caches separate for each account as well.
+            const savedDocs = localStorage.getItem(documentStorageKey());
             if (savedDocs) {
                 try {
                     const parsed = JSON.parse(savedDocs);
@@ -2858,40 +2847,16 @@
 
                 if (wsRes.status === 'fulfilled' && wsRes.value.ok) {
                     const data = await wsRes.value.json();
-                    if ((!data.workspaces || data.workspaces.length === 0) && workspaces.length > 0) {
-                        data.workspaces = [];
-                        for (const workspace of workspaces) {
-                            const createRes = await fetch(`${API_BASE}/workspaces`, {
-                                method: 'POST',
-                                headers: {
-                                    'Authorization': 'Bearer ' + token,
-                                    'Content-Type': 'application/json'
-                                },
-                                body: JSON.stringify({
-                                    name: workspace.name,
-                                    description: workspace.description || 'No description',
-                                    color: workspace.color || '#7D1D1D',
-                                    icon: workspace.icon || '📁'
-                                })
-                            });
-                            if (!createRes.ok) {
-                                throw new Error('Could not sync a workspace to the server.');
-                            }
-                            data.workspaces.push(await createRes.json());
+                    workspaces = Array.isArray(data.workspaces) ? data.workspaces : [];
+                    documents.forEach(doc => {
+                        if (doc.workspace_id && !workspaces.some(ws => ws.id === doc.workspace_id)) {
+                            const previous = cachedWorkspaces.find(ws => ws.id === doc.workspace_id);
+                            const matching = workspaces.find(ws => ws.name.toLowerCase() === previous?.name.toLowerCase());
+                            if (matching) doc.workspace_id = matching.id;
                         }
-                    }
-                    if (data.workspaces && data.workspaces.length > 0) {
-                        workspaces = data.workspaces;
-                        documents.forEach(doc => {
-                            if (doc.workspace_id && !workspaces.some(ws => ws.id === doc.workspace_id)) {
-                                const previous = cachedWorkspaces.find(ws => ws.id === doc.workspace_id);
-                                const matching = workspaces.find(ws => ws.name.toLowerCase() === previous?.name.toLowerCase());
-                                if (matching) doc.workspace_id = matching.id;
-                            }
-                        });
-                        saveWorkspacesLocally();
-                        renderWorkspaces();
-                    }
+                    });
+                    saveWorkspacesLocally();
+                    renderWorkspaces();
                 }
 
                 if (docRes.status === 'fulfilled' && docRes.value.ok) {
@@ -2942,12 +2907,22 @@
             }
         }
 
+        function workspaceStorageKey() {
+            const userId = currentUser?.id;
+            return userId ? `keepai_workspaces_${encodeURIComponent(userId)}` : 'keepai_workspaces_guest';
+        }
+
         function saveWorkspacesLocally() {
-            localStorage.setItem('keepai_workspaces', JSON.stringify(workspaces));
+            localStorage.setItem(workspaceStorageKey(), JSON.stringify(workspaces));
         }
 
         function saveDocumentsLocally() {
-            localStorage.setItem('keepai_documents', JSON.stringify(documents));
+            localStorage.setItem(documentStorageKey(), JSON.stringify(documents));
+        }
+
+        function documentStorageKey() {
+            const userId = currentUser?.id;
+            return userId ? `keepai_documents_${encodeURIComponent(userId)}` : 'keepai_documents_guest';
         }
 
         function updateUIProfile() {
@@ -3359,6 +3334,9 @@
                         throw new Error('The workspace could not be saved. Please try again.');
                     }
                     newWs = { ...newWs, ...(await response.json()) };
+                } else if (!token) {
+                    showToast('Sign in to create a workspace for your account.', 'error');
+                    return;
                 }
             } catch (err) {
                 showToast(err.message || 'The workspace could not be saved. Please try again.', 'error');
@@ -4682,6 +4660,7 @@
             });
             if (confirmed) {
                 localStorage.removeItem('access_token');
+                localStorage.removeItem('user');
                 window.location.href = 'student_login.html';
             }
         }
