@@ -129,6 +129,13 @@ def admin_page():
         return FileResponse(admin_path)
     return {"error": "admin_dashboard.html not found"}
 
+@app.get("/admin_panel.html")
+def admin_panel_page():
+    admin_panel_path = os.path.join(FRONTEND_DIR, "admin_panel.html")
+    if os.path.exists(admin_panel_path):
+        return FileResponse(admin_panel_path)
+    return {"error": "admin_panel.html not found"}
+
 @app.get("/student")
 @app.get("/student_login")
 @app.get("/student_login.html")
