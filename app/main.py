@@ -1,3 +1,5 @@
+import json
+import os
 import sys
 if sys.platform == "win32":
     try:
@@ -6,11 +8,10 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, PlainTextResponse
 from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin
 from app.core.config import ALLOWED_ORIGINS
 from app.services.knowledge_loader import initialize_knowledge_base
@@ -43,8 +44,29 @@ app.include_router(learning_tools.router, prefix="/api")
 def deployment_health():
     return {"status": "ok"}
 
-# PWA root routes
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+@app.get("/assets/js/config.js", response_class=PlainTextResponse)
+def frontend_config():
+    api_base_url = os.getenv("VITE_API_URL", "").strip().rstrip("/")
+    if not api_base_url:
+        config_path = os.path.join(BASE_DIR, "assets", "js", "config.js")
+        return FileResponse(config_path, media_type="application/javascript")
+
+    config = (
+        f"const API_BASE_URL = {json.dumps(api_base_url)};\n"
+        "window.API_BASE_URL = API_BASE_URL;\n"
+        "window.API_URL = API_BASE_URL;\n"
+        "window.API_BASE = `${API_BASE_URL}/api`;\n"
+        "window.API_IS_DEVELOPMENT = ['localhost', '127.0.0.1'].includes(window.location.hostname);\n"
+    )
+    return PlainTextResponse(
+        config,
+        media_type="application/javascript",
+        headers={"Cache-Control": "no-store"},
+    )
+
+# PWA root routes
 icons_dir = os.path.join(BASE_DIR, "icons")
 if os.path.exists(icons_dir):
     app.mount("/icons", StaticFiles(directory=icons_dir), name="icons")

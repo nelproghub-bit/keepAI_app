@@ -1,5 +1,5 @@
 // Westmead IS KeepAI Service Worker for Progressive Web App (PWA)
-const CACHE_NAME = 'keepai-pwa-v4';
+const CACHE_NAME = 'keepai-pwa-v5';
 
 const STATIC_ASSETS = [
   './',
@@ -44,7 +44,12 @@ self.addEventListener('fetch', event => {
   const url = new URL(req.url);
 
   // Never cache backend API calls, APK downloads, or non-GET requests
-  if (url.pathname.includes('/api/') || url.pathname.endsWith('.apk') || req.method !== 'GET') {
+  if (
+    url.pathname.includes('/api/')
+    || url.pathname.endsWith('/assets/js/config.js')
+    || url.pathname.endsWith('.apk')
+    || req.method !== 'GET'
+  ) {
     return;
   }
 
