@@ -1105,6 +1105,85 @@ table.data-table tr:hover {
     padding: 20px 16px;
   }
 }
+
+@keyframes admin-login-spin {
+  to { transform: rotate(360deg); }
+}
+
+.admin-login-spinner {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: admin-login-spin 0.7s linear infinite;
+}
+
+@media (max-width: 860px) {
+  #dashboard-app.active {
+    display: flex;
+    flex-direction: column;
+  }
+  .dash-sidebar {
+    width: 100%;
+    height: auto;
+    position: relative;
+    max-height: none;
+    overflow: visible;
+    padding: 12px;
+  }
+  .dash-nav {
+    display: flex;
+    overflow-x: auto;
+    gap: 6px;
+    padding: 8px 12px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .dash-nav .nav-link {
+    flex: 0 0 auto;
+    width: auto;
+    white-space: nowrap;
+  }
+  .dash-sidebar-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 10px;
+  }
+  .dash-main,
+  .content-section,
+  .panel,
+  .page-header {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 540px) {
+  .dash-brand-text span {
+    display: none;
+  }
+  .dash-nav {
+    padding-inline: 8px;
+  }
+  .dash-nav .nav-link {
+    padding: 10px;
+  }
+  .dash-nav .nav-link svg {
+    display: none;
+  }
+  .auth-wrapper,
+  .auth-card,
+  .form-group,
+  .form-control {
+    min-width: 0;
+    max-width: 100%;
+  }
+  .table-responsive table {
+    min-width: 600px;
+  }
+}
 </style>
 </head>
 <body>
@@ -1863,9 +1942,10 @@ let pendingDeleteAction = null;
 async function parseJsonResponse(res, defaultError = 'Request failed.') {
   try {
     return await res.json();
-  } catch (err) {
+  } catch {
     if (!res.ok) {
-      throw new Error(`Server connection error (${res.status}). Make sure the KeepAI Python backend is running.`);
+      const localHint = window.API_IS_DEVELOPMENT ? ' Start the backend locally and try again.' : '';
+      throw new Error(`Can't reach the server. Please try again in a moment.${localHint}`);
     }
     throw new Error(defaultError);
   }
@@ -1874,7 +1954,9 @@ async function parseJsonResponse(res, defaultError = 'Request failed.') {
 // On Page Load: Check registration status and session
 document.addEventListener('DOMContentLoaded', async () => {
   await checkAdminRegistrationStatus();
-  checkExistingSession();
+  await checkExistingSession();
+  window.addEventListener('popstate', restoreAdminTabFromUrl);
+  window.addEventListener('hashchange', restoreAdminTabFromUrl);
 });
 
 // -------------------------------------------------------------
@@ -1955,7 +2037,9 @@ async function handleAdminLogin(e) {
   const btn = document.getElementById('btn-login');
 
   btn.disabled = true;
-  btn.textContent = 'Signing In...';
+  btn.setAttribute('aria-busy', 'true');
+  btn.innerHTML = '<span class="admin-login-spinner" aria-hidden="true"></span><span>Logging in...</span>';
+  let loginSucceeded = false;
 
   try {
     const res = await fetch(`${API_BASE}/admin/login`, {
@@ -1972,6 +2056,7 @@ async function handleAdminLogin(e) {
     // Save session
     localStorage.setItem('admin_access_token', data.access_token);
     localStorage.setItem('admin_user', JSON.stringify(data.user));
+    loginSucceeded = true;
 
     showAuthAlert('Sign in successful! Loading admin console...', 'success');
     setTimeout(() => {
@@ -1979,11 +2064,23 @@ async function handleAdminLogin(e) {
     }, 600);
 
   } catch (err) {
-    showAuthAlert(err.message, 'error');
+    showAuthAlert(getAdminLoginErrorMessage(err), 'error');
   } finally {
-    btn.disabled = false;
-    btn.textContent = 'Sign In as Administrator ✦';
+    if (!loginSucceeded) {
+      btn.disabled = false;
+      btn.removeAttribute('aria-busy');
+      btn.textContent = 'Sign In as Administrator ✦';
+    }
   }
+}
+
+function getAdminLoginErrorMessage(error) {
+  if (error instanceof TypeError && /fetch|network/i.test(error.message)) {
+    return window.API_IS_DEVELOPMENT
+      ? "Can't reach the server. Start the backend locally and try again."
+      : "Can't reach the server. Please try again in a moment.";
+  }
+  return error.message || 'Sign in failed. Please try again.';
 }
 
 async function handleAdminRegister(e) {
@@ -2035,31 +2132,46 @@ async function handleAdminRegister(e) {
   }
 }
 
-function checkExistingSession() {
+async function checkExistingSession() {
   const token = localStorage.getItem('admin_access_token');
-  const userJson = localStorage.getItem('admin_user');
+  if (!token) return;
 
-  if (token && userJson) {
-    try {
-      const user = JSON.parse(userJson);
-      if (user && user.role === 'admin') {
-        enterDashboard(user);
-      }
-    } catch (e) {
+  try {
+    const response = await fetch(`${API_BASE}/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (response.status === 401 || response.status === 403) {
       localStorage.removeItem('admin_access_token');
       localStorage.removeItem('admin_user');
+      return;
     }
+    const data = await parseJsonResponse(response, 'Could not verify your admin session.');
+    if (!response.ok) throw new Error(data.detail || 'Could not verify your admin session.');
+    if (data.user?.role !== 'admin') {
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_user');
+      return;
+    }
+    localStorage.setItem('admin_user', JSON.stringify(data.user));
+    enterDashboard(data.user);
+  } catch (error) {
+    console.error('Could not verify the admin session:', error);
+    showAuthAlert('Could not verify your session. Please sign in again.', 'error');
   }
 }
 
 function enterDashboard(user) {
   currentAdminUser = user;
+  const loginButton = document.getElementById('btn-login');
+  loginButton.disabled = false;
+  loginButton.removeAttribute('aria-busy');
+  loginButton.textContent = 'Sign In as Administrator ✦';
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('dashboard-app').classList.add('active');
   document.getElementById('sidebar-admin-name').textContent = user.full_name || user.username;
 
-  // Load initial view
-  loadDashboardStats();
+  const requestedTab = window.location.hash.slice(1);
+  switchDashboardTab(isValidAdminTab(requestedTab) ? requestedTab : 'overview', false);
   loadAdminAnnouncements();
 }
 
@@ -2086,9 +2198,32 @@ function handleAdminSignOut() {
 // -------------------------------------------------------------
 // Dashboard Navigation & Views
 // -------------------------------------------------------------
-function switchDashboardTab(tabId) {
+function isValidAdminTab(tabId) {
+  return ['overview', 'users', 'students', 'documents', 'announcements', 'playground', 'system'].includes(tabId);
+}
+
+function restoreAdminTabFromUrl() {
+  if (!document.getElementById('dashboard-app').classList.contains('active')) return;
+  const tabId = window.location.hash.slice(1);
+  const activeSection = document.querySelector('.content-section[style*="display: block"]');
+  const activeTabKey = tabId === 'students' ? 'users' : tabId;
+  if (isValidAdminTab(tabId) && activeSection?.id !== `section-${activeTabKey}`) {
+    switchDashboardTab(tabId, false);
+  }
+}
+
+function switchDashboardTab(tabId, updateHistory = true) {
+  if (!isValidAdminTab(tabId)) return;
   // Normalize users vs students
   const activeTabKey = (tabId === 'students' || tabId === 'users') ? 'users' : tabId;
+  const nextUrl = `${window.location.pathname}${window.location.search}#${activeTabKey}`;
+  if (window.location.hash !== `#${activeTabKey}`) {
+    if (updateHistory) {
+      window.history.pushState({ tabId: activeTabKey }, '', nextUrl);
+    } else {
+      window.history.replaceState({ tabId: activeTabKey }, '', nextUrl);
+    }
+  }
 
   // Update links
   document.querySelectorAll('.nav-link').forEach(link => {

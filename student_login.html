@@ -300,10 +300,11 @@ body {
 .spinner {
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  flex: 0 0 16px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: white;
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.7s cubic-bezier(0.5, 0, 0.5, 1) infinite;
 }
 
 @keyframes spin {
@@ -919,10 +920,12 @@ function setButtonLoading(buttonId, loading) {
   const btn = document.getElementById(buttonId);
   if (loading) {
     btn.disabled = true;
-    const message = window.API_IS_DEVELOPMENT ? 'Processing...' : 'Connecting to server...';
-    btn.innerHTML = `<div class="spinner"></div> ${message}`;
+    btn.setAttribute('aria-busy', 'true');
+    const message = buttonId === 'signin-btn' ? 'Logging in...' : 'Creating account...';
+    btn.innerHTML = `<span class="spinner" aria-hidden="true"></span><span>${message}</span>`;
   } else {
     btn.disabled = false;
+    btn.removeAttribute('aria-busy');
     if (buttonId === 'signin-btn') {
       btn.textContent = 'Sign In';
     } else {
@@ -944,6 +947,7 @@ async function handleSignIn(event) {
   }
   
   setButtonLoading('signin-btn', true);
+  let loginSucceeded = false;
   
   try {
     const response = await fetchApi('/auth/login', {
@@ -958,12 +962,14 @@ async function handleSignIn(event) {
       // Store token and user data
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('user', JSON.stringify(data.user));
+      loginSucceeded = true;
       
       // Show success and redirect
       showAlert('signin-alert', 'Login successful! Redirecting...', 'success');
       
       setTimeout(() => {
-        window.location.href = 'student_dashboard.html';
+        const destination = getStudentReturnPath();
+        window.location.assign(destination);
       }, 1000);
     } else {
       showAlert('signin-alert', data.detail || 'Invalid credentials. Please check your username/email and password.');
@@ -981,8 +987,22 @@ async function handleSignIn(event) {
           : "Can't reach the server. Please try again in a moment.")
     );
   } finally {
-    setButtonLoading('signin-btn', false);
+    if (!loginSucceeded) setButtonLoading('signin-btn', false);
   }
+}
+
+function getStudentReturnPath() {
+  const requestedPath = new URLSearchParams(window.location.search).get('returnTo');
+  if (requestedPath) {
+    const destination = new URL(requestedPath, window.location.origin);
+    if (
+      destination.origin === window.location.origin
+      && destination.pathname.endsWith('/student_dashboard.html')
+    ) {
+      return `${destination.pathname}${destination.search}${destination.hash}`;
+    }
+  }
+  return 'student_dashboard.html';
 }
 
 async function handleRegister(event) {

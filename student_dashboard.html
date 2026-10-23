@@ -1836,7 +1836,7 @@
     <!-- Toast Notification Container -->
     <div class="toast-container" id="toast-container"></div>
 
-    <div class="app" id="app-root">
+    <div class="app" id="app-root" style="visibility: hidden;">
         <!-- Collapsible Sidebar -->
         <aside class="sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -2737,6 +2737,7 @@
         let announcementHasLoaded = false;
         let knownAnnouncementIds = new Set();
         let currentTutorConversationId = null;
+        let studentDashboardInitialized = false;
 
         // Flashcards state
         const sampleFlashcards = [
@@ -2752,6 +2753,101 @@
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('app-root').style.visibility = 'hidden';
+            showStudentSessionLoading();
+            restoreStudentSession().then(isAuthenticated => {
+                if (!isAuthenticated) return;
+                document.getElementById('session-verification-status')?.remove();
+                document.getElementById('app-root').style.visibility = '';
+                initializeStudentDashboard();
+            });
+        });
+
+        function showStudentSessionLoading() {
+            const status = document.createElement('div');
+            status.id = 'session-verification-status';
+            status.setAttribute('role', 'status');
+            status.setAttribute('aria-live', 'polite');
+            status.textContent = 'Verifying your session...';
+            status.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-content:center;background:#f8fafc;color:#172033;font:600 15px system-ui,sans-serif;';
+            document.body.appendChild(status);
+        }
+
+        async function restoreStudentSession() {
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                redirectToStudentLogin();
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    redirectToStudentLogin();
+                    return false;
+                }
+                if (!response.ok) {
+                    throw new Error(`Session verification failed (${response.status}).`);
+                }
+
+                const data = await response.json();
+                if (data.user.role && data.user.role !== 'student') {
+                    localStorage.removeItem('access_token');
+                    localStorage.removeItem('user');
+                    redirectToStudentLogin();
+                    return false;
+                }
+                currentUser = data.user;
+                localStorage.setItem('user', JSON.stringify(currentUser));
+                return true;
+            } catch (error) {
+                console.error('Could not verify the student session:', error);
+                showStudentSessionError();
+                return false;
+            }
+        }
+
+        function showStudentSessionError() {
+            document.getElementById('session-verification-status')?.remove();
+            let notice = document.getElementById('session-verification-error');
+            if (!notice) {
+                notice = document.createElement('div');
+                notice.id = 'session-verification-error';
+                notice.setAttribute('role', 'alert');
+                notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172033;text-align:center;font:500 15px system-ui,sans-serif;';
+                notice.innerHTML = '<strong>We could not verify your session.</strong><span>Check your connection and try again.</span><button type="button" style="justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">Retry</button>';
+                notice.querySelector('button').addEventListener('click', async event => {
+                    const button = event.currentTarget;
+                    button.disabled = true;
+                    button.textContent = 'Checking...';
+                    const isAuthenticated = await restoreStudentSession();
+                    if (isAuthenticated) {
+                        notice.remove();
+                        document.getElementById('app-root').style.visibility = '';
+                        initializeStudentDashboard();
+                    } else {
+                        button.disabled = false;
+                        button.textContent = 'Retry';
+                    }
+                });
+                document.body.appendChild(notice);
+            }
+            const appRoot = document.getElementById('app-root');
+            if (appRoot) appRoot.style.visibility = 'hidden';
+        }
+
+        function redirectToStudentLogin() {
+            const returnTo = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+            window.location.replace(`student_login.html?returnTo=${encodeURIComponent(returnTo)}`);
+        }
+
+        function initializeStudentDashboard() {
+            if (studentDashboardInitialized) return;
+            studentDashboardInitialized = true;
             initPWA();
             initNetworkListeners();
             initStorage();
@@ -2767,17 +2863,24 @@
             renderDocuments();
             updateUIProfile();
             updateCounters();
+            const initialSection = window.location.hash.slice(1);
+            showSection(isValidStudentSection(initialSection) ? initialSection : 'workspaces', false);
 
-            // Bind click handlers to all sidebar items
-            document.querySelectorAll('.nav-item').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    const sec = this.getAttribute('data-section');
-                    if (sec) {
-                        showSection(sec);
-                    }
-                });
-            });
-        });
+            window.addEventListener('popstate', restoreStudentSectionFromUrl);
+            window.addEventListener('hashchange', restoreStudentSectionFromUrl);
+        }
+
+        function isValidStudentSection(sectionId) {
+            return ['workspaces', 'documents', 'tutor', 'learning', 'progress', 'settings'].includes(sectionId);
+        }
+
+        function restoreStudentSectionFromUrl() {
+            const sectionId = window.location.hash.slice(1);
+            const activeSection = document.querySelector('.section.active');
+            if (isValidStudentSection(sectionId) && (!activeSection || activeSection.id !== `${sectionId}-section`)) {
+                showSection(sectionId, false);
+            }
+        }
 
         // ==================== PWA IMPLEMENTATION ====================
         function initPWA() {
@@ -3221,7 +3324,17 @@
         }
 
         // ==================== SECTION NAVIGATION ====================
-        function showSection(sectionId) {
+        function showSection(sectionId, updateHistory = true) {
+            if (!isValidStudentSection(sectionId)) return;
+            const nextUrl = `${window.location.pathname}${window.location.search}#${sectionId}`;
+            if (window.location.hash !== `#${sectionId}`) {
+                if (updateHistory) {
+                    window.history.pushState({ sectionId }, '', nextUrl);
+                } else {
+                    window.history.replaceState({ sectionId }, '', nextUrl);
+                }
+            }
+
             // Hide all sections
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
 

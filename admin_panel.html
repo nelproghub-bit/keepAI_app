@@ -396,7 +396,7 @@
     </style>
 </head>
 <body>
-    <div class="container">
+    <div class="container" id="admin-panel-content" style="visibility: hidden;">
         <!-- Header -->
         <div class="header">
             <h1>⚙️ KeepAI Admin Panel</h1>
@@ -494,12 +494,80 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            verifyAdminPanelSession().then(isAdmin => {
+                if (!isAdmin) return;
+                document.getElementById('admin-panel-content').style.visibility = '';
+                initializeAdminPanel();
+            });
+        });
+
+        async function verifyAdminPanelSession() {
+            const token = localStorage.getItem('admin_access_token');
+            if (!token) {
+                window.location.replace('admin_dashboard.html');
+                return false;
+            }
+
+            try {
+                const response = await fetch(`${FASTAPI_BASE}/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (response.status === 401 || response.status === 403) {
+                    localStorage.removeItem('admin_access_token');
+                    localStorage.removeItem('admin_user');
+                    window.location.replace('admin_dashboard.html');
+                    return false;
+                }
+                if (!response.ok) {
+                    throw new Error(`Session verification failed (${response.status}).`);
+                }
+                const data = await response.json();
+                if (data.user?.role !== 'admin') {
+                    localStorage.removeItem('admin_access_token');
+                    localStorage.removeItem('admin_user');
+                    window.location.replace('admin_dashboard.html');
+                    return false;
+                }
+                localStorage.setItem('admin_user', JSON.stringify(data.user));
+                return true;
+            } catch (error) {
+                console.error('Could not verify the admin panel session:', error);
+                showAdminPanelSessionError();
+                return false;
+            }
+        }
+
+        function showAdminPanelSessionError() {
+            let notice = document.getElementById('admin-panel-session-error');
+            if (notice) return;
+            notice = document.createElement('div');
+            notice.id = 'admin-panel-session-error';
+            notice.setAttribute('role', 'alert');
+            notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172033;text-align:center;font:500 15px system-ui,sans-serif;';
+            notice.innerHTML = '<strong>We could not verify your administrator session.</strong><span>Check your connection and retry.</span><button type="button" style="justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-weight:700;cursor:pointer;">Retry</button><a href="admin_dashboard.html" style="color:#4f46e5;">Back to Admin Dashboard</a>';
+            notice.querySelector('button').addEventListener('click', async event => {
+                const button = event.currentTarget;
+                button.disabled = true;
+                button.textContent = 'Checking...';
+                if (await verifyAdminPanelSession()) {
+                    notice.remove();
+                    document.getElementById('admin-panel-content').style.visibility = '';
+                    initializeAdminPanel();
+                } else {
+                    button.disabled = false;
+                    button.textContent = 'Retry';
+                }
+            });
+            document.body.appendChild(notice);
+        }
+
+        function initializeAdminPanel() {
             document.getElementById('server-endpoint').textContent = window.API_URL;
             addLog('System initialized and ready', 'info');
             checkStatus();
             // Auto check status every 5 seconds
             statusCheckInterval = setInterval(() => checkStatus(false), 5000);
-        });
+        }
 
         // Add log entry
         function addLog(message, type = 'info') {
