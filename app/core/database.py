@@ -137,10 +137,16 @@ def init_db():
             full_name VARCHAR(128) NOT NULL,
             student_id VARCHAR(64) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(32) NOT NULL DEFAULT 'student',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'role'")
+        if not cursor.fetchone():
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'student'"
+            )
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (
@@ -181,10 +187,16 @@ def init_db():
             full_name TEXT NOT NULL,
             student_id TEXT NOT NULL,
             password_hash TEXT NOT NULL,
+            role TEXT NOT NULL DEFAULT 'student',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )
         """)
+        user_columns = {row["name"] for row in cursor.execute("PRAGMA table_info(users)").fetchall()}
+        if "role" not in user_columns:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'"
+            )
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (

@@ -609,7 +609,16 @@ def restart_server_api():
         time.sleep(0.5)
         python_exe = sys.executable
         base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        subprocess.Popen([python_exe, "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"], cwd=base_dir)
+        subprocess.Popen([
+            python_exe,
+            "-m",
+            "uvicorn",
+            "app.main:app",
+            "--host",
+            "0.0.0.0",
+            "--port",
+            os.getenv("PORT", "8000"),
+        ], cwd=base_dir)
         os._exit(0)
     threading.Thread(target=_restart).start()
     return {
@@ -617,4 +626,3 @@ def restart_server_api():
         "status": "online",
         "message": "Server restart initiated successfully."
     }
-

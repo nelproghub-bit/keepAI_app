@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin
+from app.core.config import ALLOWED_ORIGINS
 from app.services.knowledge_loader import initialize_knowledge_base
 from app.services.rag_service import sync_initial_documents_to_db
 
@@ -24,7 +25,7 @@ app = FastAPI(
 # CORS middleware for web clients
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -38,11 +39,19 @@ app.include_router(workspaces.router, prefix="/api")
 app.include_router(tutor.router, prefix="/api")
 app.include_router(learning_tools.router, prefix="/api")
 
+@app.get("/health")
+def deployment_health():
+    return {"status": "ok"}
+
 # PWA root routes
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 icons_dir = os.path.join(BASE_DIR, "icons")
 if os.path.exists(icons_dir):
     app.mount("/icons", StaticFiles(directory=icons_dir), name="icons")
+
+assets_dir = os.path.join(BASE_DIR, "assets")
+if os.path.exists(assets_dir):
+    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
 downloads_dir = os.path.join(BASE_DIR, "downloads")
 if os.path.exists(downloads_dir):
@@ -117,4 +126,3 @@ def student_dashboard_page():
     if os.path.exists(dashboard_path):
         return FileResponse(dashboard_path)
     return {"error": "student_dashboard.html not found"}
-

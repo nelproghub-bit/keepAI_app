@@ -1,4 +1,6 @@
 import os
+import secrets
+import warnings
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
@@ -31,7 +33,27 @@ DB_PATH = os.getenv("DB_PATH", "./data/keepai.db")
 MAX_UPLOAD_BYTES = 15 * 1024 * 1024
 
 # Authentication & Security Configuration
-JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY", "keepai-secure-jwt-academic-secret-key-2026-v1")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+if not JWT_SECRET_KEY:
+    if ENVIRONMENT == "production":
+        raise RuntimeError("JWT_SECRET_KEY must be set in production.")
+    JWT_SECRET_KEY = secrets.token_urlsafe(32)
+    warnings.warn(
+        "JWT_SECRET_KEY is unset; using an ephemeral development key. "
+        "Set JWT_SECRET_KEY to preserve sessions across restarts.",
+        RuntimeWarning,
+        stacklevel=2,
+    )
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
 
+DEFAULT_ALLOWED_ORIGINS = (
+    "http://localhost:5173,http://localhost:3000,"
+    "http://127.0.0.1:5173,http://127.0.0.1:3000"
+)
+ALLOWED_ORIGINS = [
+    origin.strip().rstrip("/")
+    for origin in os.getenv("ALLOWED_ORIGINS", DEFAULT_ALLOWED_ORIGINS).split(",")
+    if origin.strip()
+]

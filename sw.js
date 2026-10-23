@@ -1,5 +1,5 @@
 // Westmead IS KeepAI Service Worker for Progressive Web App (PWA)
-const CACHE_NAME = 'keepai-pwa-v3';
+const CACHE_NAME = 'keepai-pwa-v4';
 
 const STATIC_ASSETS = [
   './',

@@ -4066,7 +4066,7 @@
 
             try {
                 const token = localStorage.getItem('access_token');
-                const res = await fetch(`${API_BASE_URL}/learning/quiz`, {
+                const res = await fetch(`${API_BASE}/learning/quiz`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

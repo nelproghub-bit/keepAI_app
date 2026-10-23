@@ -52,14 +52,16 @@ echo [OK] Application ready
 echo.
 
 REM Start server
+if not defined PORT set "PORT=8000"
+
 echo ==========================================
 echo Starting Server...
 echo ==========================================
 echo.
-echo [INFO] Server will listen on all network interfaces (port 8000)
-echo [INFO] Local API: http://127.0.0.1:8000/api
-echo [INFO] Network API: http://YOUR-COMPUTER-IP:8000/api
-echo [INFO] Documentation: http://127.0.0.1:8000/docs
+echo [INFO] Server will listen on all network interfaces (port %PORT%)
+echo [INFO] Local API: http://127.0.0.1:%PORT%/api
+echo [INFO] Network API: http://YOUR-COMPUTER-IP:%PORT%/api
+echo [INFO] Documentation: http://127.0.0.1:%PORT%/docs
 echo.
 echo [INFO] Database: MariaDB at 127.0.0.1:3306
 echo [INFO] Database Name: keepai
@@ -68,7 +70,7 @@ echo [INFO] Press Ctrl+C to stop the server
 echo.
 
 REM Execute the server
-.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 0.0.0.0 --port %PORT%
 
 REM Server exited
 echo.

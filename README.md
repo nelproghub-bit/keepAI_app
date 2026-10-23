@@ -37,9 +37,20 @@ KeepAI now includes a **complete student portal** with registration, login, and 
    - **Admins**: Open `index.html` (system configuration)
    - Or use a local server like VS Code Live Server
 
-### Frontend API URL
+### Production Deployment
 
-The frontend is served as static HTML, so it cannot read `VITE_API_URL` directly through Vite's `import.meta.env`. The shared frontend configuration reads `window.VITE_API_URL` when the hosting environment injects it before `assets/js/config.js` loads. Set it to the backend origin (for example, `https://api.example.com`, without `/api`). If the backend is available from the same origin through a reverse proxy, no override is needed.
+The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs`, which reads `VITE_API_URL` at build time, writes it into the shared frontend config, and outputs the deployable site to `dist/`. Local builds fall back to `http://localhost:8000`; deployment builds require an HTTPS `VITE_API_URL`.
+
+1. Deploy the backend to Render using `render.yaml`. Set `JWT_SECRET_KEY` to a unique random value and `GEMINI_API_KEY` to your provider key when prompted.
+2. Keep the Render persistent disk mounted at `/var/data`. SQLite and per-user document chunks, embeddings, and extracted text JSON files are stored there. Render's free web services do not provide persistent disks, so choose a paid instance with a disk; ephemeral filesystems lose this data on restart/deploy.
+3. In Vercel, set `VITE_API_URL` to the Render backend origin (for example, `https://keep-ai-api.onrender.com`, without `/api`), then redeploy. Vercel builds fail intentionally if this variable is missing.
+4. Keep `ALLOWED_ORIGINS` on Render set to `https://keep-ai-app.vercel.app` and any local development origins needed. Separate origins with commas.
+
+`requirements.txt` pins backend dependencies. The configured SQLite storage is not compatible with `DATABASE_URL`/hosted Postgres; use the persistent disk settings above unless the database layer is separately migrated.
+
+The downloadable APK currently bundles an older copy of the frontend that still targets a hostname on port 8000. This repository has no Android project or signing configuration, so the APK must be rebuilt from its original Android source with the new production API URL before redistribution.
+
+Local database and document files under `data/` are ignored and no longer tracked in the current Git tree; local copies remain on disk. Earlier commits still contain those files, so sanitize Git history if this repository is public or those files contained private data.
 
 5. **For Students - Register:**
    - Click "Register Student" tab

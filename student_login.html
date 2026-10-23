@@ -736,7 +736,7 @@ body {
   <div class="auth-card">
     <div class="auth-header">
       <div class="logo">
-        <img src="assets/images/westmead-logo.png" alt="Westmead International School" style="width: 100%; height: 100%; object-fit: contain;">
+        <img src="/assets/images/westmead-logo.png" alt="Westmead International School" onerror="this.onerror=null; this.src='/icons/favicon.svg';" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
       <p class="tagline">KEEP-AI</p>
       <p class="value-prop">"YOUR SIMPLE AI STUDY ASSISTANT"</p>
@@ -883,7 +883,7 @@ body {
         <i class="fa-solid fa-xmark"></i>
       </button>
       <div style="width: 54px; height: 54px; border-radius: 50%; background: white; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-        <img src="assets/images/westmead-logo.png" alt="KeepAI Logo" style="width: 100%; height: 100%; object-fit: contain;">
+        <img src="/assets/images/westmead-logo.png" alt="KeepAI Logo" onerror="this.onerror=null; this.src='/icons/favicon.svg';" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
       <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Get KeepAI Mobile & Desktop App</h3>
       <p style="font-size: 12.5px; opacity: 0.9; margin: 0;">Access your notes, workspace, and study assistant anywhere.</p>
@@ -1055,8 +1055,12 @@ async function handleSignIn(event) {
     showAlert(
       'signin-alert',
       error.name === 'AbortError'
-        ? 'Login timed out. The backend is not responding yet. Please try again.'
-        : 'Cannot connect to the backend. Make sure the backend is running, then try again.'
+        ? (window.API_IS_DEVELOPMENT
+          ? 'Login timed out. The local backend is not responding. Start it with start_backend.bat, then try again.'
+          : "Can't reach the server. Please try again in a moment.")
+        : (window.API_IS_DEVELOPMENT
+          ? 'Cannot connect to the local backend. Start it with start_backend.bat, then try again.'
+          : "Can't reach the server. Please try again in a moment.")
     );
   } finally {
     setButtonLoading('signin-btn', false);
@@ -1133,8 +1137,12 @@ async function handleRegister(event) {
     showAlert(
       'register-alert',
       error.name === 'AbortError'
-        ? 'Registration timed out. The backend is not responding yet. Please try again.'
-        : 'Cannot connect to the backend. Make sure the backend is running, then try again.'
+        ? (window.API_IS_DEVELOPMENT
+          ? 'Registration timed out. The local backend is not responding. Start it with start_backend.bat, then try again.'
+          : "Can't reach the server. Please try again in a moment.")
+        : (window.API_IS_DEVELOPMENT
+          ? 'Cannot connect to the local backend. Start it with start_backend.bat, then try again.'
+          : "Can't reach the server. Please try again in a moment.")
     );
   } finally {
     setButtonLoading('register-btn', false);

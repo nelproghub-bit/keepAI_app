@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: keep-ai-api
+    runtime: python
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    disk:
+      name: keep-ai-data
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.14.6
+      - key: ENVIRONMENT
+        value: production
+      - key: DB_TYPE
+        value: sqlite
+      - key: DB_PATH
+        value: /var/data/keepai.db
+      - key: CHROMA_PATH
+        value: /var/data/chroma
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: AI_PROVIDER
+        value: gemini
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
