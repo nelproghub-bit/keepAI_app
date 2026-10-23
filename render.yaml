@@ -2,25 +2,21 @@ services:
   - type: web
     name: keep-ai-api
     runtime: python
-    plan: starter
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /health
-    disk:
-      name: keep-ai-data
-      mountPath: /var/data
-      sizeGB: 1
     envVars:
       - key: PYTHON_VERSION
         value: 3.14.6
       - key: ENVIRONMENT
         value: production
       - key: DB_TYPE
-        value: sqlite
-      - key: DB_PATH
-        value: /var/data/keepai.db
+        value: postgres
+      - key: DATABASE_URL
+        sync: false
       - key: CHROMA_PATH
-        value: /var/data/chroma
+        value: /tmp/keepai/chroma
       - key: ALLOWED_ORIGINS
         sync: false
       - key: AI_PROVIDER

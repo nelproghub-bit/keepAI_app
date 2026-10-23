@@ -4,10 +4,64 @@ from typing import Optional, Dict, Any, List
 import pymysql
 import pymysql.cursors
 from app.core.config import (
-    DB_TYPE, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_PATH
+    DATABASE_URL, DB_TYPE, DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME, DB_PATH
 )
 
 _active_engine = "sqlite"
+
+class PostgresCursorWrapper:
+    """Adapt PostgreSQL cursors to the application's qmark placeholder convention."""
+    def __init__(self, cursor):
+        self._cursor = cursor
+
+    def execute(self, query: str, args=None):
+        adapted_query = query.replace("?", "%s")
+        if args is not None:
+            return self._cursor.execute(adapted_query, args)
+        return self._cursor.execute(adapted_query)
+
+    def executemany(self, query: str, args):
+        return self._cursor.executemany(query.replace("?", "%s"), args)
+
+    def fetchone(self):
+        return self._cursor.fetchone()
+
+    def fetchall(self):
+        return self._cursor.fetchall()
+
+    @property
+    def rowcount(self):
+        return self._cursor.rowcount
+
+    def close(self):
+        return self._cursor.close()
+
+class PostgresConnectionWrapper:
+    """Expose PostgreSQL connections through the database API used by services."""
+    def __init__(self, conn):
+        self._conn = conn
+
+    def cursor(self):
+        return PostgresCursorWrapper(self._conn.cursor())
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        return self._conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type:
+            self.rollback()
+        else:
+            self.commit()
+        self.close()
 
 class MySQLCursorWrapper:
     """Wrapper around PyMySQL DictCursor that converts ? placeholders to %s"""
@@ -102,6 +156,21 @@ def _try_get_mysql_connection() -> Optional[MySQLConnectionWrapper]:
         print(f"⚠️ MySQL/MariaDB connection notice: {e}. Falling back to SQLite.")
         return None
 
+def _get_postgres_connection() -> PostgresConnectionWrapper:
+    """Connect to the configured persistent PostgreSQL database."""
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL must be set when DB_TYPE=postgres.")
+
+    import psycopg
+    from psycopg.rows import dict_row
+
+    conn = psycopg.connect(
+        DATABASE_URL,
+        connect_timeout=10,
+        row_factory=dict_row,
+    )
+    return PostgresConnectionWrapper(conn)
+
 def _get_sqlite_connection():
     """Fallback to local SQLite database"""
     os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
@@ -110,8 +179,12 @@ def _get_sqlite_connection():
     return conn
 
 def get_connection():
-    """Get active database connection (MariaDB/MySQL preferred, SQLite fallback)"""
+    """Get a configured database connection."""
     global _active_engine
+    if DB_TYPE in ["postgres", "postgresql"]:
+        _active_engine = "postgres"
+        return _get_postgres_connection()
+
     if DB_TYPE in ["mysql", "mariadb"]:
         mysql_conn = _try_get_mysql_connection()
         if mysql_conn:
@@ -122,12 +195,58 @@ def get_connection():
     return _get_sqlite_connection()
 
 def init_db():
-    """Initialize schema tables on MariaDB/MySQL or SQLite"""
+    """Initialize schema tables on PostgreSQL, MariaDB/MySQL, or SQLite."""
     global _active_engine
     conn = get_connection()
     cursor = conn.cursor()
 
-    if _active_engine == "mariadb":
+    if _active_engine == "postgres":
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id VARCHAR(64) PRIMARY KEY,
+            username VARCHAR(64) UNIQUE NOT NULL,
+            email VARCHAR(128) UNIQUE NOT NULL,
+            full_name VARCHAR(128) NOT NULL,
+            student_id VARCHAR(64) NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            role VARCHAR(32) NOT NULL DEFAULT 'student',
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            last_login TIMESTAMP NULL
+        )
+        """)
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'student'"
+        )
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS student_stats (
+            user_id VARCHAR(64) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+            questions_asked INTEGER DEFAULT 0,
+            summaries_generated INTEGER DEFAULT 0,
+            quizzes_attempted INTEGER DEFAULT 0,
+            questions_tested INTEGER DEFAULT 0,
+            study_minutes INTEGER DEFAULT 0,
+            study_plans TEXT DEFAULT '[]',
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS documents (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            filename VARCHAR(255) NOT NULL,
+            chunks_indexed INTEGER DEFAULT 0,
+            char_count INTEGER DEFAULT 0,
+            page_count INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id)"
+        )
+        conn.commit()
+        conn.close()
+        print("[KeepAI] Connected to PostgreSQL database.")
+    elif _active_engine == "mariadb":
         # MariaDB / MySQL DDL
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS users (
@@ -229,6 +348,14 @@ def init_db():
 
 def get_database_info() -> Dict[str, Any]:
     """Get active database status and configuration"""
+    if _active_engine == "postgres":
+        return {
+            "engine": "POSTGRES",
+            "database": "configured database",
+            "host": "remote",
+            "user": "application",
+            "status": "connected"
+        }
     return {
         "engine": _active_engine.upper(),
         "database": DB_NAME if _active_engine == "mariadb" else DB_PATH,

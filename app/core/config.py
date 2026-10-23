@@ -23,7 +23,11 @@ ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-3-haiku-20240307")
 
 # Storage & Database Configuration
 CHROMA_PATH = os.getenv("CHROMA_PATH", "./data/chroma")
-DB_TYPE = os.getenv("DB_TYPE", "mysql").lower()  # options: mysql, mariadb, sqlite
+DATABASE_URL = os.getenv("DATABASE_URL")
+DB_TYPE = os.getenv(
+    "DB_TYPE",
+    "postgres" if DATABASE_URL else "mysql",
+).lower()  # options: postgres, mysql, mariadb, sqlite
 DB_HOST = os.getenv("DB_HOST", "127.0.0.1")
 DB_PORT = int(os.getenv("DB_PORT", "3306"))
 DB_USER = os.getenv("DB_USER", "root")

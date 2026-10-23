@@ -63,6 +63,7 @@ pydantic_core==2.50.0
 Pygments==2.21.0
 pymupdf==1.28.2
 PyMySQL==1.2.3
+psycopg[binary]==3.3.6
 PyPika==0.51.1
 pyproject_hooks==1.3.3
 python-dateutil==2.9.0.post0

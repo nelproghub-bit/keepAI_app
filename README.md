@@ -41,12 +41,13 @@ KeepAI now includes a **complete student portal** with registration, login, and 
 
 The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs`, which reads `VITE_API_URL` at build time, writes it into the shared frontend config, and outputs the deployable site to `dist/`. Local builds fall back to `http://localhost:8000`; deployment builds require an HTTPS `VITE_API_URL`.
 
-1. Deploy the backend to Render using `render.yaml`. Set `JWT_SECRET_KEY` to a unique random value and `GEMINI_API_KEY` to your provider key when prompted.
-2. Keep the Render persistent disk mounted at `/var/data`. SQLite and per-user document chunks, embeddings, and extracted text JSON files are stored there. Render's free web services do not provide persistent disks, so choose a paid instance with a disk; ephemeral filesystems lose this data on restart/deploy.
+1. Use the Neon project `keepai-userdb` in AWS US West 2 (Oregon) for persistent PostgreSQL storage. Set its pooled connection string as the Render `DATABASE_URL` secret; never commit the URL.
+2. Configure Render with `DB_TYPE=postgres`, then redeploy. PostgreSQL stores accounts and application records across free-service restarts. The free Render filesystem remains temporary; uploaded materials, embeddings, and extracted-text files can still be lost until file storage is moved to a persistent object store.
 3. In Vercel, set `VITE_API_URL` to the Render backend origin (for example, `https://keep-ai-api.onrender.com`, without `/api`), then redeploy. Vercel builds fail intentionally if this variable is missing.
 4. Keep `ALLOWED_ORIGINS` on Render set to `https://keep-ai-app.vercel.app` and any local development origins needed. Separate origins with commas.
 
-`requirements.txt` pins backend dependencies. The configured SQLite storage is not compatible with `DATABASE_URL`/hosted Postgres; use the persistent disk settings above unless the database layer is separately migrated.
+`requirements.txt` pins backend dependencies and includes the PostgreSQL driver. Local development continues to use SQLite by default; hosted PostgreSQL is selected with `DB_TYPE=postgres` and `DATABASE_URL`.
+Accounts previously written to the Render free service's temporary SQLite file are not automatically migrated. Users may need to register again once after PostgreSQL is connected.
 
 The downloadable APK currently bundles an older copy of the frontend that still targets a hostname on port 8000. This repository has no Android project or signing configuration, so the APK must be rebuilt from its original Android source with the new production API URL before redistribution.
 
