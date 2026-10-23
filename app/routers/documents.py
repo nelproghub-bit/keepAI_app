@@ -16,16 +16,68 @@ def list_documents(
 ):
     """Get all indexed documents and statistics for the active student"""
     uid = (current_user["id"] if current_user else None) or user_id or "student_arnel"
-    return get_user_document_stats(uid)
+    stats = get_user_document_stats(uid)
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT d.id, d.filename, wd.workspace_id
+            FROM documents d
+            LEFT JOIN workspace_documents wd ON wd.document_id = d.id
+            WHERE d.user_id = ?
+            """,
+            (uid,)
+        )
+        workspace_by_document = {
+            row["id"]: row["workspace_id"]
+            for row in cur.fetchall()
+        }
+    finally:
+        conn.close()
+
+    for document in stats["files"]:
+        document["workspace_id"] = workspace_by_document.get(document["file_id"])
+    return stats
 
 @router.post("/documents/upload")
 async def upload_document(
     file: UploadFile = File(...),
     user_id: Optional[str] = Form(None),
+    workspace_id: Optional[str] = Form(None),
     current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
 ):
     """Upload and securely index a PDF, DOCX, or TXT course document for the student"""
     uid = (current_user["id"] if current_user else None) or user_id or "student_arnel"
+
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT d.id, wd.workspace_id
+            FROM documents d
+            LEFT JOIN workspace_documents wd ON wd.document_id = d.id
+            WHERE d.user_id = ? AND LOWER(d.filename) = LOWER(?)
+            """,
+            (uid, file.filename or "")
+        )
+        existing_rows = cur.fetchall()
+        previous_document_ids = [row["id"] for row in existing_rows]
+        effective_workspace_id = workspace_id or next(
+            (row["workspace_id"] for row in existing_rows if row["workspace_id"]),
+            None
+        )
+
+        if effective_workspace_id:
+            cur.execute(
+                "SELECT id FROM workspaces WHERE id = ? AND (user_id = ? OR user_id = 'student_arnel')",
+                (effective_workspace_id, uid)
+            )
+            if not cur.fetchone():
+                raise HTTPException(status_code=404, detail="Workspace not found")
+    finally:
+        conn.close()
     
     fn = file.filename or ""
     fn_lower = fn.lower()
@@ -62,11 +114,39 @@ async def upload_document(
         full_text=full_text,
         outline=doc_info.get("outline", [])
     )
+
+    if effective_workspace_id:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            for previous_id in previous_document_ids:
+                cur.execute(
+                    "DELETE FROM workspace_documents WHERE document_id = ?",
+                    (previous_id,)
+                )
+            cur.execute(
+                "DELETE FROM workspace_documents WHERE document_id = ?",
+                (file_id,)
+            )
+            cur.execute(
+                """
+                INSERT INTO workspace_documents (id, workspace_id, document_id)
+                VALUES (?, ?, ?)
+                """,
+                (f"wsdoc_{uuid.uuid4().hex[:12]}", effective_workspace_id, file_id)
+            )
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
     
     return {
         "message": "Document indexed successfully",
         "file_id": file_id,
         "filename": fn,
+        "workspace_id": effective_workspace_id,
         "chunks_indexed": indexed,
         "page_count": doc_info.get("page_count", 1),
         "char_count": len(full_text)
@@ -91,6 +171,19 @@ def delete_document(
     try:
         conn = get_connection()
         cur = conn.cursor()
+        cur.execute(
+            "DELETE FROM workspace_documents WHERE document_id = ?",
+            (file_id,)
+        )
+        cur.execute(
+            """
+            DELETE FROM workspace_documents
+            WHERE document_id IN (
+                SELECT id FROM documents WHERE filename = ? OR id = ?
+            )
+            """,
+            (filename or file_id, file_id)
+        )
         cur.execute("DELETE FROM documents WHERE id = ? OR filename = ?", (file_id, file_id))
         if filename:
             cur.execute("DELETE FROM documents WHERE filename = ? OR id = ?", (filename, filename))

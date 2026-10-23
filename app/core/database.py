@@ -241,6 +241,28 @@ def init_db():
         )
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspaces (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            color VARCHAR(32) DEFAULT '#7D1D1D',
+            icon VARCHAR(32) DEFAULT '📁',
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspace_documents (
+            id VARCHAR(64) PRIMARY KEY,
+            workspace_id VARCHAR(64) NOT NULL,
+            document_id VARCHAR(64) NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (workspace_id, document_id)
+        )
+        """)
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS rag_documents (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(64) NOT NULL,
@@ -252,6 +274,12 @@ def init_db():
         """)
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workspaces_user ON workspaces(user_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workspace_documents_workspace ON workspace_documents(workspace_id)"
         )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
@@ -304,6 +332,30 @@ def init_db():
             page_count INT DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspaces (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            description TEXT,
+            color VARCHAR(32) DEFAULT '#7D1D1D',
+            icon VARCHAR(32) DEFAULT '📁',
+            is_active BOOLEAN DEFAULT TRUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            INDEX idx_workspaces_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspace_documents (
+            id VARCHAR(64) PRIMARY KEY,
+            workspace_id VARCHAR(64) NOT NULL,
+            document_id VARCHAR(64) NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_workspace_document (workspace_id, document_id),
+            INDEX idx_workspace_documents_workspace (workspace_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
         cursor.execute("""
@@ -367,6 +419,28 @@ def init_db():
         )
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspaces (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            description TEXT,
+            color TEXT DEFAULT '#7D1D1D',
+            icon TEXT DEFAULT '📁',
+            is_active INTEGER DEFAULT 1,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS workspace_documents (
+            id TEXT PRIMARY KEY,
+            workspace_id TEXT NOT NULL,
+            document_id TEXT NOT NULL,
+            added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (workspace_id, document_id)
+        )
+        """)
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS rag_documents (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -378,6 +452,12 @@ def init_db():
         """)
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workspaces_user ON workspaces(user_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_workspace_documents_workspace ON workspace_documents(workspace_id)"
         )
         conn.commit()
         conn.close()

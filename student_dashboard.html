@@ -2869,6 +2869,8 @@
             try {
                 const token = localStorage.getItem('access_token');
                 if (!token) return;
+                const cachedWorkspaces = workspaces.slice();
+                const previousDocuments = documents.slice();
 
                 const [wsRes, docRes] = await Promise.allSettled([
                     fetch(`${API_BASE}/workspaces`, { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -2877,8 +2879,37 @@
 
                 if (wsRes.status === 'fulfilled' && wsRes.value.ok) {
                     const data = await wsRes.value.json();
+                    if ((!data.workspaces || data.workspaces.length === 0) && workspaces.length > 0) {
+                        data.workspaces = [];
+                        for (const workspace of workspaces) {
+                            const createRes = await fetch(`${API_BASE}/workspaces`, {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    name: workspace.name,
+                                    description: workspace.description || 'No description',
+                                    color: workspace.color || '#7D1D1D',
+                                    icon: workspace.icon || '📁'
+                                })
+                            });
+                            if (!createRes.ok) {
+                                throw new Error('Could not sync a workspace to the server.');
+                            }
+                            data.workspaces.push(await createRes.json());
+                        }
+                    }
                     if (data.workspaces && data.workspaces.length > 0) {
                         workspaces = data.workspaces;
+                        documents.forEach(doc => {
+                            if (doc.workspace_id && !workspaces.some(ws => ws.id === doc.workspace_id)) {
+                                const previous = cachedWorkspaces.find(ws => ws.id === doc.workspace_id);
+                                const matching = workspaces.find(ws => ws.name.toLowerCase() === previous?.name.toLowerCase());
+                                if (matching) doc.workspace_id = matching.id;
+                            }
+                        });
                         saveWorkspacesLocally();
                         renderWorkspaces();
                     }
@@ -2888,8 +2919,43 @@
                     const data = await docRes.value.json();
                     if (data.files) {
                         documents = data.files;
+                        let linkedDocument = false;
+                        for (const doc of documents) {
+                            if (doc.workspace_id) continue;
+                            const cached = previousDocuments.find(item =>
+                                item.filename.toLowerCase() === doc.filename.toLowerCase()
+                            );
+                            if (!cached?.workspace_id) continue;
+                            const cachedWorkspace = cachedWorkspaces.find(ws => ws.id === cached.workspace_id);
+                            const targetWorkspace = workspaces.find(ws =>
+                                ws.id === cached.workspace_id ||
+                                ws.name.toLowerCase() === cachedWorkspace?.name.toLowerCase()
+                            );
+                            if (!targetWorkspace) continue;
+                            const linkRes = await fetch(
+                                `${API_BASE}/workspaces/${encodeURIComponent(targetWorkspace.id)}/documents/${encodeURIComponent(doc.file_id)}`,
+                                {
+                                    method: 'POST',
+                                    headers: { 'Authorization': 'Bearer ' + token }
+                                }
+                            );
+                            if (linkRes.ok) {
+                                doc.workspace_id = targetWorkspace.id;
+                                linkedDocument = true;
+                            }
+                        }
+                        if (linkedDocument) {
+                            const refreshRes = await fetch(`${API_BASE}/workspaces`, {
+                                headers: { 'Authorization': 'Bearer ' + token }
+                            });
+                            if (refreshRes.ok) {
+                                const refreshed = await refreshRes.json();
+                                workspaces = refreshed.workspaces || workspaces;
+                            }
+                        }
                         saveDocumentsLocally();
                         renderDocuments();
+                        renderWorkspaces();
                     }
                 }
             } catch (err) {
@@ -3126,7 +3192,7 @@
 
             if (!name) return;
 
-            const newWs = {
+            let newWs = {
                 id: 'ws_' + Date.now(),
                 name: name,
                 description: desc,
@@ -3135,22 +3201,10 @@
                 updated_at: 'Just now'
             };
 
-            // Push to state
-            workspaces.unshift(newWs);
-            saveWorkspacesLocally();
-            renderWorkspaces();
-            closeModal('create-workspace-modal');
-            showToast(`Workspace "${name}" created successfully!`, 'success');
-
-            // Reset form
-            document.getElementById('workspace-name').value = '';
-            document.getElementById('workspace-desc').value = '';
-
-            // Try backend post if available
             try {
                 const token = localStorage.getItem('access_token');
                 if (token && navigator.onLine) {
-                    await fetch(`${API_BASE}/workspaces`, {
+                    const response = await fetch(`${API_BASE}/workspaces`, {
                         method: 'POST',
                         headers: {
                             'Authorization': `Bearer ${token}`,
@@ -3158,8 +3212,23 @@
                         },
                         body: JSON.stringify({ name, description: desc, color: '#7D1D1D', icon })
                     });
+                    if (!response.ok) {
+                        throw new Error('The workspace could not be saved. Please try again.');
+                    }
+                    newWs = { ...newWs, ...(await response.json()) };
                 }
-            } catch (err) {}
+            } catch (err) {
+                showToast(err.message || 'The workspace could not be saved. Please try again.', 'error');
+                return;
+            }
+
+            workspaces.unshift(newWs);
+            saveWorkspacesLocally();
+            renderWorkspaces();
+            closeModal('create-workspace-modal');
+            document.getElementById('workspace-name').value = '';
+            document.getElementById('workspace-desc').value = '';
+            showToast(`Workspace "${name}" created successfully!`, 'success');
         }
 
         async function deleteWorkspace(id) {
@@ -3321,9 +3390,11 @@
             const formData = new FormData();
             formData.append('file', file);
             formData.append('user_id', currentUser?.id || 'student_arnel');
+            if (wsSelect.value) formData.append('workspace_id', wsSelect.value);
 
             let fileId = 'doc_' + Date.now();
             let chunksIndexed = Math.max(1, Math.floor(file.size / 1024));
+            let savedWorkspaceId = wsSelect.value;
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -3332,29 +3403,29 @@
                     headers: token ? { 'Authorization': `Bearer ${token}` } : {},
                     body: formData
                 });
-                if (res.ok) {
-                    const data = await res.json();
-                    fileId = data.file_id || fileId;
-                    chunksIndexed = data.chunks_indexed || chunksIndexed;
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'The document could not be uploaded.');
                 }
+                fileId = data.file_id || fileId;
+                chunksIndexed = data.chunks_indexed || chunksIndexed;
+                savedWorkspaceId = data.workspace_id || '';
             } catch (err) {
-                console.warn('Backend upload note:', err);
+                console.error('Document upload failed:', err);
+                showToast(err.message || 'The document could not be uploaded. Please try again.', 'error');
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i> Upload Document';
+                return;
             }
 
             const newDoc = {
                 file_id: fileId,
                 filename: file.name,
-                workspace_id: wsSelect.value,
+                workspace_id: savedWorkspaceId,
                 chunks_indexed: chunksIndexed,
                 char_count: file.size,
                 uploaded_at: new Date().toISOString()
             };
-
-            const ws = workspaces.find(w => w.id === wsSelect.value);
-            if (ws) {
-                ws.document_count = (ws.document_count || 0) + 1;
-                saveWorkspacesLocally();
-            }
 
             const existingIdx = documents.findIndex(d => d.filename.toLowerCase() === file.name.toLowerCase());
             if (existingIdx >= 0) {
@@ -3363,6 +3434,7 @@
                 documents.unshift(newDoc);
             }
             saveDocumentsLocally();
+            refreshLocalWorkspaceCounts();
 
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<i class="fas fa-cloud-upload-alt me-1"></i> Upload Document';
@@ -3371,6 +3443,22 @@
             renderDocuments();
             renderWorkspaces();
             showToast(`"${file.name}" uploaded successfully!`, 'success');
+            await syncWithBackend();
+        }
+
+        function refreshLocalWorkspaceCounts() {
+            const documentIdsByWorkspace = new Map();
+            documents.forEach(doc => {
+                if (!doc.workspace_id) return;
+                if (!documentIdsByWorkspace.has(doc.workspace_id)) {
+                    documentIdsByWorkspace.set(doc.workspace_id, new Set());
+                }
+                documentIdsByWorkspace.get(doc.workspace_id).add(doc.file_id || doc.id || doc.filename);
+            });
+            workspaces.forEach(workspace => {
+                workspace.document_count = documentIdsByWorkspace.get(workspace.id)?.size || 0;
+            });
+            saveWorkspacesLocally();
         }
 
         async function deleteDocument(docId, docFilename) {
@@ -3388,12 +3476,6 @@
 
             const targetId = (doc && (doc.file_id || doc.id)) ? (doc.file_id || doc.id) : docId;
 
-            if (doc && doc.workspace_id) {
-                const ws = workspaces.find(w => w.id === doc.workspace_id);
-                if (ws && ws.document_count > 0) ws.document_count--;
-                saveWorkspacesLocally();
-            }
-
             // Immediately filter out and save locally
             documents = documents.filter(d => 
                 (d.file_id || d.id) !== targetId && 
@@ -3402,6 +3484,7 @@
                 d.id !== docId
             );
             saveDocumentsLocally();
+            refreshLocalWorkspaceCounts();
             renderDocuments();
             renderWorkspaces();
 
@@ -3423,6 +3506,7 @@
                 });
 
                 if (res.ok) {
+                    await syncWithBackend();
                     showToast(`"${filename}" permanently deleted.`, 'info');
                 } else {
                     console.warn('Backend delete response status:', res.status);
@@ -3494,13 +3578,16 @@
             container.appendChild(attachBubble);
             scrollChatToBottom();
 
+            const targetWs = workspaces[0];
             // Prepare multipart form upload to backend
             const formData = new FormData();
             formData.append('file', file);
             formData.append('user_id', currentUser?.id || 'student_arnel');
+            if (targetWs) formData.append('workspace_id', targetWs.id);
 
             let fileId = 'doc_' + Date.now();
             let chunksIndexed = Math.max(1, Math.floor(file.size / 1024));
+            let savedWorkspaceId = targetWs ? targetWs.id : '';
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -3510,16 +3597,22 @@
                     body: formData
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    fileId = data.file_id || fileId;
-                    chunksIndexed = data.chunks_indexed || chunksIndexed;
-                } else {
-                    const errData = await res.json().catch(() => ({}));
-                    console.warn('Upload API notice:', errData);
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.detail || 'The document could not be uploaded.');
                 }
+                fileId = data.file_id || fileId;
+                chunksIndexed = data.chunks_indexed || chunksIndexed;
+                savedWorkspaceId = data.workspace_id || '';
             } catch (err) {
-                console.warn('Network upload fallback:', err);
+                console.error('Chat attachment upload failed:', err);
+                const statusEl = document.getElementById(`${attachBubbleId}-status`);
+                if (statusEl) {
+                    statusEl.textContent = err.message || 'Upload failed. Please try again.';
+                }
+                showToast(err.message || 'The document could not be uploaded. Please try again.', 'error');
+                input.value = '';
+                return;
             }
 
             // Update bubble badge with success
@@ -3536,11 +3629,10 @@
             if (docNameEl) docNameEl.textContent = file.name;
 
             // ALSO RECORD IN DOCUMENTS (Documents table & Workspaces)
-            const targetWs = workspaces[0] || { id: 'ws_iot', name: 'General Studies' };
             const newDoc = {
                 file_id: fileId,
                 filename: file.name,
-                workspace_id: targetWs.id,
+                workspace_id: savedWorkspaceId,
                 chunks_indexed: chunksIndexed,
                 char_count: file.size,
                 uploaded_at: new Date().toISOString()
@@ -3553,13 +3645,10 @@
                 documents.unshift(newDoc);
             }
             saveDocumentsLocally();
+            refreshLocalWorkspaceCounts();
             renderDocuments();
-
-            if (targetWs) {
-                targetWs.document_count = documents.filter(d => d.workspace_id === targetWs.id).length;
-                saveWorkspacesLocally();
-                renderWorkspaces();
-            }
+            renderWorkspaces();
+            await syncWithBackend();
 
             // AI greeting acknowledging the new study material
             setTimeout(() => {

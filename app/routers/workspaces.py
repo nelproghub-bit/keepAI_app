@@ -26,9 +26,10 @@ def list_workspaces(
         cur.execute(
             """
             SELECT w.id, w.user_id, w.name, w.description, w.color, w.icon, w.created_at,
-                   COUNT(wd.document_id) as document_count
+                   COUNT(DISTINCT d.id) as document_count
             FROM workspaces w
             LEFT JOIN workspace_documents wd ON w.id = wd.workspace_id
+            LEFT JOIN documents d ON d.id = wd.document_id
             WHERE w.user_id = ? OR w.user_id = 'student_arnel'
             GROUP BY w.id
             ORDER BY w.created_at DESC
@@ -37,7 +38,8 @@ def list_workspaces(
         )
         rows = cur.fetchall()
         result = []
-        for r in rows:
+        for row in rows:
+            r = dict(row)
             result.append({
                 "id": r["id"],
                 "name": r["name"],
@@ -82,17 +84,61 @@ def create_workspace(
     finally:
         conn.close()
 
+@router.post("/workspaces/{workspace_id}/documents/{document_id}")
+def add_document_to_workspace(
+    workspace_id: str,
+    document_id: str,
+    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+):
+    """Link an existing student document to a workspace exactly once."""
+    uid = (current_user["id"] if current_user else None) or "student_arnel"
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id FROM workspaces WHERE id = ? AND (user_id = ? OR user_id = 'student_arnel')",
+            (workspace_id, uid)
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Workspace not found")
+        cur.execute(
+            "SELECT id FROM documents WHERE id = ? AND user_id = ?",
+            (document_id, uid)
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Document not found")
+
+        cur.execute(
+            "DELETE FROM workspace_documents WHERE workspace_id = ? AND document_id = ?",
+            (workspace_id, document_id)
+        )
+        cur.execute(
+            "INSERT INTO workspace_documents (id, workspace_id, document_id) VALUES (?, ?, ?)",
+            (f"wsdoc_{uuid.uuid4().hex[:12]}", workspace_id, document_id)
+        )
+        conn.commit()
+        return {"workspace_id": workspace_id, "document_id": document_id}
+    finally:
+        conn.close()
+
 @router.delete("/workspaces/{workspace_id}")
 def delete_workspace(
     workspace_id: str,
     current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
 ):
     """Delete a workspace from the database"""
+    uid = (current_user["id"] if current_user else None) or "student_arnel"
     conn = get_connection()
     try:
         cur = conn.cursor()
+        cur.execute(
+            "SELECT id FROM workspaces WHERE id = ? AND user_id = ?",
+            (workspace_id, uid)
+        )
+        if not cur.fetchone():
+            raise HTTPException(status_code=404, detail="Workspace not found")
         cur.execute("DELETE FROM workspace_documents WHERE workspace_id = ?", (workspace_id,))
-        cur.execute("DELETE FROM workspaces WHERE id = ?", (workspace_id,))
+        cur.execute("DELETE FROM workspaces WHERE id = ? AND user_id = ?", (workspace_id, uid))
         conn.commit()
         return {"message": "Workspace deleted", "id": workspace_id}
     finally:
