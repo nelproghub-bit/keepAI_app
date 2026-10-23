@@ -10,16 +10,17 @@ from app.core.database import get_connection
 class WorkspaceService:
     
     def create_workspace(self, user_id: str, name: str, description: str = "", 
-                        color: str = "#4f46e5", icon: str = "📚") -> Dict[str, Any]:
+                        color: str = "#4f46e5", icon: str = "📚",
+                        category: Optional[str] = None) -> Dict[str, Any]:
         """Create a new workspace for a student"""
         workspace_id = f"workspace_{uuid.uuid4().hex[:12]}"
         conn = get_connection()
         cursor = conn.cursor()
         
         cursor.execute("""
-            INSERT INTO workspaces (id, user_id, name, description, color, icon)
-            VALUES (?, ?, ?, ?, ?, ?)
-        """, (workspace_id, user_id, name, description, color, icon))
+            INSERT INTO workspaces (id, user_id, name, category, description, color, icon)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (workspace_id, user_id, name, category, description, color, icon))
         
         conn.commit()
         conn.close()
@@ -32,7 +33,7 @@ class WorkspaceService:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT id, user_id, name, description, color, icon, is_active, created_at, updated_at
+            SELECT id, user_id, name, category, description, color, icon, is_active, created_at, updated_at
             FROM workspaces
             WHERE id = ?
         """, (workspace_id,))
@@ -44,9 +45,9 @@ class WorkspaceService:
             return None
         
         return dict(row) if hasattr(row, 'keys') else {
-            "id": row[0], "user_id": row[1], "name": row[2], "description": row[3],
-            "color": row[4], "icon": row[5], "is_active": row[6], 
-            "created_at": str(row[7]), "updated_at": str(row[8])
+            "id": row[0], "user_id": row[1], "name": row[2], "category": row[3],
+            "description": row[4], "color": row[5], "icon": row[6], "is_active": row[7],
+            "created_at": str(row[8]), "updated_at": str(row[9])
         }
     
     def list_user_workspaces(self, user_id: str) -> List[Dict[str, Any]]:
@@ -55,7 +56,7 @@ class WorkspaceService:
         cursor = conn.cursor()
         
         cursor.execute("""
-            SELECT w.id, w.user_id, w.name, w.description, w.color, w.icon, 
+            SELECT w.id, w.user_id, w.name, w.category, w.description, w.color, w.icon,
                    w.is_active, w.created_at, w.updated_at,
                    COUNT(wd.document_id) as document_count
             FROM workspaces w
@@ -74,17 +75,18 @@ class WorkspaceService:
                 workspaces.append(dict(row))
             else:
                 workspaces.append({
-                    "id": row[0], "user_id": row[1], "name": row[2], "description": row[3],
-                    "color": row[4], "icon": row[5], "is_active": row[6],
-                    "created_at": str(row[7]), "updated_at": str(row[8]),
-                    "document_count": row[9]
+                    "id": row[0], "user_id": row[1], "name": row[2], "category": row[3],
+                    "description": row[4], "color": row[5], "icon": row[6], "is_active": row[7],
+                    "created_at": str(row[8]), "updated_at": str(row[9]),
+                    "document_count": row[10]
                 })
         
         return workspaces
     
     def update_workspace(self, workspace_id: str, name: Optional[str] = None,
                         description: Optional[str] = None, color: Optional[str] = None,
-                        icon: Optional[str] = None, is_active: Optional[bool] = None) -> Dict[str, Any]:
+                        icon: Optional[str] = None, is_active: Optional[bool] = None,
+                        category: Optional[str] = None) -> Dict[str, Any]:
         """Update workspace details"""
         conn = get_connection()
         cursor = conn.cursor()
@@ -104,6 +106,9 @@ class WorkspaceService:
         if icon is not None:
             updates.append("icon = ?")
             params.append(icon)
+        if category is not None:
+            updates.append("category = ?")
+            params.append(category)
         if is_active is not None:
             updates.append("is_active = ?")
             params.append(1 if is_active else 0)

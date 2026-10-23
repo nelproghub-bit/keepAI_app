@@ -81,9 +81,9 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 ## ✨ Features
 
 ### Student Dashboard Features (NEW!)
-- **🗂️ Workspace Organization** - Create separate workspaces for different courses
+- **🗂️ Workspace Organization** - Create workspaces with preset or custom course categories
 - **⚙️ Student Settings** - Customize AI tutor mode, theme, and preferences
-- **🎨 Personalization** - Choose colors and icons for your workspaces
+- **🎨 Personalization** - Automatically match professional icons to custom workspace categories
 - **📚 Document Collections** - Organize materials by course or subject
 - **🔒 Student-Only Access** - Focused interface without admin distractions
 

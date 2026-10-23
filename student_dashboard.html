@@ -2288,15 +2288,21 @@
                     <input type="text" id="workspace-desc" placeholder="e.g., Sensors, communication protocols, lecture notes">
                 </div>
                 <div class="form-field">
-                    <label for="workspace-icon">Choose Icon</label>
-                    <select id="workspace-icon">
-                        <option value="💻">💻 Technology / IoT</option>
-                        <option value="📚">📚 General Studies</option>
-                        <option value="🔬">🔬 Science & Research</option>
-                        <option value="📐">📐 Mathematics</option>
-                        <option value="🌐">🌐 Networks & Web</option>
-                        <option value="⚡">⚡ Electronics</option>
+                    <label for="workspace-icon">Workspace category</label>
+                    <select id="workspace-icon" onchange="updateWorkspaceCategoryControls()">
+                        <option value="fa-microchip" data-category="Technology / IoT">💻 Technology / IoT</option>
+                        <option value="fa-book-open" data-category="General Studies">📚 General Studies</option>
+                        <option value="fa-flask" data-category="Science & Research">🔬 Science & Research</option>
+                        <option value="fa-calculator" data-category="Mathematics">📐 Mathematics</option>
+                        <option value="fa-network-wired" data-category="Networks & Web">🌐 Networks & Web</option>
+                        <option value="fa-bolt" data-category="Electronics">⚡ Electronics</option>
+                        <option value="custom">＋ Custom category...</option>
                     </select>
+                    <div id="custom-workspace-category-field" hidden style="margin-top: 10px;">
+                        <label for="custom-workspace-category">Your category</label>
+                        <input type="text" id="custom-workspace-category" maxlength="80" oninput="updateWorkspaceCategoryIconPreview()" placeholder="e.g., Psychology, Accounting, Graphic Design">
+                        <small id="workspace-category-icon-preview" style="display: block; margin-top: 7px; color: var(--text-muted);"></small>
+                    </div>
                 </div>
                 <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 8px;">
                     <i class="fas fa-plus me-1"></i> Create Workspace
@@ -3253,10 +3259,11 @@
                 <div class="workspace-card" onclick="openWorkspaceDetail('${ws.id}')">
                     <div class="workspace-card-top">
                         <div class="workspace-icon-pill">
-                            ${ws.icon || '💻'}
+                            ${workspaceIconMarkup(ws.icon)}
                         </div>
                         <div class="workspace-title-area">
                             <div class="workspace-name">${escapeHTML(ws.name)}</div>
+                            ${ws.category ? `<div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-top: 3px;">${escapeHTML(ws.category)}</div>` : ''}
                             <div class="workspace-desc">${escapeHTML(ws.description || 'No description')}</div>
                         </div>
                     </div>
@@ -3299,20 +3306,82 @@
 
         function showCreateWorkspaceModal() {
             document.getElementById('create-workspace-modal').classList.add('show');
+            updateWorkspaceCategoryControls();
             document.getElementById('workspace-name').focus();
+        }
+
+        function updateWorkspaceCategoryControls() {
+            const iconSelect = document.getElementById('workspace-icon');
+            const categoryField = document.getElementById('custom-workspace-category-field');
+            const categoryInput = document.getElementById('custom-workspace-category');
+            const isCustom = iconSelect.value === 'custom';
+            categoryField.hidden = !isCustom;
+            categoryInput.required = isCustom;
+            updateWorkspaceCategoryIconPreview();
+        }
+
+        function updateWorkspaceCategoryIconPreview() {
+            const categoryInput = document.getElementById('custom-workspace-category');
+            const preview = document.getElementById('workspace-category-icon-preview');
+            if (!categoryInput || !preview || document.getElementById('workspace-icon').value !== 'custom') return;
+            const category = categoryInput.value.trim();
+            const icon = getWorkspaceCategoryIcon(category);
+            preview.innerHTML = category
+                ? `${workspaceIconMarkup(icon)} Suggested icon for “${escapeHTML(category)}”`
+                : `${workspaceIconMarkup(icon)} A matching icon will be selected automatically`;
+        }
+
+        function getWorkspaceCategoryIcon(category) {
+            const text = category.toLowerCase();
+            if (/math|calculus|algebra|statistics|accounting|finance/.test(text)) return 'fa-calculator';
+            if (/science|biology|chemistry|physics|research|lab/.test(text)) return 'fa-flask';
+            if (/network|web|internet|cyber|security/.test(text)) return 'fa-network-wired';
+            if (/electronic|circuit|robot|iot|engineer|computer|technology|software|coding|program/.test(text)) return 'fa-microchip';
+            if (/art|design|creative|music|photograph/.test(text)) return 'fa-palette';
+            if (/business|management|marketing|entrepreneur/.test(text)) return 'fa-briefcase';
+            if (/health|medical|medicine|nursing|anatomy/.test(text)) return 'fa-heartbeat';
+            if (/history|geography|politic|culture/.test(text)) return 'fa-landmark';
+            if (/language|literature|writing|reading|english/.test(text)) return 'fa-book';
+            return 'fa-book-open';
+        }
+
+        function workspaceIconMarkup(icon) {
+            const allowedIcons = [
+                'fa-microchip', 'fa-book-open', 'fa-flask', 'fa-calculator',
+                'fa-network-wired', 'fa-bolt', 'fa-palette', 'fa-briefcase',
+                'fa-heartbeat', 'fa-landmark', 'fa-book', 'fa-folder-open'
+            ];
+            return allowedIcons.includes(icon)
+                ? `<i class="fas ${icon}" aria-hidden="true"></i>`
+                : escapeHTML(icon || '📁');
         }
 
         async function handleCreateWorkspace(e) {
             e.preventDefault();
             const name = document.getElementById('workspace-name').value.trim();
             const desc = document.getElementById('workspace-desc').value.trim() || 'No description';
-            const icon = document.getElementById('workspace-icon').value || '💻';
+            const iconSelect = document.getElementById('workspace-icon');
+            const customCategoryInput = document.getElementById('custom-workspace-category');
+            const category = iconSelect.value === 'custom'
+                ? customCategoryInput.value.trim()
+                : iconSelect.options[iconSelect.selectedIndex].dataset.category;
+            const icon = iconSelect.value === 'custom'
+                ? getWorkspaceCategoryIcon(category)
+                : iconSelect.value;
 
-            if (!name) return;
+            if (!name) {
+                showToast('Enter a workspace name.', 'warning');
+                return;
+            }
+            if (!category) {
+                showToast('Enter a category name.', 'warning');
+                return;
+            }
 
             let newWs = {
                 id: 'ws_' + Date.now(),
                 name: name,
+                category: category,
                 description: desc,
                 icon: icon,
                 document_count: 0,
@@ -3328,7 +3397,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ name, description: desc, color: '#7D1D1D', icon })
+                        body: JSON.stringify({ name, category, description: desc, color: '#7D1D1D', icon })
                     });
                     if (!response.ok) {
                         throw new Error('The workspace could not be saved. Please try again.');
@@ -3349,6 +3418,9 @@
             closeModal('create-workspace-modal');
             document.getElementById('workspace-name').value = '';
             document.getElementById('workspace-desc').value = '';
+            customCategoryInput.value = '';
+            iconSelect.selectedIndex = 0;
+            updateWorkspaceCategoryControls();
             showToast(`Workspace "${name}" created successfully!`, 'success');
         }
 
@@ -3386,7 +3458,7 @@
             const ws = workspaces.find(w => w.id === id);
             if (!ws) return;
 
-            document.getElementById('ws-detail-icon').textContent = ws.icon || '💻';
+            document.getElementById('ws-detail-icon').innerHTML = workspaceIconMarkup(ws.icon);
             document.getElementById('ws-detail-name').textContent = ws.name;
             document.getElementById('ws-detail-desc').textContent = ws.description || 'No description provided';
 
@@ -3487,7 +3559,7 @@
             const select = document.getElementById('doc-workspace-select');
             if (select) {
                 select.innerHTML = workspaces.map(w => `
-                    <option value="${w.id}">${w.icon || '📁'} ${escapeHTML(w.name)}</option>
+                    <option value="${escapeHTML(w.id)}">${escapeHTML(w.category || 'Workspace')} · ${escapeHTML(w.name)}</option>
                 `).join('');
             }
             document.getElementById('upload-document-modal').classList.add('show');

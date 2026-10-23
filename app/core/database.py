@@ -245,6 +245,7 @@ def init_db():
             id VARCHAR(64) PRIMARY KEY,
             user_id VARCHAR(64) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            category VARCHAR(80),
             description TEXT,
             color VARCHAR(32) DEFAULT '#7D1D1D',
             icon VARCHAR(32) DEFAULT '📁',
@@ -253,6 +254,9 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute(
+            "ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS category VARCHAR(80)"
+        )
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspace_documents (
             id VARCHAR(64) PRIMARY KEY,
@@ -354,6 +358,7 @@ def init_db():
             id VARCHAR(64) PRIMARY KEY,
             user_id VARCHAR(64) NOT NULL,
             name VARCHAR(255) NOT NULL,
+            category VARCHAR(80) NULL,
             description TEXT,
             color VARCHAR(32) DEFAULT '#7D1D1D',
             icon VARCHAR(32) DEFAULT '📁',
@@ -363,6 +368,9 @@ def init_db():
             INDEX idx_workspaces_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("SHOW COLUMNS FROM workspaces LIKE 'category'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE workspaces ADD COLUMN category VARCHAR(80) NULL")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspace_documents (
             id VARCHAR(64) PRIMARY KEY,
@@ -451,6 +459,7 @@ def init_db():
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
             name TEXT NOT NULL,
+            category TEXT,
             description TEXT,
             color TEXT DEFAULT '#7D1D1D',
             icon TEXT DEFAULT '📁',
@@ -459,6 +468,9 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        workspace_columns = {row["name"] for row in cursor.execute("PRAGMA table_info(workspaces)").fetchall()}
+        if "category" not in workspace_columns:
+            cursor.execute("ALTER TABLE workspaces ADD COLUMN category TEXT")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspace_documents (
             id TEXT PRIMARY KEY,

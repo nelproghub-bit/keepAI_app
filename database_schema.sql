@@ -85,6 +85,7 @@ CREATE TABLE IF NOT EXISTS `workspaces` (
     `id` VARCHAR(64) NOT NULL,
     `user_id` VARCHAR(64) NOT NULL,
     `name` VARCHAR(255) NOT NULL,
+    `category` VARCHAR(80) NULL,
     `description` TEXT,
     `color` VARCHAR(32) DEFAULT '#4f46e5',
     `icon` VARCHAR(64) DEFAULT '📚',

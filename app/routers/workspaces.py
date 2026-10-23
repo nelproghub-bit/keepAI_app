@@ -10,9 +10,10 @@ router = APIRouter(tags=["Workspaces"])
 
 class WorkspaceCreateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
+    category: Optional[str] = Field(default=None, max_length=80)
     description: Optional[str] = "No description"
     color: Optional[str] = "#7D1D1D"
-    icon: Optional[str] = "📁"
+    icon: Optional[str] = Field(default="fa-folder-open", max_length=32)
 
 @router.get("/workspaces")
 def list_workspaces(
@@ -25,7 +26,7 @@ def list_workspaces(
         cur = conn.cursor()
         cur.execute(
             """
-            SELECT w.id, w.user_id, w.name, w.description, w.color, w.icon, w.created_at,
+            SELECT w.id, w.user_id, w.name, w.category, w.description, w.color, w.icon, w.created_at,
                    COUNT(DISTINCT d.id) as document_count
             FROM workspaces w
             LEFT JOIN workspace_documents wd ON w.id = wd.workspace_id
@@ -43,6 +44,7 @@ def list_workspaces(
             result.append({
                 "id": r["id"],
                 "name": r["name"],
+                "category": r.get("category"),
                 "description": r.get("description") or "No description",
                 "color": r.get("color") or "#7D1D1D",
                 "icon": r.get("icon") or "📁",
@@ -66,10 +68,10 @@ def create_workspace(
         cur = conn.cursor()
         cur.execute(
             """
-            INSERT INTO workspaces (id, user_id, name, description, color, icon)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO workspaces (id, user_id, name, category, description, color, icon)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             """,
-            (ws_id, uid, req.name, req.description, req.color, req.icon)
+            (ws_id, uid, req.name, req.category, req.description, req.color, req.icon)
         )
         conn.commit()
         record_activity(
@@ -81,6 +83,7 @@ def create_workspace(
         return {
             "id": ws_id,
             "name": req.name,
+            "category": req.category,
             "description": req.description,
             "color": req.color,
             "icon": req.icon,
