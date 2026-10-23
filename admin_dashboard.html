@@ -1,0 +1,2718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>Admin Dashboard — Westmead International School</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#7D1D1D">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KeepAI Admin">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+<link rel="icon" type="image/png" href="assets/images/westmead-logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #7D1D1D;
+  --primary-hover: #651818;
+  --primary-light: #FFF5F5;
+  --primary-border: #f8d7da;
+  --primary-gradient: linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
+  --emerald: #059669;
+  --emerald-light: #ecfdf5;
+  --emerald-border: #a7f3d0;
+  --amber: #d97706;
+  --amber-light: #fffbeb;
+  --amber-border: #fde68a;
+  --rose: #e11d48;
+  --rose-light: #fff1f2;
+  --rose-border: #fecdd3;
+  --sky: #0284c7;
+  --sky-light: #f0f9ff;
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --border: #e2e8f0;
+  --text-main: #0f172a;
+  --text-body: #334155;
+  --text-muted: #64748b;
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+  --shadow-xl: 0 20px 50px -12px rgba(125, 29, 29, 0.25);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-body);
+  background: var(--bg-app);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, .brand-title, .btn, .nav-item {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+button, input, select, textarea {
+  font: inherit;
+  outline: none;
+}
+
+button { cursor: pointer; }
+
+/* -------------------------------------------------------------------------
+   AUTH CONTAINER (Single-page entry inspired by student_portal.html)
+   ------------------------------------------------------------------------- */
+#auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+}
+
+.auth-wrapper {
+  width: 100%;
+  max-width: 480px;
+}
+
+.auth-card {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  overflow: hidden;
+  position: relative;
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--primary-gradient);
+}
+
+.auth-header {
+  padding: 36px 32px 20px;
+  text-align: center;
+  background: #fafafa;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-logo {
+  width: 76px;
+  height: 76px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.15);
+  padding: 10px;
+}
+
+.auth-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.auth-school {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary);
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.auth-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin: 6px 0 4px;
+}
+
+.auth-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  background: #fdfdfd;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 15px 12px;
+  text-align: center;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: #f9fafb;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+.auth-tab.active {
+  background: white;
+  color: var(--primary);
+  border-bottom-color: var(--primary);
+}
+
+.auth-tab.locked {
+  cursor: not-allowed;
+  opacity: 0.65;
+  background: #f1f5f9;
+}
+
+.auth-body {
+  padding: 28px 32px 32px;
+}
+
+.form-view {
+  display: none;
+}
+
+.form-view.active {
+  display: block;
+  animation: fadeIn 0.25s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 6px;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%;
+  padding: 11px 14px;
+  font-size: 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: white;
+  color: var(--text-main);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-group input:focus, .form-group textarea:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 0;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+
+.btn-primary {
+  width: 100%;
+  background: var(--primary-gradient);
+  color: white;
+  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  opacity: 0.95;
+  transform: translateY(-1px);
+}
+
+.btn-primary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-danger {
+  background: var(--rose);
+  color: white;
+  padding: 7px 12px;
+  font-size: 12.5px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-danger:hover {
+  background: #be123c;
+}
+
+.btn-secondary {
+  background: var(--bg-subtle);
+  color: var(--text-main);
+  border: 1px solid var(--border);
+  padding: 8px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-secondary:hover {
+  background: #e2e8f0;
+}
+
+.alert-box {
+  display: none;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  margin-bottom: 18px;
+  line-height: 1.5;
+}
+
+.alert-box.show { display: block; }
+.alert-box.error { background: var(--rose-light); color: #9f1239; border: 1px solid var(--rose-border); }
+.alert-box.success { background: var(--emerald-light); color: #065f46; border: 1px solid var(--emerald-border); }
+.alert-box.warning { background: var(--amber-light); color: #92400e; border: 1px solid var(--amber-border); }
+
+.restriction-notice {
+  background: #fff8eb;
+  border: 1px solid #fed7aa;
+  color: #9a3412;
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 13px;
+  margin-bottom: 18px;
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.restriction-notice strong {
+  display: block;
+  margin-bottom: 2px;
+}
+
+/* -------------------------------------------------------------------------
+   DASHBOARD VIEW (App layout when logged in)
+   ------------------------------------------------------------------------- */
+#dashboard-app {
+  display: none;
+  min-height: 100vh;
+  grid-template-columns: 260px 1fr;
+}
+
+#dashboard-app.active {
+  display: grid;
+}
+
+/* Sidebar */
+.dash-sidebar {
+  background: #1c0606;
+  color: #f1f5f9;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 20px 14px;
+}
+
+.dash-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 18px;
+}
+
+.dash-brand-logo {
+  width: 40px;
+  height: 40px;
+  background: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+}
+
+.dash-brand-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.dash-brand-text h3 {
+  font-size: 15px;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.3px;
+}
+
+.dash-brand-text span {
+  font-size: 11px;
+  color: #fca5a5;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.dash-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  color: #cbd5e1;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 13.5px;
+  transition: all 0.2s;
+  background: transparent;
+  border: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.nav-link:hover {
+  background: rgba(255, 255, 255, 0.07);
+  color: white;
+}
+
+.nav-link.active {
+  background: var(--primary);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.4);
+}
+
+.nav-link svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+  flex-shrink: 0;
+}
+
+.dash-sidebar-footer {
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+
+.admin-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: white;
+}
+
+.admin-role {
+  font-size: 11px;
+  color: #f87171;
+}
+
+.btn-signout {
+  width: 100%;
+  padding: 9px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+  background: rgba(239, 68, 68, 0.15);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-weight: 600;
+  transition: all 0.2s;
+}
+
+.btn-signout:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: white;
+}
+
+/* Main Content Area */
+.dash-main {
+  padding: 28px 36px;
+  max-width: 1360px;
+  overflow-y: auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+}
+
+.page-title h1 {
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--text-main);
+  letter-spacing: -0.4px;
+}
+
+.page-title p {
+  color: var(--text-muted);
+  font-size: 13.5px;
+  margin-top: 3px;
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 28px;
+}
+
+.stat-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 20px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  flex-direction: column;
+}
+
+.stat-card-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.stat-card-val {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--primary);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  line-height: 1.1;
+}
+
+.stat-card-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* Cards & Tables */
+.dash-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  padding: 24px;
+  margin-bottom: 24px;
+}
+
+.dash-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.dash-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.dash-card-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.data-table-wrapper {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+table.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+  font-size: 13.5px;
+}
+
+table.data-table th {
+  background: #f8fafc;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 11.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+table.data-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-body);
+}
+
+table.data-table tr:last-child td {
+  border-bottom: none;
+}
+
+table.data-table tr:hover {
+  background: #fdf2f2;
+}
+
+.tag-pill {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.tag-pill.success { background: var(--emerald-light); color: var(--emerald); }
+.tag-pill.primary { background: var(--primary-light); color: var(--primary); }
+.tag-pill.neutral { background: var(--bg-subtle); color: var(--text-muted); }
+
+/* User Management Specific Styles */
+.user-badge-student {
+  background: #e0f2fe;
+  color: #0284c7;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.user-badge-admin {
+  background: #fee2e2;
+  color: #ef4444;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  display: inline-block;
+}
+
+.action-btn-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.action-btn-circle.edit {
+  background: transparent;
+  color: #334155;
+}
+.action-btn-circle.edit:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.action-btn-circle.delete {
+  background: #e11d48;
+  color: white;
+  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+}
+.action-btn-circle.delete:hover {
+  background: #be123c;
+  transform: scale(1.05);
+}
+
+.action-btn-circle.key {
+  background: #059669;
+  color: white;
+  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+}
+.action-btn-circle.key:hover {
+  background: #047857;
+  transform: scale(1.05);
+}
+
+.btn-purple {
+  background: #4f46e5;
+  color: white;
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13px;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-purple:hover {
+  background: #4338ca;
+  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+}
+
+.btn-green-add {
+  background: #059669;
+  color: white;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  font-size: 13.5px;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.btn-green-add:hover {
+  background: #047857;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+}
+
+/* AI Playground */
+.playground-box {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.playground-modes {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mode-chip {
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mode-chip.active {
+  background: var(--primary-light);
+  border-color: var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.response-card {
+  background: #fafafa;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--text-main);
+  white-space: pre-wrap;
+  min-height: 120px;
+}
+
+.meta-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.info-item {
+  padding: 14px;
+  background: var(--bg-subtle);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.info-label {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.info-val {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+}
+
+/* Modal — Professional with animations */
+.modal-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 30, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 200;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: overlayFadeIn 0.2s ease;
+}
+
+@keyframes overlayFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.modal-overlay.active {
+  display: flex;
+}
+
+.modal-card {
+  background: white;
+  width: 100%;
+  max-width: 460px;
+  border-radius: 20px;
+  padding: 28px;
+  box-shadow: 0 25px 60px -10px rgba(10, 15, 30, 0.35), 0 0 0 1px rgba(255,255,255,0.08);
+  transform: translateY(0);
+  animation: modalSlideIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes modalSlideIn {
+  from { opacity: 0; transform: translateY(24px) scale(0.96); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.modal-icon-wrap {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+.modal-icon-wrap.danger  { background: #fee2e2; }
+.modal-icon-wrap.success { background: #dcfce7; }
+.modal-icon-wrap.info    { background: #dbeafe; }
+.modal-icon-wrap.warning { background: #fef9c3; }
+.modal-icon-wrap svg { width: 26px; height: 26px; stroke-width: 2; }
+.modal-icon-wrap.danger  svg { stroke: #dc2626; }
+.modal-icon-wrap.success svg { stroke: #16a34a; }
+.modal-icon-wrap.info    svg { stroke: #2563eb; }
+.modal-icon-wrap.warning svg { stroke: #d97706; }
+
+.modal-title {
+  font-size: 19px;
+  font-weight: 800;
+  color: var(--text-main);
+  margin-bottom: 6px;
+  letter-spacing: -0.3px;
+}
+
+.modal-desc {
+  font-size: 13.5px;
+  color: var(--text-muted);
+  margin-bottom: 22px;
+  line-height: 1.6;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+/* Toast Notification System */
+#toast-container {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 12px;
+  background: #0f172a;
+  color: white;
+  font-size: 13.5px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(10, 15, 30, 0.35);
+  pointer-events: auto;
+  max-width: 360px;
+  animation: toastIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  line-height: 1.45;
+}
+
+.toast.toast-exit {
+  animation: toastOut 0.3s ease forwards;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to   { opacity: 0; transform: translateY(8px); }
+}
+
+.toast-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.toast.toast-success .toast-icon { background: #22c55e; }
+.toast.toast-error   .toast-icon { background: #ef4444; }
+.toast.toast-info    .toast-icon { background: #3b82f6; }
+.toast.toast-warning .toast-icon { background: #f59e0b; }
+.toast-icon svg { width: 13px; height: 13px; stroke: white; stroke-width: 3; }
+
+/* Info / Success popup modal */
+#info-modal .modal-card {
+  max-width: 400px;
+  text-align: center;
+}
+#info-modal .modal-icon-wrap {
+  margin: 0 auto 16px;
+}
+#info-modal .modal-actions {
+  justify-content: center;
+}
+
+/* Confirm delete modal — danger accent top border */
+#confirm-modal .modal-card {
+  border-top: 4px solid #ef4444;
+}
+
+/* Logout confirmation modal — amber warning accent */
+#logout-modal .modal-card {
+  border-top: 4px solid #f59e0b;
+  max-width: 420px;
+  text-align: center;
+}
+#logout-modal .modal-icon-wrap {
+  margin: 0 auto 16px;
+}
+#logout-modal .modal-actions {
+  justify-content: center;
+  gap: 12px;
+}
+#logout-modal .btn-logout-confirm {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+  color: white;
+  border: none;
+  padding: 10px 28px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+#logout-modal .btn-logout-confirm:hover {
+  background: linear-gradient(135deg, #b91c1c 0%, #991b1b 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.35);
+}
+
+
+/* PWA Options Grid & Download Styles */
+.pwa-options-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.pwa-option-card {
+  background: #fafafa;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.pwa-option-card:hover {
+  border-color: var(--primary);
+  background: #fffafa;
+  transform: translateY(-2px);
+}
+
+.pwa-badge {
+  display: inline-block;
+  align-self: center;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  margin-bottom: 8px;
+}
+
+.pwa-badge.apk {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.pwa-badge.pwa {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.pwa-tips-box {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 12px 14px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  line-height: 1.5;
+  text-align: left;
+}
+
+@media (max-width: 860px) {
+  #dashboard-app {
+    grid-template-columns: 1fr;
+  }
+  .dash-sidebar {
+    height: auto;
+    position: relative;
+  }
+  .dash-main {
+    padding: 18px;
+  }
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+  }
+}
+
+@media (max-width: 540px) {
+  .auth-wrapper {
+    max-width: 100%;
+    padding: 0 4px;
+  }
+  .auth-header {
+    padding: 24px 16px 16px;
+  }
+  .auth-body {
+    padding: 20px 16px;
+  }
+  .dash-main {
+    padding: 12px;
+  }
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .dash-stats-grid {
+    grid-template-columns: 1fr;
+  }
+  .pwa-options-grid {
+    grid-template-columns: 1fr;
+  }
+  .modal-card {
+    max-width: 95vw;
+    margin: 10px;
+    padding: 20px 16px;
+  }
+}
+</style>
+</head>
+<body>
+
+<!-- =========================================================================
+     ADMIN AUTHENTICATION VIEW (Directly inside admin_dashboard)
+     ========================================================================= -->
+<div id="auth-container">
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="auth-logo">
+          <img src="assets/images/westmead-logo.png" alt="Westmead International School Logo">
+        </div>
+        <div class="auth-school">Westmead International School</div>
+        <h1 class="auth-title">Administrator Portal</h1>
+        <p class="auth-desc">Secure management console for KeepAI study assistant</p>
+      </div>
+
+      <!-- Auth Tabs -->
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-btn-login" onclick="switchAuthTab('login')">
+          Admin Sign In
+        </button>
+        <button class="auth-tab" id="tab-btn-register" onclick="switchAuthTab('register')">
+          Register Admin
+        </button>
+      </div>
+
+      <div class="auth-body">
+        <!-- Alert Box -->
+        <div id="auth-alert" class="alert-box"></div>
+
+        <!-- Restriction Notice when admin exists -->
+        <div id="registration-locked-banner" class="restriction-notice" style="display: none;">
+          <svg style="width:20px; height:20px; flex-shrink:0; margin-top:2px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <div>
+            <strong>Admin Registration Locked</strong>
+            Only one administrator is allowed in this system. An admin account has already been registered. Please sign in below.
+          </div>
+        </div>
+
+        <!-- 1. SIGN IN FORM -->
+        <div id="form-login" class="form-view active">
+          <form onsubmit="handleAdminLogin(event)">
+            <div class="form-group">
+              <label>Admin Username or Email</label>
+              <input type="text" id="login-identifier" required placeholder="e.g. admin or admin@westmead.edu" autocomplete="username">
+            </div>
+
+            <div class="form-group">
+              <label>Password</label>
+              <input type="password" id="login-password" required placeholder="••••••••" autocomplete="current-password">
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-login" style="margin-top: 10px;">
+              Sign In as Administrator ✦
+            </button>
+            <p class="auth-desc" style="margin-top: 14px; text-align: center; font-size: 12px;">
+              <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+                📱 Get KeepAI Mobile & Desktop App / Download APK
+              </a>
+            </p>
+          </form>
+        </div>
+
+        <!-- 2. REGISTRATION FORM (Restricted to 1 admin only) -->
+        <div id="form-register" class="form-view">
+          <form id="register-form" onsubmit="handleAdminRegister(event)">
+            <div class="form-group">
+              <label>Administrator Full Name</label>
+              <input type="text" id="reg-fullname" required placeholder="e.g. Dr. Maria Santos" minlength="2">
+            </div>
+
+            <div class="form-group">
+              <label>Admin Email</label>
+              <input type="email" id="reg-email" required placeholder="admin@westmead.edu">
+            </div>
+
+            <div class="form-group">
+              <label>Desired Username</label>
+              <input type="text" id="reg-username" required placeholder="e.g. westmead_admin" minlength="3">
+            </div>
+
+            <div class="form-group">
+              <label>Password (min 6 characters)</label>
+              <input type="password" id="reg-password" required placeholder="••••••••" minlength="6">
+            </div>
+
+            <div class="form-group">
+              <label>Confirm Password</label>
+              <input type="password" id="reg-confirm" required placeholder="••••••••" minlength="6">
+            </div>
+
+            <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+              🔒 <strong>Single Admin Policy:</strong> Once registered, this admin account is the primary manager and registrations will close automatically.
+            </div>
+
+            <button type="submit" class="btn btn-primary" id="btn-register">
+              Register Primary Administrator ✦
+            </button>
+          </form>
+        </div>
+
+        <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 16px; font-size: 12.5px; color: var(--text-muted);">
+          Are you a student? <a href="student_login.html" style="color: var(--primary); font-weight: 600; text-decoration: none;">Go to Student Login →</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- =========================================================================
+     ADMIN DASHBOARD VIEW (Full control center with transferred functions)
+     ========================================================================= -->
+<div id="dashboard-app">
+  <!-- Sidebar -->
+  <aside class="dash-sidebar">
+    <div class="dash-brand">
+      <div class="dash-brand-logo">
+        <img src="assets/images/westmead-logo.png" alt="Westmead Logo">
+      </div>
+      <div class="dash-brand-text">
+        <h3>KeepAI Admin</h3>
+        <span>Westmead IS</span>
+      </div>
+    </div>
+
+    <!-- Navigation links -->
+    <nav class="dash-nav">
+      <button class="nav-link active" onclick="switchDashboardTab('overview')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
+        <span>Overview</span>
+      </button>
+
+      <button class="nav-link" onclick="switchDashboardTab('users')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>User Management</span>
+      </button>
+
+      <button class="nav-link" onclick="switchDashboardTab('documents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span>Documents</span>
+      </button>
+
+      <button class="nav-link" onclick="switchDashboardTab('playground')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+        <span>AI Test Console</span>
+      </button>
+
+      <button class="nav-link" onclick="switchDashboardTab('system')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>System & Database</span>
+      </button>
+
+      <a class="nav-link" href="admin_panel.html" style="text-decoration: none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+        <span>Admin Panel</span>
+      </a>
+
+      <button class="nav-link" onclick="openAppDownloadModal()" style="background: rgba(16, 185, 129, 0.12); color: #34d399; margin-top: 10px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Get App / APK</span>
+        <span style="background: #059669; color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; margin-left: auto;">APK</span>
+      </button>
+    </nav>
+
+    <!-- Sidebar footer -->
+    <div class="dash-sidebar-footer">
+      <div class="admin-badge">
+        <div class="admin-info">
+          <span class="admin-name" id="sidebar-admin-name">Administrator</span>
+          <span class="admin-role">Primary Admin</span>
+        </div>
+        <span class="tag-pill primary">Admin</span>
+      </div>
+      <button class="btn-signout" onclick="openLogoutModal()">
+        <svg style="width:14px;height:14px;vertical-align:middle;margin-right:5px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+        Sign Out
+      </button>
+    </div>
+  </aside>
+
+  <!-- Main View -->
+  <main class="dash-main">
+
+    <!-- 1. OVERVIEW SECTION -->
+    <div id="section-overview" class="content-section active">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>System Overview</h1>
+          <p>Real-time activity and health status of KeepAI</p>
+        </div>
+        <div>
+          <button class="btn btn-secondary" onclick="loadDashboardStats()">
+            ↻ Refresh Metrics
+          </button>
+        </div>
+      </div>
+
+      <!-- Stat Cards -->
+      <div class="stat-grid">
+        <div class="stat-card">
+          <div class="stat-card-title">Registered Students</div>
+          <div class="stat-card-val" id="stat-students">0</div>
+          <div class="stat-card-desc">Active student user accounts</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-title">Total Documents</div>
+          <div class="stat-card-val" id="stat-documents">0</div>
+          <div class="stat-card-desc">Indexed course materials in database</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-title">Questions Asked</div>
+          <div class="stat-card-val" id="stat-questions">0</div>
+          <div class="stat-card-desc">Answered with citations by Gemini</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-card-title">Study Minutes</div>
+          <div class="stat-card-val" id="stat-study-minutes">0</div>
+          <div class="stat-card-desc">Logged study time across students</div>
+        </div>
+      </div>
+
+      <!-- System Quick Status -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div>
+            <div class="dash-card-title">AI & Database Integration Status</div>
+            <div class="dash-card-subtitle">Active infrastructure details</div>
+          </div>
+        </div>
+        <div class="meta-info-grid">
+          <div class="info-item">
+            <div class="info-label">AI Engine Provider</div>
+            <div class="info-val" id="meta-ai-provider">Google Gemini AI</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Active Model</div>
+            <div class="info-val" id="meta-ai-model">gemini-2.5-flash</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Database Connection</div>
+            <div class="info-val" id="meta-db-status">Connected (MariaDB / MySQL)</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Admin Restriction</div>
+            <div class="info-val"><span class="tag-pill success">Single-Admin Enforced</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. USER MANAGEMENT SECTION (Real Database Connection) -->
+    <div id="section-users" class="content-section" style="display: none;">
+      <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;">
+        <div>
+          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Management</h1>
+          <p style="color: var(--text-muted); font-size: 13.5px;">Manage student and admin accounts</p>
+        </div>
+        <div>
+          <button class="btn-purple" onclick="openLogoutModal()" title="Sign Out" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);">
+            <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            <span>Logout</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="dash-card" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); padding: 24px;">
+        <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
+          <div>
+            <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Accounts</h2>
+            <p style="color: var(--text-muted); font-size: 13px;">Manage student and admin accounts</p>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 260px;">
+            <button class="btn-green-add" onclick="openAddUserModal()">
+              <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>+ Add User</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="data-table-wrapper" style="border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border);">
+          <table class="data-table" id="users-table">
+            <thead>
+              <tr style="background: #f8fafc;">
+                <th>USERNAME</th>
+                <th>FULL NAME</th>
+                <th>EMAIL</th>
+                <th>ROLE</th>
+                <th>CREATED</th>
+                <th>LAST LOGIN</th>
+                <th style="text-align: center;">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="users-table-body">
+              <tr>
+                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                  Connecting to MariaDB/MySQL database and loading user accounts...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 12px;">
+          <div style="font-size: 13px; color: var(--text-muted);" id="user-count-footer">
+            Showing <strong id="user-count-display">0</strong> users
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button class="btn btn-secondary" onclick="exportUsersCSV()" style="padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+              <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export</span>
+            </button>
+            <button class="btn-purple" onclick="loadUsersList()" style="padding: 8px 16px; font-size: 13px;">
+              <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+              <span>Refresh</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- 3. DOCUMENTS MANAGEMENT SECTION -->
+    <div id="section-documents" class="content-section" style="display: none;">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Document Repository</h1>
+          <p>Manage all indexed course handouts, modules, and notes in the database</p>
+        </div>
+        <div>
+          <button class="btn btn-secondary" onclick="loadDocumentsList()">
+            ↻ Refresh Documents
+          </button>
+        </div>
+      </div>
+
+      <!-- Upload Document as Admin -->
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div>
+            <div class="dash-card-title">Upload School Course Material</div>
+            <div class="dash-card-subtitle">Upload a PDF or TXT document to make it searchable for students</div>
+          </div>
+        </div>
+        <form id="admin-upload-form" onsubmit="handleAdminUpload(event)" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <input type="file" id="admin-file-input" required accept=".pdf,.txt,.docx,.md" style="padding: 8px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px;">
+          <button type="submit" class="btn btn-primary" id="btn-admin-upload" style="width: auto; padding: 10px 18px;">
+            Upload & Index Document ✦
+          </button>
+          <span id="upload-status" style="font-size: 13px; color: var(--text-muted);"></span>
+        </form>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">All Indexed Documents</div>
+        </div>
+
+        <div class="data-table-wrapper">
+          <table class="data-table" id="documents-table">
+            <thead>
+              <tr>
+                <th>Document Name</th>
+                <th>Uploaded By</th>
+                <th>Pages</th>
+                <th>Chunks</th>
+                <th>Date Uploaded</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="documents-table-body">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">
+                  Loading documents...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. AI TESTING PLAYGROUND SECTION -->
+    <div id="section-playground" class="content-section" style="display: none;">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>AI System Diagnostics & Playground</h1>
+          <p>Directly test Google Gemini AI responses and verify prompt behaviors</p>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <div class="playground-box">
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Select Response Type</label>
+            <div class="playground-modes">
+              <button type="button" class="mode-chip active" data-mode="tutor" onclick="setPlaygroundMode('tutor', this)">Study Tutor</button>
+              <button type="button" class="mode-chip" data-mode="summary" onclick="setPlaygroundMode('summary', this)">Simple Summary</button>
+              <button type="button" class="mode-chip" data-mode="quiz" onclick="setPlaygroundMode('quiz', this)">Practice Quiz</button>
+              <button type="button" class="mode-chip" data-mode="flashcard" onclick="setPlaygroundMode('flashcard', this)">Flashcards</button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 0;">
+            <label>Test Question or Prompt</label>
+            <textarea id="ai-test-prompt" rows="3" placeholder="Enter a lesson question (e.g. What is object-oriented programming and why is it useful?)..."></textarea>
+          </div>
+
+          <div>
+            <button class="btn btn-primary" id="btn-run-ai-test" onclick="runAITest()" style="width: auto;">
+              Send Prompt to Gemini AI ✦
+            </button>
+          </div>
+
+          <div>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; text-transform: uppercase;">
+              AI Response Output
+            </label>
+            <div class="response-card" id="ai-test-output">Press "Send Prompt to Gemini AI" to test the AI model response...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. SYSTEM SETTINGS & DATABASE STATUS SECTION -->
+    <div id="section-system" class="content-section" style="display: none;">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>System Diagnostics & Settings</h1>
+          <p>Server environment, database health, and administrator account details</p>
+        </div>
+      </div>
+
+      <div class="dash-card">
+        <div class="dash-card-header">
+          <div class="dash-card-title">Server & Environment Diagnostics</div>
+        </div>
+        <div class="meta-info-grid">
+          <div class="info-item">
+            <div class="info-label">Operating System</div>
+            <div class="info-val" id="sys-os">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Python Version</div>
+            <div class="info-val" id="sys-python">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Database Type & State</div>
+            <div class="info-val" id="sys-db">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">AI Engine & Model</div>
+            <div class="info-val" id="sys-ai">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">System Health Status</div>
+            <div class="info-val" id="sys-health">—</div>
+          </div>
+          <div class="info-item">
+            <div class="info-label">Admin Registration State</div>
+            <div class="info-val" id="sys-reg-state">—</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- =========================================================================
+     USER MANAGEMENT MODALS (Add User, Edit User, Reset Password, Confirm Delete)
+     ========================================================================= -->
+<!-- ADD USER MODAL -->
+<div id="add-user-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 500px;">
+    <div class="modal-title">Add New User to Database</div>
+    <div class="modal-desc">Create a new student or admin account in MariaDB/MySQL database.</div>
+    <form onsubmit="handleAddUserSubmit(event)">
+      <div id="add-user-alert" class="alert-box"></div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="add-fullname" required placeholder="e.g. Maria Santos" minlength="2">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Username</label>
+          <input type="text" id="add-username" required placeholder="e.g. msantos" minlength="3">
+        </div>
+        <div class="form-group">
+          <label>Student ID / Tag</label>
+          <input type="text" id="add-studentid" placeholder="e.g. BSIT 412">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="add-email" required placeholder="e.g. msantos@westmead.edu">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Account Role</label>
+          <select id="add-role">
+            <option value="student" selected>Student</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Password (min 6)</label>
+          <input type="password" id="add-password" required placeholder="••••••••" minlength="6">
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeAddUserModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-add-user" style="width: auto;">
+          Add User to Database ✦
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div id="edit-user-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-title">Edit User Account</div>
+    <div class="modal-desc">Update user information in MariaDB/MySQL database.</div>
+    <form onsubmit="handleEditUserSubmit(event)">
+      <input type="hidden" id="edit-user-id">
+      <div id="edit-user-alert" class="alert-box"></div>
+      <div class="form-group">
+        <label>Username (Read-Only)</label>
+        <input type="text" id="edit-username" disabled style="background: #f1f5f9; color: var(--text-muted);">
+      </div>
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="edit-fullname" required>
+      </div>
+      <div class="form-group">
+        <label>Email Address</label>
+        <input type="email" id="edit-email" required>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="form-group">
+          <label>Student ID / Tag</label>
+          <input type="text" id="edit-studentid">
+        </div>
+        <div class="form-group">
+          <label>Role</label>
+          <select id="edit-role">
+            <option value="student">Student</option>
+            <option value="admin">Administrator</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-edit-user" style="width: auto;">
+          Save Changes ✦
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- RESET PASSWORD MODAL -->
+<div id="reset-password-modal" class="modal-overlay">
+  <div class="modal-card" style="max-width: 440px;">
+    <div class="modal-title">Reset User Password</div>
+    <div class="modal-desc">Set a new secure password for <strong id="reset-pw-username">user</strong> in the database.</div>
+    <form onsubmit="handleResetPasswordSubmit(event)">
+      <input type="hidden" id="reset-pw-user-id">
+      <div id="reset-pw-alert" class="alert-box"></div>
+      <div class="form-group">
+        <label>New Password (min 6 characters)</label>
+        <input type="password" id="reset-new-password" required minlength="6" placeholder="••••••••">
+      </div>
+      <div class="form-group">
+        <label>Confirm New Password</label>
+        <input type="password" id="reset-confirm-password" required minlength="6" placeholder="••••••••">
+      </div>
+      <div class="modal-actions" style="margin-top: 20px;">
+        <button type="button" class="btn btn-secondary" onclick="closeResetPasswordModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn-submit-reset-pw" style="width: auto;">
+          Update Password ✦
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- DELETE CONFIRMATION MODAL -->
+<div id="confirm-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-icon-wrap danger">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+        <line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>
+      </svg>
+    </div>
+    <div class="modal-title" id="modal-title">Confirm Permanent Deletion</div>
+    <div class="modal-desc" id="modal-desc">
+      Are you sure you want to permanently delete this item? This action will remove it completely from the database and cannot be undone.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeConfirmModal()">Cancel</button>
+      <button class="btn btn-danger" id="modal-confirm-btn" onclick="executePendingDelete()">
+        Yes, Delete Permanently
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- INFO / SUCCESS MODAL -->
+<div id="info-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-icon-wrap success" id="info-modal-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <div class="modal-title" id="info-modal-title">Done!</div>
+    <div class="modal-desc" id="info-modal-desc"></div>
+    <div class="modal-actions" style="justify-content:center;">
+      <button class="btn btn-primary" onclick="closeInfoModal()" style="min-width:120px;">Got it</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- LOGOUT CONFIRMATION MODAL -->
+<div id="logout-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-icon-wrap warning">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+        <polyline points="16 17 21 12 16 7"/>
+        <line x1="21" y1="12" x2="9" y2="12"/>
+      </svg>
+    </div>
+    <div class="modal-title">Ready to Leave?</div>
+    <div class="modal-desc">
+      You are about to sign out of the admin panel. Any unsaved changes will be lost. You will be taken back to the login page.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeLogoutModal()">Stay Here</button>
+      <button class="btn-logout-confirm" onclick="handleAdminSignOut()">
+        Yes, Sign Me Out
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- APP DOWNLOAD & PWA INSTALL MODAL -->
+<div id="pwa-download-modal" class="modal-overlay" onclick="handlePwaOverlayClick(event)">
+  <div class="modal-card" style="max-width: 530px; padding: 0; overflow: hidden; border-radius: 20px;">
+    <div style="background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
+      <button type="button" class="action-btn-circle" onclick="closeAppDownloadModal()" style="position: absolute; top: 12px; right: 12px; color: white; background: rgba(255,255,255,0.15);">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; height: 14px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+      <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+        <img src="assets/images/westmead-logo.png" alt="KeepAI" style="width: 100%; height: 100%; object-fit: contain;">
+      </div>
+      <div class="modal-title" style="color: white; margin-bottom: 4px; font-size: 20px;">Get KeepAI Mobile & Desktop App</div>
+      <div class="modal-desc" style="color: #f1f5f9; margin-bottom: 0; font-size: 12.5px;">Install as Progressive Web App or download the Android APK directly.</div>
+    </div>
+
+    <div style="padding: 22px;">
+      <div class="pwa-options-grid">
+        <!-- Option 1: Android APK -->
+        <div class="pwa-option-card">
+          <div>
+            <span class="pwa-badge apk">Android APK</span>
+            <div style="font-size: 36px; color: #059669; margin-bottom: 8px;">
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width: 40px; height: 40px; display: inline-block;"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9996.4482.9996.9993.0001.5511-.4486.9997-.9996.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.082 12 8.082s-3.5902.3296-5.1368.8677L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/></svg>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Download APK</div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">Direct install on Android phones. Version 1.0 (~68 KB).</div>
+          </div>
+          <a href="downloads/KeepAI_v1.0.apk" download="KeepAI_v1.0.apk" class="btn" style="background: #059669; color: white; padding: 9px 12px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: var(--radius-sm); width: 100%;">
+            Download APK
+          </a>
+        </div>
+
+        <!-- Option 2: PWA Install -->
+        <div class="pwa-option-card">
+          <div>
+            <span class="pwa-badge pwa">Web App</span>
+            <div style="font-size: 36px; color: var(--primary); margin-bottom: 8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 40px; height: 40px; display: inline-block;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            </div>
+            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Install Web App</div>
+            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">Add to Home Screen. Fast offline access on all platforms.</div>
+          </div>
+          <button type="button" class="btn btn-primary" onclick="triggerPwaInstall()" style="padding: 9px 12px; font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); width: 100%;">
+            Install Web App
+          </button>
+        </div>
+      </div>
+
+      <div class="pwa-tips-box">
+        <strong style="color: var(--text-main); display: block; margin-bottom: 4px;">Installation Tips:</strong>
+        <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
+          <li><strong>Android:</strong> Tap "Download APK". If prompted with <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong>, then tap Open to install.</li>
+          <li><strong>iOS Safari:</strong> Tap Share icon, then tap <strong>"Add to Home Screen"</strong>.</li>
+          <li><strong>PC / Mac / Chrome:</strong> Click <strong>"Install Web App"</strong> or the install icon in the URL bar.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- =========================================================================
+     CLIENT JAVASCRIPT
+     ========================================================================= -->
+<script>
+const API_HOST = window.location.hostname || '127.0.0.1';
+const API_BASE = (window.location.port === '8000') ? '/api' : `http://${API_HOST}:8000/api`;
+let currentAdminUser = null;
+let currentPlaygroundMode = 'tutor';
+let allStudentsCache = [];
+let pendingDeleteAction = null;
+
+// Helper to safely parse JSON or return clear message
+async function parseJsonResponse(res, defaultError = 'Request failed.') {
+  try {
+    return await res.json();
+  } catch (err) {
+    if (!res.ok) {
+      throw new Error(`Server connection error (${res.status}). Make sure the KeepAI Python backend is running on port 8000.`);
+    }
+    throw new Error(defaultError);
+  }
+}
+
+// On Page Load: Check registration status and session
+document.addEventListener('DOMContentLoaded', async () => {
+  await checkAdminRegistrationStatus();
+  checkExistingSession();
+});
+
+// -------------------------------------------------------------
+// Auth Logic & Single Admin Restriction
+// -------------------------------------------------------------
+async function checkAdminRegistrationStatus() {
+  try {
+    const res = await fetch(`${API_BASE}/admin/registration-status`);
+    const data = await parseJsonResponse(res, 'Could not check admin status.');
+    
+    const regTabBtn = document.getElementById('tab-btn-register');
+    const lockedBanner = document.getElementById('registration-locked-banner');
+    const regSubmitBtn = document.getElementById('btn-register');
+    
+    if (data.admin_exists) {
+      // 1 Admin is registered: Lock registration
+      regTabBtn.classList.add('locked');
+      regTabBtn.innerHTML = 'Register Admin <span style="font-size: 11px; color: #ef4444;">(Closed 🔒)</span>';
+      lockedBanner.style.display = 'flex';
+      regSubmitBtn.disabled = true;
+      regSubmitBtn.textContent = 'Admin Registration Closed (1 Admin Limit)';
+    } else {
+      // Open for first admin registration
+      regTabBtn.classList.remove('locked');
+      regTabBtn.textContent = 'Register Admin';
+      lockedBanner.style.display = 'none';
+      regSubmitBtn.disabled = false;
+      regSubmitBtn.textContent = 'Register Primary Administrator ✦';
+    }
+  } catch (err) {
+    console.error('Failed to verify admin status:', err);
+  }
+}
+
+function switchAuthTab(tab) {
+  const loginTab = document.getElementById('tab-btn-login');
+  const regTab = document.getElementById('tab-btn-register');
+  const loginForm = document.getElementById('form-login');
+  const regForm = document.getElementById('form-register');
+
+  hideAuthAlert();
+
+  if (tab === 'login') {
+    loginTab.classList.add('active');
+    regTab.classList.remove('active');
+    loginForm.classList.add('active');
+    regForm.classList.remove('active');
+  } else {
+    // If registration is locked, inform the user
+    if (regTab.classList.contains('locked')) {
+      showAuthAlert('Admin registration is closed because 1 administrator is already registered. Please sign in.', 'warning');
+    }
+    regTab.classList.add('active');
+    loginTab.classList.remove('active');
+    regForm.classList.add('active');
+    loginForm.classList.remove('active');
+  }
+}
+
+function showAuthAlert(message, type = 'error') {
+  const alert = document.getElementById('auth-alert');
+  alert.className = `alert-box show ${type}`;
+  alert.textContent = message;
+}
+
+function hideAuthAlert() {
+  const alert = document.getElementById('auth-alert');
+  alert.className = 'alert-box';
+  alert.textContent = '';
+}
+
+async function handleAdminLogin(e) {
+  e.preventDefault();
+  hideAuthAlert();
+
+  const identifier = document.getElementById('login-identifier').value.trim();
+  const password = document.getElementById('login-password').value;
+  const btn = document.getElementById('btn-login');
+
+  btn.disabled = true;
+  btn.textContent = 'Signing In...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier, password })
+    });
+
+    const data = await parseJsonResponse(res, 'Sign in failed.');
+    if (!res.ok) {
+      throw new Error(data.detail || 'Sign in failed.');
+    }
+
+    // Save session
+    localStorage.setItem('admin_access_token', data.access_token);
+    localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+    showAuthAlert('Sign in successful! Loading admin console...', 'success');
+    setTimeout(() => {
+      enterDashboard(data.user);
+    }, 600);
+
+  } catch (err) {
+    showAuthAlert(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Sign In as Administrator ✦';
+  }
+}
+
+async function handleAdminRegister(e) {
+  e.preventDefault();
+  hideAuthAlert();
+
+  const full_name = document.getElementById('reg-fullname').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const username = document.getElementById('reg-username').value.trim();
+  const password = document.getElementById('reg-password').value;
+  const confirm = document.getElementById('reg-confirm').value;
+  const btn = document.getElementById('btn-register');
+
+  if (password !== confirm) {
+    showAuthAlert('Passwords do not match. Please verify.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Registering Admin...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, email, username, password })
+    });
+
+    const data = await parseJsonResponse(res, 'Registration failed.');
+    if (!res.ok) {
+      throw new Error(data.detail || 'Registration failed.');
+    }
+
+    localStorage.setItem('admin_access_token', data.access_token);
+    localStorage.setItem('admin_user', JSON.stringify(data.user));
+
+    showAuthAlert('Administrator registered successfully! Accessing dashboard...', 'success');
+    await checkAdminRegistrationStatus(); // Immediately close registration tab
+
+    setTimeout(() => {
+      enterDashboard(data.user);
+    }, 700);
+
+  } catch (err) {
+    showAuthAlert(err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Register Primary Administrator ✦';
+  }
+}
+
+function checkExistingSession() {
+  const token = localStorage.getItem('admin_access_token');
+  const userJson = localStorage.getItem('admin_user');
+
+  if (token && userJson) {
+    try {
+      const user = JSON.parse(userJson);
+      if (user && user.role === 'admin') {
+        enterDashboard(user);
+      }
+    } catch (e) {
+      localStorage.removeItem('admin_access_token');
+      localStorage.removeItem('admin_user');
+    }
+  }
+}
+
+function enterDashboard(user) {
+  currentAdminUser = user;
+  document.getElementById('auth-container').style.display = 'none';
+  document.getElementById('dashboard-app').classList.add('active');
+  document.getElementById('sidebar-admin-name').textContent = user.full_name || user.username;
+
+  // Load initial view
+  loadDashboardStats();
+}
+
+function openLogoutModal() {
+  document.getElementById('logout-modal').classList.add('active');
+}
+
+function closeLogoutModal() {
+  document.getElementById('logout-modal').classList.remove('active');
+}
+
+function handleAdminSignOut() {
+  closeLogoutModal();
+  localStorage.removeItem('admin_access_token');
+  localStorage.removeItem('admin_user');
+  currentAdminUser = null;
+
+  document.getElementById('dashboard-app').classList.remove('active');
+  document.getElementById('auth-container').style.display = 'flex';
+  switchAuthTab('login');
+  checkAdminRegistrationStatus();
+}
+
+// -------------------------------------------------------------
+// Dashboard Navigation & Views
+// -------------------------------------------------------------
+function switchDashboardTab(tabId) {
+  // Normalize users vs students
+  const activeTabKey = (tabId === 'students' || tabId === 'users') ? 'users' : tabId;
+
+  // Update links
+  document.querySelectorAll('.nav-link').forEach(link => {
+    link.classList.remove('active');
+  });
+
+  const targetLink = Array.from(document.querySelectorAll('.nav-link')).find(btn => 
+    btn.textContent.toLowerCase().includes(activeTabKey) || 
+    (activeTabKey === 'users' && btn.textContent.toLowerCase().includes('user')) ||
+    (activeTabKey === 'playground' && btn.textContent.includes('Test')) ||
+    (activeTabKey === 'system' && btn.textContent.includes('System'))
+  );
+  if (targetLink) targetLink.classList.add('active');
+
+  // Hide all sections
+  document.querySelectorAll('.content-section').forEach(sec => {
+    sec.style.display = 'none';
+  });
+
+  const activeSec = document.getElementById(`section-${activeTabKey}`);
+  if (activeSec) activeSec.style.display = 'block';
+
+  // Trigger data load from real database
+  if (activeTabKey === 'overview') loadDashboardStats();
+  if (activeTabKey === 'users') loadUsersList();
+  if (activeTabKey === 'documents') loadDocumentsList();
+  if (activeTabKey === 'system') loadSystemDiagnostics();
+}
+
+// -------------------------------------------------------------
+// Overview Metrics
+// -------------------------------------------------------------
+async function loadDashboardStats() {
+  try {
+    const res = await fetch(`${API_BASE}/admin/stats`);
+    const data = await parseJsonResponse(res, 'Failed to load stats');
+
+    document.getElementById('stat-students').textContent = data.total_students || 0;
+    document.getElementById('stat-documents').textContent = data.total_documents || 0;
+    document.getElementById('stat-questions').textContent = data.total_questions_asked || 0;
+    document.getElementById('stat-study-minutes').textContent = data.total_study_minutes || 0;
+
+    document.getElementById('meta-ai-provider').textContent = data.ai_provider || 'Google Gemini AI';
+    document.getElementById('meta-ai-model').textContent = data.ai_model || 'gemini-2.5-flash';
+    document.getElementById('meta-db-status').textContent = data.database_status || 'Connected';
+  } catch (err) {
+    console.error('Error fetching admin stats:', err);
+  }
+}
+
+// -------------------------------------------------------------
+// User Management (Real MariaDB/MySQL Database Connection)
+// -------------------------------------------------------------
+let allUsersCache = [];
+
+async function loadUsersList() {
+  const tbody = document.getElementById('users-table-body');
+  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Connecting to database and loading users...</td></tr>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/users`);
+    const users = await parseJsonResponse(res, 'Failed to load users');
+    allUsersCache = users;
+    renderUsersTable(users);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--rose); padding: 24px;">Database error: ${err.message}</td></tr>`;
+  }
+}
+
+function renderUsersTable(users) {
+  const tbody = document.getElementById('users-table-body');
+  const countDisplay = document.getElementById('user-count-display');
+  countDisplay.textContent = users ? users.length : 0;
+
+  if (!users || users.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">No user accounts found in database. Click "+ Add User" to create one.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = users.map(u => {
+    const roleBadge = u.role === 'admin'
+      ? `<span class="user-badge-admin">admin</span>`
+      : `<span class="user-badge-student">student</span>`;
+
+    const escapedUsername = escapeHtml(u.username);
+    const escapedFullname = escapeHtml(u.full_name || 'N/A');
+    const escapedEmail = escapeHtml(u.email || 'N/A');
+
+    return `
+      <tr>
+        <td><strong>${escapedUsername}</strong></td>
+        <td>${escapedFullname}</td>
+        <td>${escapedEmail}</td>
+        <td>${roleBadge}</td>
+        <td>${escapeHtml(u.created_at)}</td>
+        <td>${escapeHtml(u.last_login)}</td>
+        <td style="text-align: center;">
+          <div style="display: inline-flex; align-items: center; gap: 8px;">
+            <button class="action-btn-circle edit" onclick="openEditUserModal('${u.id}')" title="Edit User">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            </button>
+            <button class="action-btn-circle delete" onclick="confirmDeleteUser('${u.id}', '${escapedUsername}')" title="Delete User Permanently">
+              <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+            </button>
+            <button class="action-btn-circle key" onclick="openResetPasswordModal('${u.id}', '${escapedUsername}')" title="Reset User Password">
+              <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterUsersTable() {
+  const query = document.getElementById('user-search-input').value.toLowerCase().trim();
+  if (!query) {
+    renderUsersTable(allUsersCache);
+    return;
+  }
+  const filtered = allUsersCache.filter(u => 
+    (u.username && u.username.toLowerCase().includes(query)) ||
+    (u.full_name && u.full_name.toLowerCase().includes(query)) ||
+    (u.email && u.email.toLowerCase().includes(query)) ||
+    (u.role && u.role.toLowerCase().includes(query))
+  );
+  renderUsersTable(filtered);
+}
+
+// -------------------------------------------------------------
+// Add User Modal Handlers
+// -------------------------------------------------------------
+function openAddUserModal() {
+  document.getElementById('add-fullname').value = '';
+  document.getElementById('add-username').value = '';
+  document.getElementById('add-studentid').value = '';
+  document.getElementById('add-email').value = '';
+  document.getElementById('add-password').value = '';
+  document.getElementById('add-role').value = 'student';
+  hideAlertBox('add-user-alert');
+  document.getElementById('add-user-modal').classList.add('active');
+}
+
+function closeAddUserModal() {
+  document.getElementById('add-user-modal').classList.remove('active');
+}
+
+async function handleAddUserSubmit(e) {
+  e.preventDefault();
+  hideAlertBox('add-user-alert');
+
+  const full_name = document.getElementById('add-fullname').value.trim();
+  const username = document.getElementById('add-username').value.trim();
+  const student_id = document.getElementById('add-studentid').value.trim();
+  const email = document.getElementById('add-email').value.trim();
+  const role = document.getElementById('add-role').value;
+  const password = document.getElementById('add-password').value;
+  const btn = document.getElementById('btn-submit-add-user');
+
+  btn.disabled = true;
+  btn.textContent = 'Saving to Database...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, username, student_id, email, role, password })
+    });
+    const data = await parseJsonResponse(res, 'Failed to create user.');
+    if (!res.ok) throw new Error(data.detail || 'Failed to create user.');
+
+    closeAddUserModal();
+    loadUsersList();
+    loadDashboardStats();
+  } catch (err) {
+    showAlertBox('add-user-alert', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Add User to Database ✦';
+  }
+}
+
+// -------------------------------------------------------------
+// Edit User Modal Handlers
+// -------------------------------------------------------------
+function openEditUserModal(userId) {
+  const user = allUsersCache.find(u => u.id === userId);
+  if (!user) return;
+
+  document.getElementById('edit-user-id').value = user.id;
+  document.getElementById('edit-username').value = user.username;
+  document.getElementById('edit-fullname').value = user.full_name !== 'N/A' ? user.full_name : '';
+  document.getElementById('edit-email').value = user.email !== 'N/A' ? user.email : '';
+  document.getElementById('edit-studentid').value = user.student_id !== 'N/A' ? user.student_id : '';
+  document.getElementById('edit-role').value = user.role || 'student';
+  hideAlertBox('edit-user-alert');
+
+  document.getElementById('edit-user-modal').classList.add('active');
+}
+
+function closeEditUserModal() {
+  document.getElementById('edit-user-modal').classList.remove('active');
+}
+
+async function handleEditUserSubmit(e) {
+  e.preventDefault();
+  hideAlertBox('edit-user-alert');
+
+  const user_id = document.getElementById('edit-user-id').value;
+  const full_name = document.getElementById('edit-fullname').value.trim();
+  const email = document.getElementById('edit-email').value.trim();
+  const student_id = document.getElementById('edit-studentid').value.trim();
+  const role = document.getElementById('edit-role').value;
+  const btn = document.getElementById('btn-submit-edit-user');
+
+  btn.disabled = true;
+  btn.textContent = 'Updating...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/users/${user_id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name, email, student_id, role })
+    });
+    const data = await parseJsonResponse(res, 'Failed to update user.');
+    if (!res.ok) throw new Error(data.detail || 'Failed to update user.');
+
+    closeEditUserModal();
+    loadUsersList();
+    loadDashboardStats();
+  } catch (err) {
+    showAlertBox('edit-user-alert', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Save Changes ✦';
+  }
+}
+
+// -------------------------------------------------------------
+// Reset Password Modal Handlers
+// -------------------------------------------------------------
+function openResetPasswordModal(userId, username) {
+  document.getElementById('reset-pw-user-id').value = userId;
+  document.getElementById('reset-pw-username').textContent = username;
+  document.getElementById('reset-new-password').value = '';
+  document.getElementById('reset-confirm-password').value = '';
+  hideAlertBox('reset-pw-alert');
+  document.getElementById('reset-password-modal').classList.add('active');
+}
+
+function closeResetPasswordModal() {
+  document.getElementById('reset-password-modal').classList.remove('active');
+}
+
+async function handleResetPasswordSubmit(e) {
+  e.preventDefault();
+  hideAlertBox('reset-pw-alert');
+
+  const user_id = document.getElementById('reset-pw-user-id').value;
+  const new_password = document.getElementById('reset-new-password').value;
+  const confirm_password = document.getElementById('reset-confirm-password').value;
+  const btn = document.getElementById('btn-submit-reset-pw');
+
+  if (new_password !== confirm_password) {
+    showAlertBox('reset-pw-alert', 'Passwords do not match. Please re-enter.', 'error');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Saving Password...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/users/${user_id}/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ new_password })
+    });
+    const data = await parseJsonResponse(res, 'Failed to reset password.');
+    if (!res.ok) throw new Error(data.detail || 'Failed to reset password.');
+
+    closeResetPasswordModal();
+    showInfoModal('Password Updated!', 'The user\'s password has been saved to the database successfully.', 'success');
+  } catch (err) {
+    showAlertBox('reset-pw-alert', err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Update Password ✦';
+  }
+}
+
+// -------------------------------------------------------------
+// Delete User Handler
+// -------------------------------------------------------------
+function confirmDeleteUser(userId, username) {
+  pendingDeleteAction = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/users/${userId}`, { method: 'DELETE' });
+      const data = await parseJsonResponse(res, 'Could not delete user.');
+      if (!res.ok) throw new Error(data.detail || 'Could not delete user.');
+      closeConfirmModal();
+      loadUsersList();
+      loadDashboardStats();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
+  document.getElementById('modal-title').textContent = `Delete User Permanently?`;
+  document.getElementById('modal-desc').textContent = `Are you sure you want to delete "${username}"? This account and its records will be completely removed from MariaDB database.`;
+  openConfirmModal();
+}
+
+// -------------------------------------------------------------
+// Export Real Users to CSV
+// -------------------------------------------------------------
+function exportUsersCSV() {
+  if (!allUsersCache || allUsersCache.length === 0) {
+    showToast('No users available to export.', 'warning');
+    return;
+  }
+
+  const headers = ['Username', 'Full Name', 'Email', 'Role', 'Student ID', 'Created At', 'Last Login'];
+  const rows = allUsersCache.map(u => [
+    `"${(u.username || '').replace(/"/g, '""')}"`,
+    `"${(u.full_name || '').replace(/"/g, '""')}"`,
+    `"${(u.email || '').replace(/"/g, '""')}"`,
+    `"${(u.role || '').replace(/"/g, '""')}"`,
+    `"${(u.student_id || '').replace(/"/g, '""')}"`,
+    `"${(u.created_at || '').replace(/"/g, '""')}"`,
+    `"${(u.last_login || '').replace(/"/g, '""')}"`
+  ]);
+
+  const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement('a');
+  link.setAttribute('href', encodedUri);
+  link.setAttribute('download', `keepai_users_${new Date().toISOString().slice(0, 10)}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function showAlertBox(id, message, type = 'error') {
+  const el = document.getElementById(id);
+  if (el) {
+    el.className = `alert-box show ${type}`;
+    el.textContent = message;
+  }
+}
+
+function hideAlertBox(id) {
+  const el = document.getElementById(id);
+  if (el) {
+    el.className = 'alert-box';
+    el.textContent = '';
+  }
+}
+
+// -------------------------------------------------------------
+// Documents Repository Management
+// -------------------------------------------------------------
+async function loadDocumentsList() {
+  const tbody = document.getElementById('documents-table-body');
+  tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading documents...</td></tr>`;
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/documents`);
+    const docs = await parseJsonResponse(res, 'Failed to load documents');
+    renderDocumentsTable(docs);
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--rose); padding: 20px;">Failed to load documents: ${err.message}</td></tr>`;
+  }
+}
+
+function renderDocumentsTable(docs) {
+  const tbody = document.getElementById('documents-table-body');
+  if (!docs || docs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No course documents uploaded yet.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = docs.map(d => `
+    <tr>
+      <td><strong>📄 ${escapeHtml(d.filename)}</strong></td>
+      <td><span class="tag-pill neutral">${escapeHtml(d.student_name)}</span></td>
+      <td>${d.page_count || 1}</td>
+      <td>${d.chunk_count || 0}</td>
+      <td style="font-size: 12px; color: var(--text-muted);">${formatDate(d.uploaded_at)}</td>
+      <td>
+        <button class="btn btn-danger" onclick="confirmDeleteDocument('${d.id}', '${escapeHtml(d.filename)}')">
+          Delete
+        </button>
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function handleAdminUpload(e) {
+  e.preventDefault();
+  const fileInput = document.getElementById('admin-file-input');
+  const btn = document.getElementById('btn-admin-upload');
+  const statusSpan = document.getElementById('upload-status');
+
+  if (!fileInput.files.length) return;
+
+  const file = fileInput.files[0];
+  const formData = new FormData();
+  formData.append('file', file);
+  formData.append('user_id', currentAdminUser ? currentAdminUser.id : 'admin');
+
+  btn.disabled = true;
+  statusSpan.textContent = 'Processing and indexing document...';
+
+  try {
+    const res = await fetch(`${API_BASE}/documents/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    const data = await parseJsonResponse(res, 'Upload failed');
+    if (!res.ok) throw new Error(data.detail || 'Upload failed');
+
+    statusSpan.textContent = `✓ Indexed ${data.filename} (${data.chunks_indexed} chunks)`;
+    fileInput.value = '';
+    loadDocumentsList();
+    loadDashboardStats();
+  } catch (err) {
+    statusSpan.textContent = `Error: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function confirmDeleteDocument(fileId, filename) {
+  pendingDeleteAction = async () => {
+    try {
+      const res = await fetch(`${API_BASE}/admin/documents/${fileId}?filename=${encodeURIComponent(filename)}`, { 
+        method: 'DELETE' 
+      });
+      const data = await parseJsonResponse(res, 'Failed to delete document.');
+      if (!res.ok) throw new Error(data.detail || 'Failed to delete document.');
+      closeConfirmModal();
+      loadDocumentsList();
+      loadDashboardStats();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  };
+
+  document.getElementById('modal-title').textContent = `Delete Document Permanently?`;
+  document.getElementById('modal-desc').textContent = `Are you sure you want to permanently delete "${filename}"? This document will be completely removed from the database and citation indexes.`;
+  openConfirmModal();
+}
+
+// -------------------------------------------------------------
+// AI Testing Playground
+// -------------------------------------------------------------
+function setPlaygroundMode(mode, element) {
+  currentPlaygroundMode = mode;
+  document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('active'));
+  element.classList.add('active');
+}
+
+async function runAITest() {
+  const promptInput = document.getElementById('ai-test-prompt');
+  const outputBox = document.getElementById('ai-test-output');
+  const btn = document.getElementById('btn-run-ai-test');
+
+  const prompt = promptInput.value.trim();
+  if (!prompt) {
+    showToast('Please type a question or prompt before running the test.', 'warning');
+    return;
+  }
+
+  btn.disabled = true;
+  outputBox.textContent = 'Contacting Google Gemini AI study engine...';
+
+  try {
+    const res = await fetch(`${API_BASE}/admin/test-ai`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, mode: currentPlaygroundMode })
+    });
+
+    const data = await parseJsonResponse(res, 'No response returned.');
+    outputBox.textContent = data.response || 'No response returned.';
+  } catch (err) {
+    outputBox.textContent = `Error testing AI: ${err.message}`;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// -------------------------------------------------------------
+// System Diagnostics
+// -------------------------------------------------------------
+async function loadSystemDiagnostics() {
+  try {
+    const res = await fetch(`${API_BASE}/admin/system`);
+    const data = await parseJsonResponse(res, 'Could not load system info');
+
+    document.getElementById('sys-os').textContent = data.os;
+    document.getElementById('sys-python').textContent = `Python ${data.python_version}`;
+    document.getElementById('sys-db').textContent = data.database.connected 
+      ? '✓ Connected (MariaDB / MySQL)' 
+      : `⚠️ Error: ${data.database.error}`;
+    document.getElementById('sys-ai').textContent = `${data.ai_engine.provider} (${data.ai_engine.model})`;
+    document.getElementById('sys-health').innerHTML = data.system_status === 'Healthy'
+      ? '<span class="tag-pill success">All Systems Operational</span>'
+      : '<span class="tag-pill neutral">Needs Configuration</span>';
+
+    const regRes = await fetch(`${API_BASE}/admin/registration-status`);
+    const regData = await parseJsonResponse(regRes, 'Could not verify admin status');
+    document.getElementById('sys-reg-state').innerHTML = regData.admin_exists
+      ? '<span class="tag-pill primary">Registration Closed (1 Active Admin)</span>'
+      : '<span class="tag-pill neutral">Registration Open (0 Admins)</span>';
+  } catch (err) {
+    console.error('Failed to load system info:', err);
+  }
+}
+
+// -------------------------------------------------------------
+// Modal Helpers
+// -------------------------------------------------------------
+function openConfirmModal() {
+  document.getElementById('confirm-modal').classList.add('active');
+}
+
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('active');
+  pendingDeleteAction = null;
+}
+
+function executePendingDelete() {
+  if (typeof pendingDeleteAction === 'function') {
+    pendingDeleteAction();
+  }
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+  })[m]);
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'N/A';
+  try {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+  } catch {
+    return dateStr;
+  }
+}
+
+// -------------------------------------------------------------
+// Toast Notification System
+// -------------------------------------------------------------
+function showToast(message, type = 'success', duration = 3500) {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+  const icons = {
+    success: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>',
+    error:   '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+    info:    '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+    warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+  };
+  const toast = document.createElement('div');
+  toast.className = `toast toast-${type}`;
+  toast.innerHTML = `
+    <div class="toast-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${icons[type] || icons.info}</svg>
+    </div>
+    <span>${escapeHtml(message)}</span>
+  `;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('toast-exit');
+    toast.addEventListener('animationend', () => toast.remove(), { once: true });
+  }, duration);
+}
+
+// -------------------------------------------------------------
+// Info / Success Popup Modal
+// -------------------------------------------------------------
+function showInfoModal(title, desc, type = 'success') {
+  document.getElementById('info-modal-title').textContent = title;
+  document.getElementById('info-modal-desc').textContent = desc;
+  const iconWrap = document.getElementById('info-modal-icon');
+  iconWrap.className = `modal-icon-wrap ${type}`;
+  const svgPaths = {
+    success: '<path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>',
+    info:    '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+    warning: '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>'
+  };
+  iconWrap.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">${svgPaths[type] || svgPaths.info}</svg>`;
+  document.getElementById('info-modal').classList.add('active');
+}
+
+function closeInfoModal() {
+  document.getElementById('info-modal').classList.remove('active');
+}
+
+// -------------------------------------------------------------
+// PWA & Android APK Download Handlers
+// -------------------------------------------------------------
+let deferredPwaPrompt = null;
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js')
+      .then(reg => {
+        console.log('[KeepAI Admin] Service worker registered:', reg.scope);
+      })
+      .catch(err => {
+        console.warn('[KeepAI Admin] Service worker note:', err);
+      });
+  });
+}
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  deferredPwaPrompt = e;
+  console.log('[KeepAI Admin] PWA install prompt available');
+});
+
+window.addEventListener('appinstalled', () => {
+  showToast('KeepAI App installed successfully!', 'success');
+  deferredPwaPrompt = null;
+  closeAppDownloadModal();
+});
+
+function openAppDownloadModal() {
+  const modal = document.getElementById('pwa-download-modal');
+  if (modal) modal.classList.add('active');
+}
+
+function closeAppDownloadModal() {
+  const modal = document.getElementById('pwa-download-modal');
+  if (modal) modal.classList.remove('active');
+}
+
+function handlePwaOverlayClick(e) {
+  if (e.target && e.target.id === 'pwa-download-modal') {
+    closeAppDownloadModal();
+  }
+}
+
+function triggerPwaInstall() {
+  if (deferredPwaPrompt) {
+    deferredPwaPrompt.prompt();
+    deferredPwaPrompt.userChoice.then(choiceResult => {
+      console.log('[KeepAI Admin] Install choice:', choiceResult.outcome);
+      deferredPwaPrompt = null;
+      if (choiceResult.outcome === 'accepted') {
+        closeAppDownloadModal();
+      }
+    });
+  } else {
+    alert("To install KeepAI as a Web App on your device:\n\n• On Android (Chrome / Edge): Tap browser menu (⋮) -> 'Install App' or 'Add to Home screen'.\n• On iPhone / iPad (Safari): Tap Share button -> 'Add to Home Screen'.\n• On Windows / Mac (Chrome / Edge): Click the Install icon in the browser address bar.");
+  }
+}
+</script>
+
+<div id="toast-container"></div>
+</body>
+</html>

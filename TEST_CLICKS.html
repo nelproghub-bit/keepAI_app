@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Click Test - Admin Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 800px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #dc2626;
+            margin-bottom: 10px;
+            font-size: 32px;
+        }
+        .subtitle {
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .test-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin: 20px 0;
+            border-left: 5px solid #dc2626;
+        }
+        .test-section h2 {
+            color: #1e293b;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .test-button {
+            display: inline-block;
+            padding: 15px 30px;
+            background: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 10px 10px 10px 0;
+            transition: all 0.3s;
+            box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        .test-button:hover {
+            background: #991b1b;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 38, 38, 0.4);
+        }
+        .instructions {
+            background: #eff6ff;
+            border: 2px solid #3b82f6;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .instructions h3 {
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+        .instructions ol {
+            margin-left: 20px;
+            color: #1e293b;
+        }
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.6;
+        }
+        .code {
+            background: #1e293b;
+            color: #10b981;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+        }
+        .success-box {
+            background: #ecfdf5;
+            border: 2px solid #10b981;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .success-box h3 {
+            color: #065f46;
+            margin-bottom: 10px;
+        }
+        .success-box ul {
+            margin-left: 20px;
+            color: #064e3b;
+        }
+        .success-box li {
+            margin: 8px 0;
+        }
+        .emoji {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1><span class="emoji">🔧</span>Admin Dashboard Navigation Test</h1>
+        <p class="subtitle">Let's verify your navigation buttons work correctly</p>
+        
+        <div class="instructions">
+            <h3><span class="emoji">📋</span>Testing Steps</h3>
+            <ol>
+                <li><strong>Clear your browser cache:</strong> Press <span class="code">Ctrl + Shift + Delete</span>, then clear all cache</li>
+                <li><strong>Open the dashboard:</strong> Click the button below</li>
+                <li><strong>Open DevTools:</strong> Press <span class="code">F12</span> to open browser console</li>
+                <li><strong>Click sidebar buttons:</strong> Try clicking each navigation item on the left sidebar</li>
+                <li><strong>Check console:</strong> Look for messages like <span class="code">"showSection called with: users"</span></li>
+            </ol>
+        </div>
+
+        <div class="test-section">
+            <h2><span class="emoji">🚀</span>Open Admin Dashboard</h2>
+            <a href="admin_dashboard.html" class="test-button" target="_blank">
+                Open Dashboard
+            </a>
+            <a href="admin_dashboard.html?nocache=1" class="test-button">
+                Open Dashboard (No Cache)
+            </a>
+        </div>
+
+        <div class="success-box">
+            <h3><span class="emoji">✅</span>What Should Happen</h3>
+            <ul>
+                <li>Sidebar buttons change color to <strong>RED</strong> when clicked</li>
+                <li>Main content area updates to show different sections</li>
+                <li>Page title at top changes (e.g., "User Management", "Server Control")</li>
+                <li>Console shows: <span class="code">showSection called with: [section-name]</span></li>
+                <li>No JavaScript errors in the console</li>
+            </ul>
+        </div>
+
+        <div class="test-section">
+            <h2><span class="emoji">🐛</span>If Navigation Still Doesn't Work</h2>
+            <p style="margin-bottom: 15px;">Try these steps in order:</p>
+            <ol style="margin-left: 20px; color: #1e293b;">
+                <li>Close ALL browser windows</li>
+                <li>Press <span class="code">Windows + R</span></li>
+                <li>Type: <span class="code">%temp%</span> and press Enter</li>
+                <li>Delete all files in the temp folder</li>
+                <li>Restart your browser</li>
+                <li>Try opening the dashboard again</li>
+            </ol>
+        </div>
+
+        <div class="instructions">
+            <h3><span class="emoji">💡</span>Quick Console Test</h3>
+            <p style="margin-bottom: 10px;">Once the dashboard is open, press <span class="code">F12</span> and paste this in the console:</p>
+            <div style="background: #1e293b; padding: 15px; border-radius: 6px; margin: 10px 0;">
+                <code style="color: #10b981; font-family: 'Courier New', monospace;">
+                    console.log('Testing...'); showSection('users', document.querySelector('.nav-item'));
+                </code>
+            </div>
+            <p style="margin-top: 10px; color: #059669; font-weight: 600;">
+                ✅ If the Users section appears, navigation works!
+            </p>
+        </div>
+
+        <div class="test-section" style="background: #fef2f2; border-color: #ef4444;">
+            <h2 style="color: #dc2626;"><span class="emoji">⚠️</span>Critical Actions</h2>
+            <p style="color: #991b1b; font-weight: 600; margin-bottom: 15px;">
+                You MUST do this before testing:
+            </p>
+            <ol style="margin-left: 20px; color: #7f1d1d;">
+                <li><strong>Hard Refresh:</strong> Press <span class="code">Ctrl + F5</span></li>
+                <li><strong>Clear Site Data:</strong> F12 → Application → Clear Storage → Clear site data</li>
+                <li><strong>Disable Cache:</strong> F12 → Network tab → Check "Disable cache"</li>
+            </ol>
+        </div>
+
+        <p style="text-align: center; margin-top: 30px; color: #64748b; font-size: 14px;">
+            📄 Current file: <span class="code">admin_dashboard.html</span> | 
+            📁 Location: <span class="code">c:\xampp\htdocs\keepAI_app\</span>
+        </p>
+    </div>
+
+    <script>
+        console.log('✅ Test page loaded successfully');
+        console.log('🔍 Ready to test admin dashboard navigation');
+        console.log('📝 Remember to press Ctrl+F5 to clear cache!');
+    </script>
+</body>
+</html>

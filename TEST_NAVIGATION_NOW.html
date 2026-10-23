@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Navigation Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 40px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 { color: #dc2626; margin-bottom: 20px; }
+        .step {
+            background: #f9fafb;
+            padding: 15px;
+            margin: 10px 0;
+            border-left: 4px solid #dc2626;
+            border-radius: 4px;
+        }
+        .success { background: #ecfdf5; border-color: #10b981; }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #dc2626;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+        .button:hover { background: #991b1b; }
+        code {
+            background: #f3f4f6;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .alert {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🔧 Navigation Fixed!</h1>
+        
+        <div class="alert">
+            <strong>⚠️ IMPORTANT:</strong> Press <code>Ctrl + F5</code> to clear cache before testing!
+        </div>
+        
+        <h2>What Was Fixed:</h2>
+        <div class="step">
+            ✅ Removed duplicate <code>showSection()</code> function
+        </div>
+        <div class="step">
+            ✅ Added console logging for debugging
+        </div>
+        <div class="step">
+            ✅ Added <code>cursor: pointer</code> to buttons
+        </div>
+        <div class="step">
+            ✅ Simplified JavaScript code
+        </div>
+        
+        <h2>Test Instructions:</h2>
+        <div class="step">
+            <strong>1.</strong> Click the button below to open the dashboard
+        </div>
+        <div class="step">
+            <strong>2.</strong> Open Browser Console (<code>F12</code>)
+        </div>
+        <div class="step">
+            <strong>3.</strong> Click any sidebar navigation button
+        </div>
+        <div class="step">
+            <strong>4.</strong> Watch the console for debug messages
+        </div>
+        <div class="step success">
+            <strong>5.</strong> Section should change and button should turn RED
+        </div>
+        
+        <center>
+            <a href="admin_dashboard.html" class="button" target="_blank">
+                🚀 Open Admin Dashboard
+            </a>
+        </center>
+        
+        <h2>What to Look For:</h2>
+        <div class="step">
+            ✅ Console shows: <code>"showSection called with: dashboard"</code>
+        </div>
+        <div class="step">
+            ✅ Clicked button has RED background
+        </div>
+        <div class="step">
+            ✅ Main content area changes
+        </div>
+        <div class="step">
+            ✅ Page title updates
+        </div>
+        <div class="step">
+            ✅ No error messages in console
+        </div>
+        
+        <h2>If Still Not Working:</h2>
+        <div class="step">
+            1. Press <code>Ctrl + Shift + Delete</code> to clear ALL browser cache
+        </div>
+        <div class="step">
+            2. Close browser completely
+        </div>
+        <div class="step">
+            3. Reopen browser and try again
+        </div>
+        <div class="step">
+            4. Check console for any RED error messages
+        </div>
+        
+        <div class="alert">
+            <strong>💡 PRO TIP:</strong> If you see console messages when clicking, the JavaScript is working! The issue would then be CSS-related.
+        </div>
+    </div>
+    
+    <script>
+        console.log('✅ Test page loaded successfully');
+        console.log('🔍 Click the button above to test the admin dashboard');
+    </script>
+</body>
+</html>

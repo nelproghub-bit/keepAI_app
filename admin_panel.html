@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>KeepAI - Admin Panel</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#7D1D1D">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <link rel="icon" type="image/svg+xml" href="icons/favicon.svg">
+    <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #7D1D1D;
+            --success: #059669;
+            --danger: #e11d48;
+            --warning: #d97706;
+            --bg-app: #f8fafc;
+            --bg-surface: #ffffff;
+            --border: #e2e8f0;
+            --text-main: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            --shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
+            --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: var(--bg-app);
+            color: var(--text-body);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 750;
+            margin-bottom: 5px;
+            color: var(--text-main);
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .panel-title {
+            font-size: 18px;
+            font-weight: 650;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Status Display */
+        .status-box {
+            background: #f8fafc;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .status-info h3 {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        .status-info p {
+            font-size: 13px;
+            color: var(--text-body);
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .status-badge.online {
+            background: #ecfdf5;
+            color: var(--success);
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-badge.offline {
+            background: #fff1f2;
+            color: var(--danger);
+            border: 1px solid #fecdd3;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.online {
+            background: var(--success);
+        }
+
+        .status-dot.offline {
+            background: var(--danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .btn i {
+            width: 16px;
+            height: 16px;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(5, 150, 105, 0.35);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+            box-shadow: 0 4px 12px rgba(225, 29, 72, 0.28);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(225, 29, 72, 0.35);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+            box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(217, 119, 6, 0.35);
+        }
+
+        /* Logs */
+        .logs {
+            background: #0f172a;
+            color: #10b981;
+            padding: 16px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .log-line {
+            display: flex;
+            gap: 10px;
+        }
+
+        .log-time {
+            color: #6b7280;
+            flex-shrink: 0;
+        }
+
+        .log-message {
+            flex: 1;
+        }
+
+        .log-message.success {
+            color: #10b981;
+        }
+
+        .log-message.error {
+            color: #ef4444;
+        }
+
+        .log-message.warning {
+            color: #f59e0b;
+        }
+
+        .log-message.info {
+            color: #3b82f6;
+        }
+
+        /* Alert */
+        .alert {
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .alert.success {
+            background: #ecfdf5;
+            color: var(--success);
+            border: 1px solid #a7f3d0;
+        }
+
+        .alert.error {
+            background: #fff1f2;
+            color: var(--danger);
+            border: 1px solid #fecdd3;
+        }
+
+        .alert.info {
+            background: #eef2ff;
+            color: var(--primary);
+            border: 1px solid #c7d2fe;
+        }
+
+        .alert.warning {
+            background: #fffbeb;
+            color: var(--warning);
+            border: 1px solid #fde68a;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            background: #eef2ff;
+            border-radius: 10px;
+            display: grid;
+            place-items: center;
+            font-size: 24px;
+            color: var(--primary);
+            margin-bottom: 12px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 750;
+            color: var(--text-main);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+            }
+
+            .status-box {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 12px;
+            }
+            .header {
+                padding: 18px 16px;
+            }
+            .header h1 {
+                font-size: 22px;
+            }
+            .panel {
+                padding: 18px 16px;
+            }
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>⚙️ Westmead IS Admin Panel</h1>
+            <p>Server management and system control</p>
+        </div>
+
+        <!-- Status Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <i class="fas fa-server"></i> Server Status
+            </div>
+
+            <div id="alert" style="display: none;"></div>
+
+            <div class="status-box">
+                <div class="status-info">
+                    <h3>Backend Server</h3>
+                    <p id="server-endpoint">http://127.0.0.1:8000</p>
+                </div>
+                <div id="status-badge" class="status-badge offline">
+                    <span class="status-dot offline"></span>
+                    <span id="status-text">Offline</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-heartbeat"></i>
+                    </div>
+                    <div class="stat-value" id="stat-status">Offline</div>
+                    <div class="stat-label">Current Status</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value" id="stat-uptime">--:--:--</div>
+                    <div class="stat-label">Uptime</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <div class="stat-value" id="stat-db">Connected</div>
+                    <div class="stat-label">Database</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <i class="fas fa-sliders-h"></i> Controls
+            </div>
+
+            <div class="controls">
+                <button class="btn btn-success" onclick="startServer()">
+                    <i class="fas fa-play"></i> Start Server
+                </button>
+                <button class="btn btn-danger" onclick="stopServer()" id="stop-btn">
+                    <i class="fas fa-stop"></i> Stop Server
+                </button>
+                <button class="btn btn-warning" onclick="restartServer()">
+                    <i class="fas fa-sync-alt"></i> Restart Server
+                </button>
+                <button class="btn btn-primary" onclick="checkStatus()">
+                    <i class="fas fa-check-circle"></i> Check Status
+                </button>
+            </div>
+
+            <div style="padding: 14px 16px; background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; color: #4f46e5; font-size: 12px; margin-top: 16px;">
+                <i class="fas fa-lightbulb" style="margin-right: 8px;"></i>
+                <strong>Tip:</strong> All server control is now fully automated. Simply click the buttons to Start, Stop, or Restart the server. No manual commands required!
+            </div>
+        </div>
+
+        <!-- Logs Panel -->
+        <div class="panel">
+            <div class="panel-title">
+                <i class="fas fa-file-alt"></i> Server Logs
+            </div>
+
+            <div class="logs" id="logs">Ready to manage server...
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_HOST = window.location.hostname || '127.0.0.1';
+        const FASTAPI_BASE = `http://${API_HOST}:8000/api`;
+        let statusCheckInterval = null;
+        let isOperating = false;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('System initialized and ready', 'info');
+            checkStatus();
+            // Auto check status every 5 seconds
+            statusCheckInterval = setInterval(() => checkStatus(false), 5000);
+        });
+
+        // Add log entry
+        function addLog(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            if (!logsDiv) return;
+            const time = new Date().toLocaleTimeString();
+            const logLine = document.createElement('div');
+            logLine.className = 'log-line';
+            logLine.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-message ${type}">${message}</span>
+            `;
+            logsDiv.appendChild(logLine);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        }
+
+        // Show alert
+        function showAlert(message, type = 'info') {
+            const alert = document.getElementById('alert');
+            if (!alert) return;
+            const icon = type === 'success' ? 'check-circle' : 
+                        type === 'error' ? 'exclamation-circle' : 
+                        type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            alert.className = `alert ${type}`;
+            alert.innerHTML = `<i class="fas fa-${icon}"></i> ${message}`;
+            alert.style.display = 'flex';
+            
+            setTimeout(() => {
+                alert.style.display = 'none';
+            }, 5000);
+        }
+
+        // Update server status badge and cards
+        function updateStatus(isOnline, uptime = '--:--:--', dbStatus = 'Offline') {
+            const badge = document.getElementById('status-badge');
+            const statusText = document.getElementById('status-text');
+            const statStatus = document.getElementById('stat-status');
+            const statUptime = document.getElementById('stat-uptime');
+            const statDb = document.getElementById('stat-db');
+            
+            if (isOnline) {
+                if (badge) badge.className = 'status-badge online';
+                if (statusText) statusText.textContent = 'Online';
+                if (statStatus) {
+                    statStatus.textContent = 'Online';
+                    statStatus.style.color = '#10b981';
+                }
+                if (statUptime && uptime && uptime !== '--:--:--') {
+                    statUptime.textContent = uptime;
+                }
+                if (statDb) {
+                    statDb.textContent = dbStatus || 'Connected';
+                    statDb.style.color = (dbStatus === 'Connected') ? '#10b981' : '#f59e0b';
+                }
+            } else {
+                if (badge) badge.className = 'status-badge offline';
+                if (statusText) statusText.textContent = 'Offline';
+                if (statStatus) {
+                    statStatus.textContent = 'Offline';
+                    statStatus.style.color = '#ef4444';
+                }
+                if (statUptime) statUptime.textContent = '--:--:--';
+                if (statDb) {
+                    statDb.textContent = 'Offline';
+                    statDb.style.color = '#64748b';
+                }
+            }
+        }
+
+        // Universal server control dispatcher
+        async function executeServerAction(action) {
+            // First attempt: Call PHP controller directly (available on Apache/XAMPP)
+            try {
+                const res = await fetch(`server_control.php?action=${encodeURIComponent(action)}`, {
+                    cache: 'no-store'
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && typeof data.status !== 'undefined') {
+                        return data;
+                    }
+                }
+            } catch (err) {
+                // Fallback to FastAPI
+            }
+
+            // Second attempt: Direct FastAPI call (if server is up)
+            try {
+                const method = (action === 'status') ? 'GET' : 'POST';
+                const res = await fetch(`${FASTAPI_BASE}/admin/server/${encodeURIComponent(action)}`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (res.ok) {
+                    return await res.json();
+                }
+            } catch (err) {
+                // Backend is down
+            }
+
+            return {
+                success: false,
+                status: 'offline',
+                message: 'Server is currently offline or unreachable.'
+            };
+        }
+
+        // 1. Check server status
+        async function checkStatus(isManual = false) {
+            try {
+                const data = await executeServerAction('status');
+                const isOnline = (data.status === 'online');
+                updateStatus(isOnline, data.uptime, data.database);
+
+                if (isManual) {
+                    if (isOnline) {
+                        addLog(`Status: ONLINE - ${data.message || 'Server is active on port 8000'}`, 'success');
+                        showAlert('✓ Server is Online and Operational', 'success');
+                    } else {
+                        addLog('Status: OFFLINE - KeepAI server is not running', 'warning');
+                        showAlert('Server is currently Offline', 'warning');
+                    }
+                }
+            } catch (error) {
+                updateStatus(false);
+                if (isManual) {
+                    addLog(`Status Check Error: ${error.message}`, 'error');
+                    showAlert('Server is offline', 'error');
+                }
+            }
+        }
+
+        // 2. Start server
+        async function startServer() {
+            if (isOperating) return;
+            isOperating = true;
+            addLog('Starting KeepAI backend server...', 'info');
+            showAlert('Starting server, please wait a moment...', 'info');
+
+            try {
+                const data = await executeServerAction('start');
+                if (data.success) {
+                    addLog(data.message, 'success');
+                    showAlert('✓ ' + data.message, 'success');
+                } else {
+                    addLog(data.message || 'Could not start server.', 'warning');
+                    showAlert(data.message || 'Could not start server.', 'warning');
+                }
+
+                // Verify status after a short pause
+                setTimeout(async () => {
+                    await checkStatus();
+                    isOperating = false;
+                }, 2000);
+            } catch (error) {
+                addLog(`Start Server Error: ${error.message}`, 'error');
+                showAlert('Failed to start server: ' + error.message, 'error');
+                isOperating = false;
+            }
+        }
+
+        // 3. Stop server
+        async function stopServer() {
+            if (isOperating) return;
+            isOperating = true;
+            const btn = document.getElementById('stop-btn');
+            if (btn) btn.disabled = true;
+            addLog('Stopping KeepAI backend server...', 'warning');
+            showAlert('Stopping server, please wait...', 'warning');
+
+            try {
+                const data = await executeServerAction('stop');
+                addLog(data.message || 'Server stopped successfully', 'success');
+                showAlert('✓ ' + (data.message || 'Server stopped successfully'), 'success');
+
+                setTimeout(async () => {
+                    await checkStatus();
+                    if (btn) btn.disabled = false;
+                    isOperating = false;
+                }, 1500);
+            } catch (error) {
+                addLog(`Stop Server Error: ${error.message}`, 'error');
+                showAlert('Failed to stop server: ' + error.message, 'error');
+                if (btn) btn.disabled = false;
+                isOperating = false;
+            }
+        }
+
+        // 4. Restart server
+        async function restartServer() {
+            if (isOperating) return;
+            isOperating = true;
+            addLog('Restarting KeepAI backend server...', 'warning');
+            showAlert('Restarting server, please wait a few seconds...', 'info');
+
+            try {
+                const data = await executeServerAction('restart');
+                addLog(data.message || 'Server restarted successfully', 'success');
+                showAlert('✓ ' + (data.message || 'Server restarted successfully'), 'success');
+
+                setTimeout(async () => {
+                    await checkStatus();
+                    isOperating = false;
+                }, 3000);
+            } catch (error) {
+                addLog(`Restart Server Error: ${error.message}`, 'error');
+                showAlert('Failed to restart server: ' + error.message, 'error');
+                isOperating = false;
+            }
+        }
+    </script>
+</body>
+</html>

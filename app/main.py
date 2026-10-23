@@ -1,0 +1,120 @@
+import sys
+if sys.platform == "win32":
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
+import os
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin
+from app.services.knowledge_loader import initialize_knowledge_base
+from app.services.rag_service import sync_initial_documents_to_db
+
+app = FastAPI(
+    title="KeepAI API - Simple & Smart Study Assistant",
+    description="Helpful, friendly AI study assistant powered by Google Gemini AI",
+    version="1.2.0",
+)
+
+# CORS middleware for web clients
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
+app.include_router(health.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
+app.include_router(workspaces.router, prefix="/api")
+app.include_router(tutor.router, prefix="/api")
+app.include_router(learning_tools.router, prefix="/api")
+
+# PWA root routes
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+icons_dir = os.path.join(BASE_DIR, "icons")
+if os.path.exists(icons_dir):
+    app.mount("/icons", StaticFiles(directory=icons_dir), name="icons")
+
+downloads_dir = os.path.join(BASE_DIR, "downloads")
+if os.path.exists(downloads_dir):
+    app.mount("/downloads", StaticFiles(directory=downloads_dir), name="downloads")
+
+@app.get("/manifest.json")
+def get_manifest():
+    manifest_path = os.path.join(BASE_DIR, "manifest.json")
+    if os.path.exists(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return {"error": "manifest not found"}
+
+@app.get("/sw.js")
+def get_sw():
+    sw_path = os.path.join(BASE_DIR, "sw.js")
+    if os.path.exists(sw_path):
+        return FileResponse(sw_path, media_type="application/javascript")
+    return {"error": "service worker not found"}
+
+@app.get("/download/apk")
+@app.get("/downloads/keepai.apk")
+@app.get("/downloads/KeepAI_v1.0.apk")
+def download_apk():
+    apk_path = os.path.join(BASE_DIR, "downloads", "KeepAI_v1.0.apk")
+    if os.path.exists(apk_path):
+        return FileResponse(
+            apk_path,
+            media_type="application/vnd.android.package-archive",
+            filename="KeepAI_v1.0.apk"
+        )
+    return {"error": "APK not found"}
+
+@app.on_event("startup")
+async def startup_event():
+    """Initialize the training-enhanced knowledge system and sync database"""
+    print("🚀 Starting KeepAI Training-Enhanced System...")
+    initialize_knowledge_base()
+    sync_initial_documents_to_db()
+    print("✅ KeepAI Ready!")
+
+@app.get("/")
+def root():
+    student_path = os.path.join(BASE_DIR, "student_login.html")
+    if os.path.exists(student_path):
+        return FileResponse(student_path)
+    return {
+        "message": "KeepAI Simple & Smart Study Assistant", 
+        "version": "1.2.0"
+    }
+
+@app.get("/admin")
+@app.get("/admin_dashboard.html")
+def admin_page():
+    admin_path = os.path.join(BASE_DIR, "admin_dashboard.html")
+    if os.path.exists(admin_path):
+        return FileResponse(admin_path)
+    return {"error": "admin_dashboard.html not found"}
+
+@app.get("/student")
+@app.get("/student_login")
+@app.get("/student_login.html")
+@app.get("/student_portal.html")
+def student_login_page():
+    student_path = os.path.join(BASE_DIR, "student_login.html")
+    if os.path.exists(student_path):
+        return FileResponse(student_path)
+    return {"error": "student_login.html not found"}
+
+@app.get("/student_dashboard.html")
+def student_dashboard_page():
+    dashboard_path = os.path.join(BASE_DIR, "student_dashboard.html")
+    if os.path.exists(dashboard_path):
+        return FileResponse(dashboard_path)
+    return {"error": "student_dashboard.html not found"}
+
