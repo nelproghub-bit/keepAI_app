@@ -61,7 +61,7 @@ for (const filename of [
   await cp(path.join(projectRoot, filename), path.join(outputDirectory, filename));
 }
 
-for (const directory of ['assets', 'icons', 'downloads']) {
+for (const directory of ['assets', 'icons']) {
   await cp(path.join(projectRoot, directory), path.join(outputDirectory, directory), { recursive: true });
 }
 
