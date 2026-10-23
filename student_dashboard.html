@@ -3666,42 +3666,6 @@
             }
         }
 
-        function generateProgressiveTutorResponse(msg) {
-            const lower = msg.toLowerCase();
-            const style = currentUser.teaching_style || localStorage.getItem('keepai_teaching_style') || 'simple';
-            const level = currentUser.course_level || localStorage.getItem('keepai_course_level') || 'intermediate';
-
-            const styleHeaders = {
-                'simple': '💡 **Simple & Clear Explanation:**',
-                'socratic': '🤔 **Guided Thinking Question:**',
-                'detailed': '📚 **In-Depth Academic Analysis:**',
-                'visual': '🎨 **Everyday Analogy & Mental Model:**'
-            };
-
-            let prefix = styleHeaders[style] || '💡 **Study Assistant Answer:**';
-
-            if (style === 'socratic') {
-                return `${prefix}\n\nTo help you work through *" ${escapeHTML(msg)} "* at the **${level}** level:\n\n1. Consider the foundational goal: What outcome are we trying to achieve for the user or system here?\n2. *Guided Question:* Based on your current lesson notes, what happens if we don't apply this concept?\n\n*Take a guess or tell me what you think, and we'll piece it together step-by-step!*`;
-            }
-
-            if (style === 'visual') {
-                return `${prefix}\n\nImagine this like a real-world scenario:\n\n• **The Big Picture:** Think of the system like a vehicle dashboard. The gauges must give clear, instant feedback without overwhelming the driver.\n• **Application:** In your lesson material, this concept acts like the speedometer—it directly bridges the internal mechanics with the human operator.\n\n*How does this visual compare with what you are seeing in your notes?*`;
-            }
-
-            if (style === 'detailed') {
-                return `${prefix}\n\n**Theoretical & Practical Framework (${level.toUpperCase()} LEVEL):**\n\n1. **Core Mechanism:** Addresses the operational requirements and architectural considerations of the topic.\n2. **Academic Principles:** Evaluates efficiency, design patterns, and systemic trade-offs.\n3. **Practical Implementation:** Ensure all components adhere to standard industry conventions and specification guidelines.\n\n*Feel free to ask for deeper sub-topic breakdowns or specific formulas/definitions!*`;
-            }
-
-            if (activeDocument) {
-                const docName = activeDocument.filename;
-                if (lower.includes('what') || lower.includes('about') || lower.includes('summarize') || lower.includes('summary') || lower.includes('tell me')) {
-                    return `${prefix}\n\n**Study Overview for "${docName}":**\n\n• **Active Document:** \`${docName}\`\n• **Level:** ${level.charAt(0).toUpperCase() + level.slice(1)}\n• **Status:** Ready to answer your questions.\n\nAsk any question about its topics, definitions, or lessons!`;
-                }
-            }
-
-            return `${prefix}\n\nHere is what I found regarding: *" ${escapeHTML(msg)} "*\n\n${activeDocument ? `Looking at your active document **${escapeHTML(activeDocument.filename)}** at the **${level}** level.` : 'Ask any question about your lessons or upload your notes in the Library to get started!'}\n\n*Feel free to ask for follow-up details, examples, or practice questions!*`;
-        }
-
         function appendChatMessage(text, sender) {
             const container = document.getElementById('chat-messages');
             // Remove initial welcome if present
