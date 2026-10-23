@@ -18,7 +18,23 @@ class LessonRequest(BaseModel):
     user_id: Optional[str] = "student_arnel"
     topic: str = Field(default="Quiz", max_length=500)
     document_name: Optional[str] = None
-    question_count: Optional[int] = 5
+    question_count: Optional[int] = Field(default=5, ge=1, le=100)
+
+
+QUESTION_COUNT_PATTERNS = (
+    re.compile(r"\b(\d{1,3})\s*-?\s*(?:questions?|quizzes|quiz|items?|mcqs?|multiple\s*choice)\b", re.IGNORECASE),
+    re.compile(r"\b(?:quiz|exam|test)\s+(?:of|with|for)\s+(\d{1,3})\b", re.IGNORECASE),
+)
+
+
+def requested_question_count(topic: str) -> Optional[int]:
+    for pattern in QUESTION_COUNT_PATTERNS:
+        match = pattern.search(topic)
+        if match:
+            count = int(match.group(1))
+            if 1 <= count <= 100:
+                return count
+    return None
 
 class FlashcardRequest(BaseModel):
     user_id: Optional[str] = "student_arnel"
@@ -358,14 +374,9 @@ def create_quiz(
     
     # 1. Parse requested question count (from question_count field or from topic text like '100 quiz')
     num_questions = request.question_count or 5
-    topic_match = re.search(r'\b(\d{1,3})\s*(?:questions?|quiz|items?|mcq|multiple\s*choice)?\b', request.topic, re.IGNORECASE)
-    if topic_match:
-        try:
-            val = int(topic_match.group(1))
-            if 1 <= val <= 100:
-                num_questions = val
-        except ValueError:
-            pass
+    topic_count = requested_question_count(request.topic)
+    if topic_count is not None:
+        num_questions = topic_count
     num_questions = max(1, min(100, num_questions))
 
     # 2. Extract lesson context for the specified document
