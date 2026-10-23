@@ -2146,68 +2146,41 @@
                     <div class="panel-head">
                         <div>
                             <h2>My Study Progress</h2>
-                            <div class="sub">Track study hours, goals, and practice results</div>
+                            <div class="sub">A live view of your study activity and learning habits</div>
                         </div>
+                        <div id="progress-updated-at" class="sub" aria-live="polite">Loading your progress…</div>
                     </div>
 
                     <div class="stat-grid">
                         <div class="stat-card">
                             <div class="stat-label">Study Streak</div>
-                            <div class="stat-value" style="color: var(--amber);"><i class="fas fa-fire me-1"></i> 5 Days</div>
-                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Consistent daily engagement</div>
+                            <div class="stat-value" style="color: var(--amber);" id="progress-streak-val">—</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" id="progress-streak-note">Your consecutive active study days</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Weekly Study Hours</div>
-                            <div class="stat-value" id="study-hours-val">12.5 hrs</div>
-                            <div class="progress-bar-wrap">
-                                <div class="progress-fill" style="width: 78%;"></div>
-                            </div>
+                            <div class="stat-label">Study Time · Last 7 Days</div>
+                            <div class="stat-value" id="study-hours-val">—</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" id="study-time-note">Active time while using KeepAI</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">Workspaces Active</div>
-                            <div class="stat-value" id="stat-workspaces-val">1</div>
-                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">IoT Core</div>
+                            <div class="stat-label">Your Workspaces</div>
+                            <div class="stat-value" id="stat-workspaces-val">—</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Currently available in your account</div>
                         </div>
                         <div class="stat-card">
                             <div class="stat-label">Average Quiz Score</div>
-                            <div class="stat-value" style="color: var(--emerald);">88%</div>
-                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;">Top quartile performance</div>
+                            <div class="stat-value" style="color: var(--emerald);" id="progress-quiz-average">—</div>
+                            <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 4px;" id="progress-quiz-note">Based on completed quizzes</div>
                         </div>
                     </div>
 
                     <div class="grid two-col">
                         <div class="panel">
                             <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--text-main);">
-                                <i class="fas fa-bullseye me-2" style="color: var(--primary);"></i>Subject Mastery Goals
+                                <i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>Recent Subject Activity
                             </h4>
-                            <div style="display: flex; flex-direction: column; gap: 14px;">
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 4px;">
-                                        <span>Internet of Things (IoT)</span>
-                                        <span>85%</span>
-                                    </div>
-                                    <div class="progress-bar-wrap">
-                                        <div class="progress-fill" style="width: 85%;"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 4px;">
-                                        <span>Microcontroller Programming</span>
-                                        <span>70%</span>
-                                    </div>
-                                    <div class="progress-bar-wrap">
-                                        <div class="progress-fill" style="width: 70%; background: #d97706;"></div>
-                                    </div>
-                                </div>
-                                <div>
-                                    <div style="display: flex; justify-content: space-between; font-size: 12.5px; font-weight: 600; margin-bottom: 4px;">
-                                        <span>Cloud & Edge Networking</span>
-                                        <span>60%</span>
-                                    </div>
-                                    <div class="progress-bar-wrap">
-                                        <div class="progress-fill" style="width: 60%; background: #0284c7;"></div>
-                                    </div>
-                                </div>
+                            <div id="progress-subject-list" style="display: flex; flex-direction: column; gap: 14px;" aria-live="polite">
+                                <div style="color: var(--text-muted); font-size: 13px;">Loading your activity…</div>
                             </div>
                         </div>
 
@@ -2215,19 +2188,8 @@
                             <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--text-main);">
                                 <i class="fas fa-history me-2" style="color: var(--emerald);"></i>Recent Activity Log
                             </h4>
-                            <div style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;">
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <i class="fas fa-check-circle" style="color: var(--emerald);"></i>
-                                    <span>Workspace <strong>IoT</strong> created and verified.</span>
-                                </div>
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <i class="fas fa-robot" style="color: var(--primary);"></i>
-                                    <span>AI Tutor session initiated for semester prep.</span>
-                                </div>
-                                <div style="display: flex; gap: 10px; align-items: center;">
-                                    <i class="fas fa-layer-group" style="color: var(--gold);"></i>
-                                    <span>Studied 5 IoT architectural concept cards.</span>
-                                </div>
+                            <div id="progress-activity-list" style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;" aria-live="polite">
+                                <div style="color: var(--text-muted);">Loading your activity…</div>
                             </div>
                         </div>
                     </div>
@@ -2696,6 +2658,8 @@
         let activeDocument = null;
         let currentToolType = null;
         let isDesktopSidebarCollapsed = false;
+        let lastStudyInteractionAt = 0;
+        let quizCompletionRecorded = false;
 
         // Flashcards state
         const sampleFlashcards = [
@@ -2714,6 +2678,7 @@
             initPWA();
             initNetworkListeners();
             initStorage();
+            startStudyActivityTracking();
             initSidebarPreference();
             renderWorkspaces();
             renderDocuments();
@@ -3010,11 +2975,9 @@
         function updateCounters() {
             const wsBadge = document.getElementById('workspaces-badge');
             const docBadge = document.getElementById('docs-badge');
-            const statWs = document.getElementById('stat-workspaces-val');
 
             if (wsBadge) wsBadge.textContent = workspaces.length;
             if (docBadge) docBadge.textContent = documents.length;
-            if (statWs) statWs.textContent = workspaces.length;
 
             const docCountText = document.getElementById('doc-count-text');
             if (docCountText) docCountText.textContent = `${documents.length} document${documents.length === 1 ? '' : 's'} available`;
@@ -3097,6 +3060,8 @@
                 renderDocuments();
             } else if (sectionId === 'workspaces') {
                 renderWorkspaces();
+            } else if (sectionId === 'progress') {
+                loadStudyProgress();
             }
 
             // Auto-close mobile sidebar drawer if open
@@ -3107,6 +3072,170 @@
             if (profileDd) profileDd.classList.remove('show');
         }
         window.showSection = showSection;
+
+        async function loadStudyProgress() {
+            const token = localStorage.getItem('access_token');
+            const updatedAt = document.getElementById('progress-updated-at');
+            if (!token) {
+                if (updatedAt) updatedAt.textContent = 'Sign in to view your study progress.';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/progress`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    throw new Error(`Progress request failed (${response.status})`);
+                }
+                renderStudyProgress(await response.json());
+            } catch (error) {
+                console.error('Unable to load study progress:', error);
+                if (updatedAt) updatedAt.textContent = 'Progress is temporarily unavailable. Please try again.';
+            }
+        }
+
+        function renderStudyProgress(progress) {
+            const streak = Number(progress.study_streak_days) || 0;
+            const studyMinutes = Number(progress.weekly_study_minutes) || 0;
+            const workspaceCount = Number(progress.active_workspaces) || 0;
+            const averageQuiz = progress.average_quiz_score;
+            const quizCount = Number(progress.completed_quizzes) || 0;
+            const hours = Math.floor(studyMinutes / 60);
+            const minutes = studyMinutes % 60;
+
+            document.getElementById('progress-streak-val').innerHTML =
+                `<i class="fas fa-fire me-1"></i> ${streak} ${streak === 1 ? 'Day' : 'Days'}`;
+            document.getElementById('study-hours-val').textContent =
+                hours ? `${hours}h ${minutes}m` : `${minutes} min`;
+            document.getElementById('stat-workspaces-val').textContent = workspaceCount;
+            document.getElementById('progress-quiz-average').textContent =
+                averageQuiz === null || averageQuiz === undefined ? '—' : `${Math.round(Number(averageQuiz))}%`;
+            document.getElementById('progress-quiz-note').textContent =
+                quizCount ? `Average across ${quizCount} completed ${quizCount === 1 ? 'quiz' : 'quizzes'}` : 'Complete a quiz to see your average';
+            document.getElementById('progress-streak-note').textContent =
+                streak ? 'Consecutive days with recorded study activity' : 'Study today to start a streak';
+
+            renderSubjectActivity(progress.subject_activity || []);
+            renderRecentActivity(progress.recent_activity || []);
+
+            const updatedAt = document.getElementById('progress-updated-at');
+            if (updatedAt) {
+                const timestamp = progress.last_updated ? new Date(progress.last_updated) : new Date();
+                updatedAt.textContent = `Updated ${timestamp.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`;
+            }
+        }
+
+        function renderSubjectActivity(subjects) {
+            const container = document.getElementById('progress-subject-list');
+            if (!container) return;
+            if (!subjects.length) {
+                container.innerHTML = '<div style="color: var(--text-muted); font-size: 13px;">Your study topics will appear here as you use KeepAI.</div>';
+                return;
+            }
+
+            const maxActivities = Math.max(...subjects.map(item => Number(item.activities) || 0), 1);
+            container.innerHTML = subjects.map(item => {
+                const count = Number(item.activities) || 0;
+                const width = Math.max(4, Math.round((count / maxActivities) * 100));
+                return `
+                    <div>
+                        <div style="display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; font-weight: 600; margin-bottom: 5px;">
+                            <span>${escapeHTML(item.name)}</span>
+                            <span style="color: var(--text-muted); white-space: nowrap;">${count} ${count === 1 ? 'activity' : 'activities'}</span>
+                        </div>
+                        <div class="progress-bar-wrap" role="progressbar" aria-valuenow="${width}" aria-valuemin="0" aria-valuemax="100" aria-label="${escapeHTML(item.name)} activity">
+                            <div class="progress-fill" style="width: ${width}%;"></div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRecentActivity(activities) {
+            const container = document.getElementById('progress-activity-list');
+            if (!container) return;
+            if (!activities.length) {
+                container.innerHTML = '<div style="color: var(--text-muted);">Your completed study actions will appear here.</div>';
+                return;
+            }
+
+            const icons = {
+                tutor_question: ['fa-robot', 'var(--primary)'],
+                quiz_completed: ['fa-clipboard-check', 'var(--emerald)'],
+                quiz_generated: ['fa-clipboard-list', 'var(--primary)'],
+                summary_generated: ['fa-file-alt', 'var(--amber)'],
+                document_uploaded: ['fa-file-upload', 'var(--primary)'],
+                workspace_created: ['fa-folder-plus', 'var(--emerald)'],
+                flashcard_mastered: ['fa-layer-group', 'var(--amber)']
+            };
+            container.innerHTML = activities.map(item => {
+                const [icon, color] = icons[item.type] || ['fa-book-open', 'var(--primary)'];
+                const when = new Date(item.created_at);
+                const time = Number.isNaN(when.getTime()) ? '' : when.toLocaleString([], {
+                    month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+                });
+                const subject = item.subject ? ` · ${escapeHTML(item.subject)}` : '';
+                const score = item.type === 'quiz_completed' && item.score_percent !== null
+                    ? ` · ${Math.round(Number(item.score_percent))}%`
+                    : '';
+                return `
+                    <div style="display: flex; gap: 10px; align-items: flex-start;">
+                        <i class="fas ${icon}" style="color: ${color}; margin-top: 3px;"></i>
+                        <div style="min-width: 0;">
+                            <div>${escapeHTML(item.description)}${subject}${score}</div>
+                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">${escapeHTML(time)}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function recordProgressActivity(activity) {
+            const token = localStorage.getItem('access_token');
+            if (!token) return;
+            try {
+                const response = await fetch(`${API_BASE}/progress/activity`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(activity)
+                });
+                if (!response.ok) {
+                    throw new Error(`Activity tracking failed (${response.status})`);
+                }
+                if (document.getElementById('progress-section')?.classList.contains('active')) {
+                    await loadStudyProgress();
+                }
+            } catch (error) {
+                console.error('Unable to record study activity:', error);
+            }
+        }
+
+        function startStudyActivityTracking() {
+            const markInteraction = () => { lastStudyInteractionAt = Date.now(); };
+            ['click', 'keydown', 'input', 'scroll'].forEach(eventName => {
+                document.addEventListener(eventName, markInteraction, { passive: true });
+            });
+
+            window.setInterval(() => {
+                if (!localStorage.getItem('access_token') || document.hidden ||
+                    Date.now() - lastStudyInteractionAt > 2 * 60 * 1000) return;
+                recordProgressActivity({
+                    event_type: 'study_time',
+                    description: 'Active study time',
+                    duration_seconds: 60
+                });
+            }, 60 * 1000);
+
+            window.setInterval(() => {
+                if (document.getElementById('progress-section')?.classList.contains('active')) {
+                    loadStudyProgress();
+                }
+            }, 60 * 1000);
+        }
 
         function toggleProfileDropdown() {
             document.getElementById('profile-dropdown').classList.toggle('show');
@@ -4056,6 +4185,11 @@
         function markCardMastered() {
             const deck = activeFlashcardDeck.length > 0 ? activeFlashcardDeck : sampleFlashcards;
             showToast(`Card "${deck[currentFlashcardIndex].term}" marked as mastered!`, 'success');
+            recordProgressActivity({
+                event_type: 'flashcard_mastered',
+                description: 'Marked a flashcard as mastered',
+                subject: document.getElementById('fc-lesson-select')?.value || 'Flashcards'
+            });
             nextFlashcard();
         }
 
@@ -4174,6 +4308,7 @@
             const questions = data.questions || [];
 
             userQuizAnswers = {};
+            quizCompletionRecorded = false;
             if (statsBanner) statsBanner.style.display = 'flex';
             if (docSubtitle) docSubtitle.textContent = `Document: ${data.document_name || 'Selected Material'} • ${questions.length} Questions Generated`;
 
@@ -4306,6 +4441,16 @@
                 } else {
                     completionMsg.textContent = `${total - answeredCount} questions remaining.`;
                 }
+            }
+
+            if (total > 0 && answeredCount === total && !quizCompletionRecorded) {
+                quizCompletionRecorded = true;
+                recordProgressActivity({
+                    event_type: 'quiz_completed',
+                    description: 'Completed a practice quiz',
+                    subject: activeQuizData?.document_name || activeQuizData?.topic || 'Practice quiz',
+                    score_percent: pct
+                });
             }
         }
 

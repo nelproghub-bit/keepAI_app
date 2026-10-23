@@ -8,6 +8,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from app.core.security import get_optional_current_user
 from app.services.user_service import user_service
+from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context, _load_user_documents, _load_user_files_meta
 from app.services.gemini_service import generate
 
@@ -339,6 +340,13 @@ def create_summary(
         f"unsupported facts.\n\nLESSON:\n{context}",
         system="You are KeepAI, a helpful study assistant. Explain concepts in simple, clear, everyday words."
     )
+    if current_user:
+        record_activity(
+            current_user["id"],
+            "summary_generated",
+            "Generated a lesson summary",
+            request.document_name or request.topic,
+        )
     return {"summary": result, "sources": sources}
 
 @router.post("/learning/quiz")
@@ -412,6 +420,13 @@ def create_quiz(
         document_name=request.document_name or (sources[0] if sources else None)
     )
 
+    if current_user:
+        record_activity(
+            current_user["id"],
+            "quiz_generated",
+            "Generated a practice quiz",
+            request.document_name or request.topic,
+        )
     return {
         "topic": request.topic,
         "document_name": request.document_name or (sources[0] if sources else "Uploaded Document"),

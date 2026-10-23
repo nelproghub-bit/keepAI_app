@@ -5,6 +5,7 @@ from pydantic import BaseModel, Field
 import json
 from app.core.security import get_optional_current_user
 from app.services.user_service import user_service
+from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context
 from app.services.gemini_service import AIProviderError, generate, generate_stream
 
@@ -221,6 +222,13 @@ def ask_keepai(
             )
         except AIProviderError as exc:
             raise HTTPException(status_code=503, detail=str(exc)) from exc
+        if current_user:
+            record_activity(
+                current_user["id"],
+                "tutor_question",
+                "Asked the AI tutor a study question",
+                request.document_name or "AI Tutor",
+            )
         return {
             "answer": answer,
             "sources": [fname],
@@ -270,6 +278,14 @@ def ask_keepai(
             raise HTTPException(status_code=503, detail=str(exc)) from exc
         sources = []
         read_mode = "none"
+
+    if current_user:
+        record_activity(
+            current_user["id"],
+            "tutor_question",
+            "Asked the AI tutor a study question",
+            request.document_name or "AI Tutor",
+        )
     
     return {
         "answer": answer,

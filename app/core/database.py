@@ -263,6 +263,18 @@ def init_db():
         )
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS study_activity (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            event_type VARCHAR(40) NOT NULL,
+            description VARCHAR(255) NOT NULL,
+            subject VARCHAR(255),
+            duration_seconds INTEGER DEFAULT 0,
+            score_percent REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS rag_documents (
             id VARCHAR(255) PRIMARY KEY,
             user_id VARCHAR(64) NOT NULL,
@@ -280,6 +292,9 @@ def init_db():
         )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_workspace_documents_workspace ON workspace_documents(workspace_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_study_activity_user_created ON study_activity(user_id, created_at)"
         )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
@@ -356,6 +371,19 @@ def init_db():
             added_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             UNIQUE KEY uq_workspace_document (workspace_id, document_id),
             INDEX idx_workspace_documents_workspace (workspace_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS study_activity (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            event_type VARCHAR(40) NOT NULL,
+            description VARCHAR(255) NOT NULL,
+            subject VARCHAR(255),
+            duration_seconds INT DEFAULT 0,
+            score_percent DOUBLE NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_study_activity_user_created (user_id, created_at)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
         cursor.execute("""
@@ -441,6 +469,18 @@ def init_db():
         )
         """)
         cursor.execute("""
+        CREATE TABLE IF NOT EXISTS study_activity (
+            id TEXT PRIMARY KEY,
+            user_id TEXT NOT NULL,
+            event_type TEXT NOT NULL,
+            description TEXT NOT NULL,
+            subject TEXT,
+            duration_seconds INTEGER DEFAULT 0,
+            score_percent REAL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
         CREATE TABLE IF NOT EXISTS rag_documents (
             id TEXT PRIMARY KEY,
             user_id TEXT NOT NULL,
@@ -458,6 +498,9 @@ def init_db():
         )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_workspace_documents_workspace ON workspace_documents(workspace_id)"
+        )
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_study_activity_user_created ON study_activity(user_id, created_at)"
         )
         conn.commit()
         conn.close()

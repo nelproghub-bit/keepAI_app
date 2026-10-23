@@ -6,6 +6,7 @@ from app.core.security import get_optional_current_user
 from app.core.database import get_connection
 from app.services.document_service import extract_document_structured, split_text
 from app.services.rag_service import index_chunks, delete_file_chunks, get_user_document_stats
+from app.services.progress_service import record_activity
 
 router = APIRouter(tags=["Documents"])
 
@@ -141,6 +142,14 @@ async def upload_document(
             raise
         finally:
             conn.close()
+
+    if current_user:
+        record_activity(
+            current_user["id"],
+            "document_uploaded",
+            "Uploaded a study document",
+            fn,
+        )
     
     return {
         "message": "Document indexed successfully",

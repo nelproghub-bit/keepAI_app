@@ -4,6 +4,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
 from app.core.security import get_optional_current_user
 from app.core.database import get_connection
+from app.services.progress_service import record_activity
 
 router = APIRouter(tags=["Workspaces"])
 
@@ -72,6 +73,13 @@ def create_workspace(
             (ws_id, uid, req.name, req.description, req.color, req.icon)
         )
         conn.commit()
+        if current_user:
+            record_activity(
+                current_user["id"],
+                "workspace_created",
+                "Created a study workspace",
+                req.name,
+            )
         return {
             "id": ws_id,
             "name": req.name,

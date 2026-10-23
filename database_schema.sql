@@ -124,6 +124,20 @@ CREATE TABLE IF NOT EXISTS `workspace_documents` (
         REFERENCES `documents` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 7. Student Progress Activity
+CREATE TABLE IF NOT EXISTS `study_activity` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `event_type` VARCHAR(40) NOT NULL,
+    `description` VARCHAR(255) NOT NULL,
+    `subject` VARCHAR(255) NULL,
+    `duration_seconds` INT DEFAULT 0,
+    `score_percent` DOUBLE NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_study_activity_user_created` (`user_id`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Optional: Seed Default Workspace for Demo Student
 INSERT INTO `workspaces` (`id`, `user_id`, `name`, `description`, `color`, `icon`, `is_active`)
 VALUES (

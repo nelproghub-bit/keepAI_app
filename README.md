@@ -95,6 +95,8 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 
+Study progress is tied to the signed-in account and stored in the configured database. Active study time is estimated from visible-page interaction while signed in; quiz averages are calculated only from completed quizzes, and older accounts start building their activity history after this feature is deployed.
+
 ### AI-Powered Features
 - **Document Q&A** - Get answers grounded in your materials
 - **Intelligent Summarization** - Extract key concepts automatically
