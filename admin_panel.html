@@ -414,7 +414,7 @@
             <div class="status-box">
                 <div class="status-info">
                     <h3>Backend Server</h3>
-                    <p id="server-endpoint">http://127.0.0.1:8000</p>
+                    <p id="server-endpoint">Backend URL is configured automatically</p>
                 </div>
                 <div id="status-badge" class="status-badge offline">
                     <span class="status-dot offline"></span>
@@ -486,14 +486,15 @@
         </div>
     </div>
 
+    <script src="assets/js/config.js"></script>
     <script>
-        const API_HOST = window.location.hostname || '127.0.0.1';
-        const FASTAPI_BASE = `http://${API_HOST}:8000/api`;
+        const FASTAPI_BASE = window.API_BASE;
         let statusCheckInterval = null;
         let isOperating = false;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('server-endpoint').textContent = window.API_URL;
             addLog('System initialized and ready', 'info');
             checkStatus();
             // Auto check status every 5 seconds
@@ -616,7 +617,7 @@
 
                 if (isManual) {
                     if (isOnline) {
-                        addLog(`Status: ONLINE - ${data.message || 'Server is active on port 8000'}`, 'success');
+                        addLog(`Status: ONLINE - ${data.message || 'Server is active'}`, 'success');
                         showAlert('✓ Server is Online and Operational', 'success');
                     } else {
                         addLog('Status: OFFLINE - KeepAI server is not running', 'warning');

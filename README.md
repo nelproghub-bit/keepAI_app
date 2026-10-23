@@ -37,6 +37,10 @@ KeepAI now includes a **complete student portal** with registration, login, and 
    - **Admins**: Open `index.html` (system configuration)
    - Or use a local server like VS Code Live Server
 
+### Frontend API URL
+
+The frontend is served as static HTML, so it cannot read `VITE_API_URL` directly through Vite's `import.meta.env`. The shared frontend configuration reads `window.VITE_API_URL` when the hosting environment injects it before `assets/js/config.js` loads. Set it to the backend origin (for example, `https://api.example.com`, without `/api`). If the backend is available from the same origin through a reverse proxy, no override is needed.
+
 5. **For Students - Register:**
    - Click "Register Student" tab
    - Fill out the form (name, email, username, password)

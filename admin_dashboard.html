@@ -1812,9 +1812,9 @@ table.data-table tr:hover {
 <!-- =========================================================================
      CLIENT JAVASCRIPT
      ========================================================================= -->
+<script src="assets/js/config.js"></script>
 <script>
-const API_HOST = window.location.hostname || '127.0.0.1';
-const API_BASE = (window.location.port === '8000') ? '/api' : `http://${API_HOST}:8000/api`;
+const API_BASE = window.API_BASE;
 let currentAdminUser = null;
 let currentPlaygroundMode = 'tutor';
 let allStudentsCache = [];
@@ -1826,7 +1826,7 @@ async function parseJsonResponse(res, defaultError = 'Request failed.') {
     return await res.json();
   } catch (err) {
     if (!res.ok) {
-      throw new Error(`Server connection error (${res.status}). Make sure the KeepAI Python backend is running on port 8000.`);
+      throw new Error(`Server connection error (${res.status}). Make sure the KeepAI Python backend is running.`);
     }
     throw new Error(defaultError);
   }

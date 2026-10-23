@@ -2651,11 +2651,9 @@
     </div>
 
     <!-- ==================== CORE JAVASCRIPT ENGINE ==================== -->
+    <script src="assets/js/config.js"></script>
     <script>
-        // API Base URL Resolution (Safe from const re-declaration errors)
-        var API_HOST = window.location.hostname || '127.0.0.1';
-        var API_BASE = (typeof window.API_BASE !== 'undefined') ? window.API_BASE : `http://${API_HOST}:8000/api`;
-        window.API_BASE = API_BASE;
+        var API_BASE = window.API_BASE;
 
         // PWA Deferred Prompt Handler
         let deferredPwaPrompt = null;

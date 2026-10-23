@@ -950,9 +950,9 @@ body {
   </div>
 </div>
 
+<script src="assets/js/config.js"></script>
 <script>
-const API_HOST = window.location.hostname || '127.0.0.1';
-const API_BASE = `http://${API_HOST}:8000/api`;
+const API_BASE = window.API_BASE;
 const API_REQUEST_TIMEOUT_MS = 8000;
 
 async function fetchApi(path, options) {
@@ -1055,8 +1055,8 @@ async function handleSignIn(event) {
     showAlert(
       'signin-alert',
       error.name === 'AbortError'
-        ? `Login timed out. The backend at ${API_HOST}:8000 is not responding yet. Please try again.`
-        : `Cannot connect to the backend at ${API_HOST}:8000. Start the backend with start_backend.bat, then try again.`
+        ? 'Login timed out. The backend is not responding yet. Please try again.'
+        : 'Cannot connect to the backend. Make sure the backend is running, then try again.'
     );
   } finally {
     setButtonLoading('signin-btn', false);
@@ -1133,8 +1133,8 @@ async function handleRegister(event) {
     showAlert(
       'register-alert',
       error.name === 'AbortError'
-        ? `Registration timed out. The backend at ${API_HOST}:8000 is not responding yet. Please try again.`
-        : `Cannot connect to the backend at ${API_HOST}:8000. Start the backend with start_backend.bat, then try again.`
+        ? 'Registration timed out. The backend is not responding yet. Please try again.'
+        : 'Cannot connect to the backend. Make sure the backend is running, then try again.'
     );
   } finally {
     setButtonLoading('register-btn', false);
