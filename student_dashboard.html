@@ -542,6 +542,58 @@
             transform: translateY(-1px);
         }
 
+        .notification-button {
+            position: relative;
+            width: 38px;
+            height: 38px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            color: var(--text-body);
+            font-size: 16px;
+        }
+
+        .notification-button:hover { color: var(--primary); border-color: var(--primary-border); }
+
+        .notification-count {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 4px;
+            border-radius: 999px;
+            background: #dc2626;
+            color: white;
+            font-size: 10px;
+            font-weight: 800;
+            line-height: 18px;
+            text-align: center;
+        }
+
+        .announcement-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: min(60vh, 520px);
+            overflow-y: auto;
+        }
+
+        .announcement-card {
+            padding: 14px;
+            border: 1px solid var(--border);
+            border-left: 4px solid var(--primary);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+        }
+
+        .announcement-card.update { border-left-color: #d97706; }
+        .announcement-card.maintenance { border-left-color: #0284c7; }
+        .announcement-card.unread { background: var(--bg-subtle); }
+        .announcement-card h4 { color: var(--text-main); font-size: 14px; margin-bottom: 3px; }
+        .announcement-card p { color: var(--text-body); font-size: 13px; white-space: pre-wrap; }
+        .announcement-card time { color: var(--text-muted); font-size: 11px; }
+
         /* Profile Widget */
         .profile-btn {
             display: flex;
@@ -1866,6 +1918,10 @@
                 </div>
 
                 <div class="top-actions">
+                    <button class="notification-button" id="student-notification-button" type="button" onclick="openStudentAnnouncements()" aria-label="Open notifications">
+                        <i class="fas fa-bell" aria-hidden="true"></i>
+                        <span class="notification-count" id="student-notification-count" hidden>0</span>
+                    </button>
                     <!-- Install Web App Pill -->
                     <button class="btn-install-app" id="topbar-install-btn" onclick="openAppDownloadModal()">
                         <i class="fas fa-mobile-screen-button"></i>
@@ -2569,6 +2625,20 @@
         </div>
     </div>
 
+    <div class="modal-overlay" id="student-announcements-modal" onclick="handleAnnouncementsOverlayClick(event)">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="student-announcements-title">
+            <div class="modal-header">
+                <h3 id="student-announcements-title">App notifications</h3>
+                <button class="modal-close" type="button" onclick="closeStudentAnnouncements()" aria-label="Close notifications">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="announcement-list" id="student-announcements-list" aria-live="polite">
+                <p style="color: var(--text-muted);">Loading notifications…</p>
+            </div>
+        </div>
+    </div>
+
     <!-- App Download & PWA Install Modal -->
     <div class="modal-overlay" id="pwa-download-modal" onclick="handlePwaOverlayClick(event)">
         <div class="modal-content" style="max-width: 540px; padding: 0; overflow: hidden; border-radius: 20px;">
@@ -2639,6 +2709,9 @@
         let isDesktopSidebarCollapsed = false;
         let lastStudyInteractionAt = 0;
         let quizCompletionRecorded = false;
+        let announcementPollTimer = null;
+        let announcementHasLoaded = false;
+        let knownAnnouncementIds = new Set();
 
         // Flashcards state
         const sampleFlashcards = [
@@ -2657,6 +2730,12 @@
             initPWA();
             initNetworkListeners();
             initStorage();
+            loadStudentAnnouncements();
+            announcementPollTimer = setInterval(loadStudentAnnouncements, 60000);
+            window.addEventListener('online', loadStudentAnnouncements);
+            document.addEventListener('visibilitychange', () => {
+                if (!document.hidden) loadStudentAnnouncements();
+            });
             startStudyActivityTracking();
             initSidebarPreference();
             renderWorkspaces();
@@ -2700,6 +2779,140 @@
                 deferredPwaPrompt = null;
                 closeAppDownloadModal();
             });
+        }
+
+        async function loadStudentAnnouncements() {
+            const token = localStorage.getItem('access_token');
+            if (!token || !navigator.onLine) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/announcements`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) {
+                    throw new Error(`Could not load app notifications (${response.status}).`);
+                }
+
+                const data = await response.json();
+                const announcements = Array.isArray(data.announcements) ? data.announcements : [];
+                const count = document.getElementById('student-notification-count');
+                if (count) {
+                    count.textContent = data.unread_count > 99 ? '99+' : String(data.unread_count || 0);
+                    count.hidden = !data.unread_count;
+                }
+
+                if (announcementHasLoaded) {
+                    const newlyPublished = announcements.filter(item => !knownAnnouncementIds.has(item.id));
+                    if (newlyPublished.length) {
+                        showToast(
+                            newlyPublished[0].kind === 'update'
+                                ? 'The app creator posted an app update.'
+                                : 'You have a new app announcement.',
+                            'info'
+                        );
+                    }
+                }
+                knownAnnouncementIds = new Set(announcements.map(item => item.id));
+                announcementHasLoaded = true;
+
+                const modal = document.getElementById('student-announcements-modal');
+                if (modal && modal.classList.contains('show')) {
+                    renderStudentAnnouncements(announcements);
+                }
+            } catch (error) {
+                console.error('Failed to load app notifications:', error);
+            }
+        }
+
+        function renderStudentAnnouncements(announcements) {
+            const list = document.getElementById('student-announcements-list');
+            if (!list) return;
+            if (!announcements.length) {
+                list.innerHTML = '<p style="color: var(--text-muted);">There are no app announcements yet.</p>';
+                return;
+            }
+
+            list.innerHTML = announcements.map(item => {
+                const kindLabel = item.kind === 'update'
+                    ? 'App update'
+                    : item.kind === 'maintenance' ? 'Maintenance' : 'Announcement';
+                const date = item.created_at ? new Date(item.created_at).toLocaleString() : '';
+                return `
+                    <article class="announcement-card ${escapeHTML(item.kind)} ${item.is_read ? '' : 'unread'}">
+                        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
+                            <h4>${escapeHTML(item.title)}</h4>
+                            <span style="font-size:10px;font-weight:800;color:var(--primary);">${kindLabel}</span>
+                        </div>
+                        <p>${escapeHTML(item.message)}</p>
+                        <time>${escapeHTML(date)}</time>
+                        ${item.kind === 'update' ? `
+                            <button type="button" class="btn btn-primary btn-sm" style="display:block;margin-top:10px;" onclick="updateKeepAIApp()">
+                                <i class="fas fa-rotate"></i> Update app now
+                            </button>
+                        ` : ''}
+                    </article>
+                `;
+            }).join('');
+        }
+
+        async function openStudentAnnouncements() {
+            const modal = document.getElementById('student-announcements-modal');
+            const list = document.getElementById('student-announcements-list');
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                showToast('Sign in to view app notifications.', 'warning');
+                return;
+            }
+
+            modal.classList.add('show');
+            list.innerHTML = '<p style="color: var(--text-muted);">Loading notifications…</p>';
+            try {
+                const response = await fetch(`${API_BASE}/announcements`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error(`Could not load notifications (${response.status}).`);
+                const data = await response.json();
+                const announcements = Array.isArray(data.announcements) ? data.announcements : [];
+                renderStudentAnnouncements(announcements);
+
+                await Promise.all(announcements.filter(item => !item.is_read).map(async item => {
+                    const readResponse = await fetch(
+                        `${API_BASE}/announcements/${encodeURIComponent(item.id)}/read`,
+                        { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } }
+                    );
+                    if (!readResponse.ok) {
+                        throw new Error(`Could not mark "${item.title}" as read (${readResponse.status}).`);
+                    }
+                    item.is_read = true;
+                }));
+                renderStudentAnnouncements(announcements);
+                const count = document.getElementById('student-notification-count');
+                if (count) count.hidden = true;
+            } catch (error) {
+                console.error('Failed to open app notifications:', error);
+                list.innerHTML = '<p style="color: var(--danger, #dc2626);">Notifications could not be loaded. Please try again.</p>';
+            }
+        }
+
+        function closeStudentAnnouncements() {
+            document.getElementById('student-announcements-modal').classList.remove('show');
+        }
+
+        function handleAnnouncementsOverlayClick(event) {
+            if (event.target.id === 'student-announcements-modal') closeStudentAnnouncements();
+        }
+
+        async function updateKeepAIApp() {
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registration = await navigator.serviceWorker.getRegistration();
+                    if (registration) await registration.update();
+                }
+                window.location.reload();
+            } catch (error) {
+                console.error('Failed to refresh KeepAI:', error);
+                showToast('Could not refresh automatically. Please reload the page.', 'error');
+            }
         }
 
         function openAppDownloadModal() {

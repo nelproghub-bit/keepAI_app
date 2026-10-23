@@ -288,6 +288,26 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcements (
+            id VARCHAR(64) PRIMARY KEY,
+            title VARCHAR(200) NOT NULL,
+            message TEXT NOT NULL,
+            kind VARCHAR(20) NOT NULL DEFAULT 'info',
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_by VARCHAR(64) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_reads (
+            id VARCHAR(64) PRIMARY KEY,
+            announcement_id VARCHAR(64) NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+            user_id VARCHAR(64) NOT NULL,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (announcement_id, user_id)
+        )
+        """)
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_documents_user ON documents(user_id)"
         )
@@ -405,6 +425,28 @@ def init_db():
             INDEX idx_rag_documents_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcements (
+            id VARCHAR(64) PRIMARY KEY,
+            title VARCHAR(200) NOT NULL,
+            message TEXT NOT NULL,
+            kind VARCHAR(20) NOT NULL DEFAULT 'info',
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_by VARCHAR(64) NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_announcements_active (is_active, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_reads (
+            id VARCHAR(64) PRIMARY KEY,
+            announcement_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(64) NOT NULL,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY uq_announcement_user_read (announcement_id, user_id),
+            INDEX idx_announcement_reads_user (user_id)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
         conn.commit()
         conn.close()
         print(f"[KeepAI] Connected to MariaDB / MySQL database: '{DB_NAME}' at {DB_HOST}:{DB_PORT}")
@@ -502,6 +544,28 @@ def init_db():
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcements (
+            id TEXT PRIMARY KEY,
+            title TEXT NOT NULL,
+            message TEXT NOT NULL,
+            kind TEXT NOT NULL DEFAULT 'info',
+            is_active INTEGER NOT NULL DEFAULT 1,
+            created_by TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_reads (
+            id TEXT PRIMARY KEY,
+            announcement_id TEXT NOT NULL REFERENCES announcements(id) ON DELETE CASCADE,
+            user_id TEXT NOT NULL,
+            read_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE (announcement_id, user_id)
+        )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active, created_at)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcement_reads_user ON announcement_reads(user_id)")
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_rag_documents_user ON rag_documents(user_id)"
         )

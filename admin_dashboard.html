@@ -429,6 +429,26 @@ button { cursor: pointer; }
   flex-shrink: 0;
 }
 
+.announcement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.announcement-card {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+}
+
+.announcement-card.update { border-left-color: var(--amber); }
+.announcement-card.maintenance { border-left-color: var(--sky); }
+.announcement-card h3 { font-size: 14px; color: var(--text-main); margin-bottom: 3px; }
+.announcement-card p { color: var(--text-body); font-size: 13px; white-space: pre-wrap; }
+.announcement-card time { color: var(--text-muted); font-size: 11px; }
+
 .dash-sidebar-footer {
   padding-top: 16px;
   border-top: 1px solid rgba(255, 255, 255, 0.1);
@@ -1232,6 +1252,11 @@ table.data-table tr:hover {
         <span>Documents</span>
       </button>
 
+      <button class="nav-link" onclick="switchDashboardTab('announcements')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
+        <span>Announcements</span>
+      </button>
+
       <button class="nav-link" onclick="switchDashboardTab('playground')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span>AI Test Console</span>
@@ -1413,6 +1438,41 @@ table.data-table tr:hover {
       </div>
     </div>
 
+
+    <div id="section-announcements" class="content-section" style="display: none;">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>App Announcements</h1>
+          <p>Publish app updates, maintenance notices, and changes for every signed-in student.</p>
+        </div>
+        <button class="btn btn-secondary" type="button" onclick="loadAdminAnnouncements()">↻ Refresh</button>
+      </div>
+
+      <div class="dash-card" style="padding: 24px; margin-bottom: 20px;">
+        <h2 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Publish an announcement</h2>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 18px;">Students see new notices in the notification bell on their dashboard.</p>
+        <form id="announcement-create-form" onsubmit="createAdminAnnouncement(event)">
+          <label for="announcement-title" style="display:block;font-weight:700;margin-bottom:6px;">Title</label>
+          <input id="announcement-title" required minlength="3" maxlength="200" placeholder="e.g., New study tools are available" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px;">
+          <label for="announcement-kind" style="display:block;font-weight:700;margin-bottom:6px;">Notice type</label>
+          <select id="announcement-kind" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px;">
+            <option value="info">General announcement</option>
+            <option value="update">App update required</option>
+            <option value="maintenance">Maintenance notice</option>
+          </select>
+          <label for="announcement-message" style="display:block;font-weight:700;margin-bottom:6px;">Message</label>
+          <textarea id="announcement-message" required minlength="3" maxlength="5000" rows="4" placeholder="Describe what changed and what students should do." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);resize:vertical;margin-bottom:14px;"></textarea>
+          <button class="btn-purple" id="announcement-publish-button" type="submit">Publish to students</button>
+        </form>
+      </div>
+
+      <div class="dash-card" style="padding: 24px;">
+        <h2 style="font-size: 18px; font-weight: 800; margin-bottom: 16px;">Published announcements</h2>
+        <div id="admin-announcements-list" class="announcement-list" aria-live="polite">
+          <p style="color: var(--text-muted);">Open this tab to load announcements.</p>
+        </div>
+      </div>
+    </div>
 
     <!-- 3. DOCUMENTS MANAGEMENT SECTION -->
     <div id="section-documents" class="content-section" style="display: none;">
@@ -1999,6 +2059,7 @@ function enterDashboard(user) {
 
   // Load initial view
   loadDashboardStats();
+  loadAdminAnnouncements();
 }
 
 function openLogoutModal() {
@@ -2053,7 +2114,98 @@ function switchDashboardTab(tabId) {
   if (activeTabKey === 'overview') loadDashboardStats();
   if (activeTabKey === 'users') loadUsersList();
   if (activeTabKey === 'documents') loadDocumentsList();
+  if (activeTabKey === 'announcements') loadAdminAnnouncements();
   if (activeTabKey === 'system') loadSystemDiagnostics();
+}
+
+async function adminAnnouncementRequest(path, options = {}) {
+  const token = localStorage.getItem('admin_access_token');
+  if (!token) throw new Error('Your admin session has expired. Please sign in again.');
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.headers || {})
+    }
+  });
+  const data = await parseJsonResponse(response, 'Announcement request failed.');
+  if (!response.ok) throw new Error(data.detail || 'Announcement request failed.');
+  return data;
+}
+
+async function loadAdminAnnouncements() {
+  const list = document.getElementById('admin-announcements-list');
+  if (!list || !localStorage.getItem('admin_access_token')) return;
+  list.innerHTML = '<p style="color: var(--text-muted);">Loading announcements…</p>';
+  try {
+    const data = await adminAnnouncementRequest('/admin/announcements');
+    const announcements = Array.isArray(data.announcements) ? data.announcements : [];
+    if (!announcements.length) {
+      list.innerHTML = '<p style="color: var(--text-muted);">No announcements have been published yet.</p>';
+      return;
+    }
+    list.innerHTML = announcements.map(item => `
+      <article class="announcement-card ${escapeHtml(item.kind)}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+          <div>
+            <h3>${escapeHtml(item.title)}</h3>
+            <span style="font-size:10px;font-weight:800;color:var(--primary);text-transform:uppercase;">${escapeHtml(item.kind)}</span>
+          </div>
+          <button type="button" class="btn btn-secondary" style="color:var(--rose);padding:6px 10px;" onclick="deactivateAdminAnnouncement('${escapeHtml(item.id)}')">Remove</button>
+        </div>
+        <p style="margin-top:8px;">${escapeHtml(item.message)}</p>
+        <time>${escapeHtml(formatDate(item.created_at))}</time>
+      </article>
+    `).join('');
+  } catch (error) {
+    console.error('Failed to load announcements:', error);
+    list.innerHTML = `<p style="color:var(--rose);">${escapeHtml(error.message)}</p>`;
+  }
+}
+
+async function createAdminAnnouncement(event) {
+  event.preventDefault();
+  const titleInput = document.getElementById('announcement-title');
+  const messageInput = document.getElementById('announcement-message');
+  const kindInput = document.getElementById('announcement-kind');
+  const submit = document.getElementById('announcement-publish-button');
+  const title = titleInput.value.trim();
+  const message = messageInput.value.trim();
+  if (title.length < 3 || message.length < 3) {
+    showToast('Enter a title and message with at least 3 characters.', 'warning');
+    return;
+  }
+
+  submit.disabled = true;
+  try {
+    await adminAnnouncementRequest('/admin/announcements', {
+      method: 'POST',
+      body: JSON.stringify({ title, message, kind: kindInput.value })
+    });
+    document.getElementById('announcement-create-form').reset();
+    await loadAdminAnnouncements();
+    showToast('Announcement published to student dashboards.', 'success');
+  } catch (error) {
+    console.error('Failed to publish announcement:', error);
+    showToast(error.message, 'error');
+  } finally {
+    submit.disabled = false;
+  }
+}
+
+async function deactivateAdminAnnouncement(announcementId) {
+  if (!window.confirm('Remove this announcement from student dashboards?')) return;
+  try {
+    await adminAnnouncementRequest(`/admin/announcements/${encodeURIComponent(announcementId)}`, {
+      method: 'DELETE'
+    });
+    await loadAdminAnnouncements();
+    showToast('Announcement removed.', 'success');
+  } catch (error) {
+    console.error('Failed to remove announcement:', error);
+    showToast(error.message, 'error');
+  }
 }
 
 // -------------------------------------------------------------

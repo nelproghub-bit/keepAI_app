@@ -139,6 +139,29 @@ CREATE TABLE IF NOT EXISTS `study_activity` (
     KEY `idx_study_activity_user_created` (`user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- 8. Creator announcements shown in student dashboards
+CREATE TABLE IF NOT EXISTS `announcements` (
+    `id` VARCHAR(64) NOT NULL,
+    `title` VARCHAR(200) NOT NULL,
+    `message` TEXT NOT NULL,
+    `kind` VARCHAR(20) NOT NULL DEFAULT 'info',
+    `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+    `created_by` VARCHAR(64) NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_announcements_active` (`is_active`, `created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `announcement_reads` (
+    `id` VARCHAR(64) NOT NULL,
+    `announcement_id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `read_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_announcement_user_read` (`announcement_id`, `user_id`),
+    KEY `idx_announcement_reads_user` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Optional: Seed Default Workspace for Demo Student
 INSERT INTO `workspaces` (`id`, `user_id`, `name`, `description`, `color`, `icon`, `is_active`)
 VALUES (

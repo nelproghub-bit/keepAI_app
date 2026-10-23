@@ -84,6 +84,8 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🗂️ Workspace Organization** - Create workspaces with preset or custom course categories
 - **⚙️ Student Settings** - Customize AI tutor mode, theme, and preferences
 - **🎨 Personalization** - Automatically match professional icons to custom workspace categories
+- **📣 App Announcements** - Admins can publish update-required, maintenance, and general notices to student dashboards
+- Admin announcements are published from **Admin Dashboard → Announcements**; students receive a notification badge and the dashboard checks for new notices while open.
 - **📚 Document Collections** - Organize materials by course or subject
 - **🔒 Student-Only Access** - Focused interface without admin distractions
 
