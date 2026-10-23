@@ -1839,7 +1839,7 @@
                 </div>
                 <button class="pwa-sidebar-btn" id="pwa-sidebar-install" onclick="openAppDownloadModal()">
                     <i class="fas fa-mobile-screen-button"></i>
-                    <span>Get App / APK</span>
+                    <span>Install Web App</span>
                 </button>
             </div>
         </aside>
@@ -1866,10 +1866,10 @@
                 </div>
 
                 <div class="top-actions">
-                    <!-- Install App / APK Pill -->
+                    <!-- Install Web App Pill -->
                     <button class="btn-install-app" id="topbar-install-btn" onclick="openAppDownloadModal()">
                         <i class="fas fa-mobile-screen-button"></i>
-                        <span>Get App / APK</span>
+                        <span>Install Web App</span>
                     </button>
 
                     <!-- User Profile Button & Dropdown (Matches Screenshot exact Arnel Gubi C230170) -->
@@ -1894,7 +1894,7 @@
                                 <i class="fas fa-moon"></i> Toggle Dark Theme
                             </button>
                             <button class="dropdown-item" id="menu-install-pwa" onclick="openAppDownloadModal()">
-                                <i class="fas fa-mobile-screen-button"></i> Get App / APK
+                                <i class="fas fa-mobile-screen-button"></i> Install Web App
                             </button>
                             <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 4px 0;">
                             <button class="dropdown-item danger" onclick="logout()">
@@ -2579,31 +2579,13 @@
                 <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
                     <img src="assets/images/westmead-logo.png" alt="KeepAI" style="width: 100%; height: 100%; object-fit: contain;">
                 </div>
-                <h3 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: white;">Get KeepAI Mobile & Desktop App</h3>
-                <p style="font-size: 12.5px; opacity: 0.9; margin: 0; color: #f1f5f9;">Study anytime on your phone, tablet, or desktop with offline mode.</p>
+                <h3 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: white;">Install KeepAI</h3>
+                <p style="font-size: 12.5px; opacity: 0.9; margin: 0; color: #f1f5f9;">Add KeepAI to your home screen or desktop for quick access.</p>
             </div>
 
             <div style="padding: 22px;">
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px;" class="pwa-options-grid">
-                    <!-- Option 1: Android APK -->
-                    <div style="background: #fafafa; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center;">
-                        <div>
-                            <span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #d1fae5; color: #065f46; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;">
-                                <i class="fab fa-android"></i> Android APK
-                            </span>
-                            <div style="font-size: 36px; color: #059669; margin-bottom: 8px;">
-                                <i class="fab fa-android"></i>
-                            </div>
-                            <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--text-main);">Download APK</h4>
-                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0 0 12px;">Direct install on Android phones. Version 1.0 (~68 KB).</p>
-                        </div>
-                        <a href="downloads/KeepAI_v1.0.apk" download="KeepAI_v1.0.apk" class="btn btn-primary" style="background: #059669; border-color: #059669; text-decoration: none; padding: 9px 12px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
-                            <i class="fas fa-download"></i> Download APK
-                        </a>
-                    </div>
-
-                    <!-- Option 2: Progressive Web App -->
-                    <div style="background: #fafafa; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center;">
+                <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 18px;" class="pwa-options-grid">
+                    <div style="background: #fafafa; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; max-width: 360px; width: 100%; margin: 0 auto;">
                         <div>
                             <span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;">
                                 <i class="fas fa-bolt"></i> Instant Web App
@@ -2623,7 +2605,7 @@
                 <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
                     <strong style="color: var(--text-main);"><i class="fas fa-info-circle" style="color: var(--primary);"></i> Install Tips:</strong>
                     <ul style="padding-left: 18px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px;">
-                        <li><strong>Android:</strong> Tap "Download APK". If prompted with <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong>, then tap Open to install.</li>
+                        <li><strong>Android Chrome / Edge:</strong> Use the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home screen"</strong>.</li>
                         <li><strong>iOS Safari:</strong> Tap Share (<i class="fas fa-share-square"></i>), then tap <strong>"Add to Home Screen"</strong>.</li>
                         <li><strong>PC / Chrome / Edge:</strong> Click <strong>"Install Web App"</strong> or the install icon in the address bar.</li>
                     </ul>

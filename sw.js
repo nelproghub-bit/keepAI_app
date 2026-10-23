@@ -43,11 +43,10 @@ self.addEventListener('fetch', event => {
   const req = event.request;
   const url = new URL(req.url);
 
-  // Never cache backend API calls, APK downloads, or non-GET requests
+  // Never cache backend API calls, runtime config, or non-GET requests
   if (
     url.pathname.includes('/api/')
     || url.pathname.endsWith('/assets/js/config.js')
-    || url.pathname.endsWith('.apk')
     || req.method !== 'GET'
   ) {
     return;

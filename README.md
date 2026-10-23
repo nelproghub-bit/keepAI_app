@@ -49,7 +49,7 @@ The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs
 `requirements.txt` pins backend dependencies and includes the PostgreSQL driver. Local development continues to use SQLite by default; hosted PostgreSQL is selected with `DB_TYPE=postgres` and `DATABASE_URL`.
 Accounts previously written to the Render free service's temporary SQLite file are not automatically migrated. Users may need to register again once after PostgreSQL is connected.
 
-The downloadable APK currently bundles an older copy of the frontend that still targets a hostname on port 8000. This repository has no Android project or signing configuration, so the APK must be rebuilt from its original Android source with the new production API URL before redistribution.
+KeepAI is distributed as a web app that can be installed from a supported browser.
 
 Local database and document files under `data/` are ignored and no longer tracked in the current Git tree; local copies remain on disk. Earlier commits still contain those files, so sanitize Git history if this repository is public or those files contained private data.
 

@@ -986,7 +986,7 @@ table.data-table tr:hover {
 /* PWA Options Grid & Download Styles */
 .pwa-options-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 18px;
 }
@@ -1019,11 +1019,6 @@ table.data-table tr:hover {
   padding: 3px 8px;
   border-radius: 999px;
   margin-bottom: 8px;
-}
-
-.pwa-badge.apk {
-  background: #d1fae5;
-  color: #065f46;
 }
 
 .pwa-badge.pwa {
@@ -1151,7 +1146,7 @@ table.data-table tr:hover {
             </button>
             <p class="auth-desc" style="margin-top: 14px; text-align: center; font-size: 12px;">
               <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary); font-weight: 600; text-decoration: none;">
-                📱 Get KeepAI Mobile & Desktop App / Download APK
+                📱 Install KeepAI Web App
               </a>
             </p>
           </form>
@@ -1253,10 +1248,9 @@ table.data-table tr:hover {
         <span>Admin Panel</span>
       </a>
 
-      <button class="nav-link" onclick="openAppDownloadModal()" style="background: rgba(16, 185, 129, 0.12); color: #34d399; margin-top: 10px;">
+      <button class="nav-link" onclick="openAppDownloadModal()" style="margin-top: 10px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        <span>Get App / APK</span>
-        <span style="background: #059669; color: white; font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; margin-left: auto;">APK</span>
+        <span>Install Web App</span>
       </button>
     </nav>
 
@@ -1750,7 +1744,7 @@ table.data-table tr:hover {
   </div>
 </div>
 
-<!-- APP DOWNLOAD & PWA INSTALL MODAL -->
+<!-- WEB APP INSTALL MODAL -->
 <div id="pwa-download-modal" class="modal-overlay" onclick="handlePwaOverlayClick(event)">
   <div class="modal-card" style="max-width: 530px; padding: 0; overflow: hidden; border-radius: 20px;">
     <div style="background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
@@ -1760,28 +1754,13 @@ table.data-table tr:hover {
       <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
         <img src="assets/images/westmead-logo.png" alt="KeepAI" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
-      <div class="modal-title" style="color: white; margin-bottom: 4px; font-size: 20px;">Get KeepAI Mobile & Desktop App</div>
-      <div class="modal-desc" style="color: #f1f5f9; margin-bottom: 0; font-size: 12.5px;">Install as Progressive Web App or download the Android APK directly.</div>
+      <div class="modal-title" style="color: white; margin-bottom: 4px; font-size: 20px;">Install KeepAI Web App</div>
+      <div class="modal-desc" style="color: #f1f5f9; margin-bottom: 0; font-size: 12.5px;">Add KeepAI to your home screen or desktop for quick access.</div>
     </div>
 
     <div style="padding: 22px;">
       <div class="pwa-options-grid">
-        <!-- Option 1: Android APK -->
-        <div class="pwa-option-card">
-          <div>
-            <span class="pwa-badge apk">Android APK</span>
-            <div style="font-size: 36px; color: #059669; margin-bottom: 8px;">
-              <svg viewBox="0 0 24 24" fill="currentColor" style="width: 40px; height: 40px; display: inline-block;"><path d="M17.523 15.3414c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.551 0 .9996.4482.9996.9993.0001.5511-.4486.9997-.9996.9997m-11.046 0c-.5511 0-.9993-.4486-.9993-.9997s.4482-.9993.9993-.9993c.5511 0 .9993.4482.9993.9993 0 .5511-.4482.9997-.9993.9997m11.4045-6.02l1.9973-3.4592a.416.416 0 00-.1521-.5676.416.416 0 00-.5676.1521l-2.0223 3.503C15.5902 8.4116 13.8533 8.082 12 8.082s-3.5902.3296-5.1368.8677L4.8409 5.4467a.4161.4161 0 00-.5677-.1521.4157.4157 0 00-.1521.5676l1.9973 3.4592C2.6889 11.1867.3432 14.6589 0 18.761h24c-.3432-4.1021-2.6889-7.5743-6.1185-9.4396"/></svg>
-            </div>
-            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Download APK</div>
-            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">Direct install on Android phones. Version 1.0 (~68 KB).</div>
-          </div>
-          <a href="downloads/KeepAI_v1.0.apk" download="KeepAI_v1.0.apk" class="btn" style="background: #059669; color: white; padding: 9px 12px; font-size: 13px; font-weight: 600; text-decoration: none; border-radius: var(--radius-sm); width: 100%;">
-            Download APK
-          </a>
-        </div>
-
-        <!-- Option 2: PWA Install -->
+        <!-- PWA Install -->
         <div class="pwa-option-card">
           <div>
             <span class="pwa-badge pwa">Web App</span>
@@ -1800,7 +1779,7 @@ table.data-table tr:hover {
       <div class="pwa-tips-box">
         <strong style="color: var(--text-main); display: block; margin-bottom: 4px;">Installation Tips:</strong>
         <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
-          <li><strong>Android:</strong> Tap "Download APK". If prompted with <em>"File might be harmful"</em>, tap <strong>"Download anyway"</strong>, then tap Open to install.</li>
+          <li><strong>Android (Chrome / Edge):</strong> Open the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</li>
           <li><strong>iOS Safari:</strong> Tap Share icon, then tap <strong>"Add to Home Screen"</strong>.</li>
           <li><strong>PC / Mac / Chrome:</strong> Click <strong>"Install Web App"</strong> or the install icon in the URL bar.</li>
         </ul>
@@ -2653,7 +2632,7 @@ function closeInfoModal() {
 }
 
 // -------------------------------------------------------------
-// PWA & Android APK Download Handlers
+// PWA Install Handlers
 // -------------------------------------------------------------
 let deferredPwaPrompt = null;
 

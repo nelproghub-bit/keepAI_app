@@ -76,10 +76,6 @@ assets_dir = os.path.join(BASE_DIR, "assets")
 if os.path.exists(assets_dir):
     app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-downloads_dir = os.path.join(BASE_DIR, "downloads")
-if os.path.exists(downloads_dir):
-    app.mount("/downloads", StaticFiles(directory=downloads_dir), name="downloads")
-
 @app.get("/manifest.json")
 def get_manifest():
     manifest_path = os.path.join(BASE_DIR, "manifest.json")
@@ -93,19 +89,6 @@ def get_sw():
     if os.path.exists(sw_path):
         return FileResponse(sw_path, media_type="application/javascript")
     return {"error": "service worker not found"}
-
-@app.get("/download/apk")
-@app.get("/downloads/keepai.apk")
-@app.get("/downloads/KeepAI_v1.0.apk")
-def download_apk():
-    apk_path = os.path.join(BASE_DIR, "downloads", "KeepAI_v1.0.apk")
-    if os.path.exists(apk_path):
-        return FileResponse(
-            apk_path,
-            media_type="application/vnd.android.package-archive",
-            filename="KeepAI_v1.0.apk"
-        )
-    return {"error": "APK not found"}
 
 @app.on_event("startup")
 async def startup_event():

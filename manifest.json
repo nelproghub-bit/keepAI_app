@@ -61,13 +61,6 @@
       "description": "Administrator control panel and user management",
       "url": "admin_dashboard.html",
       "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
-    },
-    {
-      "name": "Download Android App",
-      "short_name": "Download APK",
-      "description": "Direct download KeepAI Android APK (.apk)",
-      "url": "downloads/KeepAI_v1.0.apk",
-      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
     }
   ]
 }
