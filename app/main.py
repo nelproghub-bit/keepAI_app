@@ -47,16 +47,28 @@ def deployment_health():
     return {"status": "ok"}
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DIST_DIR = os.path.join(BASE_DIR, "dist")
+FRONTEND_DIR = DIST_DIR if os.path.isdir(DIST_DIR) else BASE_DIR
 
 @app.get("/assets/js/config.js", response_class=PlainTextResponse)
 def frontend_config():
+    built_config_path = os.path.join(FRONTEND_DIR, "assets", "js", "config.js")
+    if FRONTEND_DIR != BASE_DIR and os.path.isfile(built_config_path):
+        return FileResponse(
+            built_config_path,
+            media_type="application/javascript",
+            headers={"Cache-Control": "no-store"},
+        )
+
     api_base_url = os.getenv("VITE_API_URL", "").strip().rstrip("/")
     if not api_base_url:
         config_path = os.path.join(BASE_DIR, "assets", "js", "config.js")
         return FileResponse(config_path, media_type="application/javascript")
 
+    app_version = os.getenv("VERCEL_GIT_COMMIT_SHA", "local")[:12]
     config = (
         f"const API_BASE_URL = {json.dumps(api_base_url)};\n"
+        f"window.APP_VERSION = {json.dumps(app_version)};\n"
         "window.API_BASE_URL = API_BASE_URL;\n"
         "window.API_URL = API_BASE_URL;\n"
         "window.API_BASE = `${API_BASE_URL}/api`;\n"
@@ -73,20 +85,20 @@ icons_dir = os.path.join(BASE_DIR, "icons")
 if os.path.exists(icons_dir):
     app.mount("/icons", StaticFiles(directory=icons_dir), name="icons")
 
-assets_dir = os.path.join(BASE_DIR, "assets")
-if os.path.exists(assets_dir):
-    app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+frontend_assets_dir = os.path.join(FRONTEND_DIR, "assets")
+if os.path.exists(frontend_assets_dir):
+    app.mount("/assets", StaticFiles(directory=frontend_assets_dir), name="assets")
 
 @app.get("/manifest.json")
 def get_manifest():
-    manifest_path = os.path.join(BASE_DIR, "manifest.json")
+    manifest_path = os.path.join(FRONTEND_DIR, "manifest.json")
     if os.path.exists(manifest_path):
         return FileResponse(manifest_path, media_type="application/manifest+json")
     return {"error": "manifest not found"}
 
 @app.get("/sw.js")
 def get_sw():
-    sw_path = os.path.join(BASE_DIR, "sw.js")
+    sw_path = os.path.join(FRONTEND_DIR, "sw.js")
     if os.path.exists(sw_path):
         return FileResponse(sw_path, media_type="application/javascript")
     return {"error": "service worker not found"}
@@ -101,7 +113,7 @@ async def startup_event():
 
 @app.get("/")
 def root():
-    student_path = os.path.join(BASE_DIR, "student_login.html")
+    student_path = os.path.join(FRONTEND_DIR, "student_login.html")
     if os.path.exists(student_path):
         return FileResponse(student_path)
     return {
@@ -112,7 +124,7 @@ def root():
 @app.get("/admin")
 @app.get("/admin_dashboard.html")
 def admin_page():
-    admin_path = os.path.join(BASE_DIR, "admin_dashboard.html")
+    admin_path = os.path.join(FRONTEND_DIR, "admin_dashboard.html")
     if os.path.exists(admin_path):
         return FileResponse(admin_path)
     return {"error": "admin_dashboard.html not found"}
@@ -122,14 +134,14 @@ def admin_page():
 @app.get("/student_login.html")
 @app.get("/student_portal.html")
 def student_login_page():
-    student_path = os.path.join(BASE_DIR, "student_login.html")
+    student_path = os.path.join(FRONTEND_DIR, "student_login.html")
     if os.path.exists(student_path):
         return FileResponse(student_path)
     return {"error": "student_login.html not found"}
 
 @app.get("/student_dashboard.html")
 def student_dashboard_page():
-    dashboard_path = os.path.join(BASE_DIR, "student_dashboard.html")
+    dashboard_path = os.path.join(FRONTEND_DIR, "student_dashboard.html")
     if os.path.exists(dashboard_path):
         return FileResponse(dashboard_path)
     return {"error": "student_dashboard.html not found"}
