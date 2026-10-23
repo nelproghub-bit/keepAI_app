@@ -1135,6 +1135,20 @@
             box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
         }
 
+        .chat-input input::placeholder {
+            color: var(--text-muted);
+            opacity: 1;
+        }
+
+        body.dark-mode .chat-input input:focus,
+        body.dark-mode .form-field input:focus,
+        body.dark-mode .form-field select:focus,
+        body.dark-mode .form-field textarea:focus {
+            background: var(--bg-subtle);
+            color: var(--text-main);
+            caret-color: var(--text-main);
+        }
+
         /* Tool Cards */
         .tool-card {
             background: var(--bg-surface);
