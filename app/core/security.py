@@ -143,6 +143,17 @@ def get_optional_current_user(
         
     return get_user_by_id(payload["sub"])
 
+def get_current_student_user(
+    current_user: Dict[str, Any] = Depends(get_current_user)
+) -> Dict[str, Any]:
+    """Require an authenticated student account for student-owned resources."""
+    if current_user.get("role") != "student":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student account required.",
+        )
+    return current_user
+
 def get_current_admin_user(
     current_user: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:

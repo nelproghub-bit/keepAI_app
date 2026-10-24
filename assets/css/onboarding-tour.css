@@ -1,0 +1,245 @@
+.keepai-tour-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.62);
+  backdrop-filter: blur(4px);
+}
+
+.keepai-tour-dialog {
+  width: min(100%, 520px);
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  border-radius: 22px;
+  background: #fff;
+  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.35);
+  color: #0f172a;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.keepai-tour-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 26px 20px;
+  background: linear-gradient(135deg, #fff8f8, #fff);
+}
+
+.keepai-tour-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.keepai-tour-mark {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  place-items: center;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #7d1d1d, #a52a2a);
+  color: white;
+  font-size: 20px;
+  font-weight: 800;
+  box-shadow: 0 6px 16px rgba(125, 29, 29, 0.22);
+}
+
+.keepai-tour-eyebrow {
+  margin: 0 0 2px;
+  color: #7d1d1d;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.keepai-tour-counter {
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.keepai-tour-progress {
+  height: 4px;
+  background: #f1e5e5;
+}
+
+.keepai-tour-progress span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, #7d1d1d, #c44b4b);
+  transition: width 180ms ease;
+}
+
+.keepai-tour-content {
+  padding: 26px 28px 24px;
+}
+
+.keepai-tour-content h2 {
+  margin: 0 0 10px;
+  color: #111827;
+  font-size: clamp(22px, 5vw, 28px);
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1.2;
+}
+
+.keepai-tour-content p {
+  margin: 0;
+  color: #475569;
+  font-size: 15px;
+  line-height: 1.7;
+}
+
+.keepai-tour-tip {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+  padding: 13px 15px;
+  border: 1px solid #f2d5d5;
+  border-radius: 12px;
+  background: #fff8f8;
+  color: #6b2525;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.keepai-tour-tip-icon {
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+
+.keepai-tour-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 24px 20px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.keepai-tour-actions {
+  display: flex;
+  gap: 9px;
+}
+
+.keepai-tour-button {
+  min-height: 40px;
+  padding: 0 15px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #334155;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+}
+
+.keepai-tour-button:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+}
+
+.keepai-tour-button:active {
+  transform: translateY(1px);
+}
+
+.keepai-tour-button:focus-visible,
+.keepai-tour-replay:focus-visible {
+  outline: 3px solid rgba(125, 29, 29, 0.32);
+  outline-offset: 2px;
+}
+
+.keepai-tour-button-primary {
+  border-color: #7d1d1d;
+  background: #7d1d1d;
+  color: #fff;
+}
+
+.keepai-tour-button-primary:hover {
+  border-color: #651818;
+  background: #651818;
+}
+
+.keepai-tour-button-quiet {
+  border-color: transparent;
+  color: #64748b;
+}
+
+.keepai-tour-replay {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 9998;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  border-radius: 999px;
+  background: #7d1d1d;
+  box-shadow: 0 8px 24px rgba(125, 29, 29, 0.25);
+  color: #fff;
+  font: 700 13px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  cursor: pointer;
+}
+
+.keepai-tour-highlight {
+  position: relative !important;
+  z-index: 10002 !important;
+  outline: 3px solid #fbbf24 !important;
+  outline-offset: 3px !important;
+  border-radius: 10px !important;
+  box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.2) !important;
+}
+
+@media (max-width: 520px) {
+  .keepai-tour-backdrop {
+    align-items: end;
+    padding: 12px;
+  }
+
+  .keepai-tour-dialog {
+    border-radius: 18px;
+  }
+
+  .keepai-tour-header {
+    padding: 20px 20px 16px;
+  }
+
+  .keepai-tour-content {
+    padding: 22px 20px;
+  }
+
+  .keepai-tour-footer {
+    align-items: stretch;
+    padding: 14px 16px 16px;
+  }
+
+  .keepai-tour-footer > .keepai-tour-button {
+    padding: 0 8px;
+  }
+
+  .keepai-tour-actions {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .keepai-tour-replay {
+    right: 14px;
+    bottom: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .keepai-tour-progress span,
+  .keepai-tour-button {
+    transition: none;
+  }
+}

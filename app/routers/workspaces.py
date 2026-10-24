@@ -2,7 +2,7 @@ import uuid
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from app.core.security import get_current_user
+from app.core.security import get_current_student_user
 from app.core.database import get_connection
 from app.services.progress_service import record_activity
 
@@ -17,7 +17,7 @@ class WorkspaceCreateRequest(BaseModel):
 
 @router.get("/workspaces")
 def list_workspaces(
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """List workspaces for the current student from the database"""
     uid = current_user["id"]
@@ -58,7 +58,7 @@ def list_workspaces(
 @router.post("/workspaces")
 def create_workspace(
     req: WorkspaceCreateRequest,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Create a new workspace in the database"""
     uid = current_user["id"]
@@ -97,7 +97,7 @@ def create_workspace(
 def add_document_to_workspace(
     workspace_id: str,
     document_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Link an existing student document to a workspace exactly once."""
     uid = current_user["id"]
@@ -133,7 +133,7 @@ def add_document_to_workspace(
 @router.delete("/workspaces/{workspace_id}")
 def delete_workspace(
     workspace_id: str,
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Delete a workspace from the database"""
     uid = current_user["id"]

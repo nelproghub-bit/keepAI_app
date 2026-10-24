@@ -1,12 +1,11 @@
 import json
 import re
 import random
-import glob
-import os
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel, Field
-from app.core.security import get_optional_current_user
+from app.core.security import get_current_student_user
+from app.core.database import get_connection
 from app.services.user_service import user_service
 from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context, _load_user_documents, _load_user_files_meta
@@ -15,7 +14,6 @@ from app.services.gemini_service import generate
 router = APIRouter(tags=["Learning Tools"])
 
 class LessonRequest(BaseModel):
-    user_id: Optional[str] = "student_arnel"
     topic: str = Field(default="Quiz", max_length=500)
     document_name: Optional[str] = None
     question_count: Optional[int] = Field(default=5, ge=1, le=100)
@@ -37,65 +35,45 @@ def requested_question_count(topic: str) -> Optional[int]:
     return None
 
 class FlashcardRequest(BaseModel):
-    user_id: Optional[str] = "student_arnel"
     topic: str = Field(default="Flashcards", max_length=500)
     document_name: Optional[str] = None
     card_count: Optional[int] = Field(default=10, ge=1, le=100)
     card_type: Optional[str] = Field(default="term-definition")  # term-definition | question-answer | concept-example | fill-blank
 
 def get_all_document_chunks(target_filename: Optional[str] = None, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Retrieve all chunks matching target_filename across active user and all stored users"""
-    chunks: List[Dict[str, Any]] = []
-    
-    # 1. Search specified user
-    if user_id:
-        docs = _load_user_documents(user_id)
-        if docs:
-            for d in docs:
-                if not target_filename or d.get("filename", "").lower() == target_filename.lower():
-                    chunks.append(d)
-            if chunks:
-                return chunks
+    """Retrieve chunks only from the supplied owner's isolated document store."""
+    if not user_id:
+        return []
+    documents = _load_user_documents(user_id)
+    if target_filename:
+        documents = [
+            document for document in documents
+            if document.get("filename", "").lower() == target_filename.lower()
+        ]
+    return documents
 
-    # 2. Search fallback default users
-    for alt_uid in ["student_arnel", "system_knowledge", "student_demo"]:
-        if alt_uid == user_id:
-            continue
-        docs = _load_user_documents(alt_uid)
-        if docs:
-            for d in docs:
-                if not target_filename or d.get("filename", "").lower() == target_filename.lower():
-                    chunks.append(d)
-            if chunks:
-                return chunks
-
-    # 3. Search all data/user_*_docs.json across all known app data folders
-    data_dirs = [
-        "data",
-        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data"),
-        r"C:\xampp\htdocs\keepAI_app\data",
-        r"C:\repository\Gubi\keepAI_app\data"
-    ]
-    seen_dirs = set()
-    for ddir in data_dirs:
-        norm = os.path.normpath(ddir)
-        if norm in seen_dirs or not os.path.exists(norm):
-            continue
-        seen_dirs.add(norm)
-        for fpath in glob.glob(os.path.join(norm, "user_*_docs.json")):
-            try:
-                with open(fpath, "r", encoding="utf-8", errors="ignore") as f:
-                    items = json.load(f)
-                    if isinstance(items, list):
-                        for d in items:
-                            if not target_filename or d.get("filename", "").lower() == target_filename.lower():
-                                chunks.append(d)
-                        if chunks:
-                            return chunks
-            except Exception:
-                pass
-
-    return chunks
+def get_owned_document_name(user_id: str, document_name: Optional[str]) -> Optional[str]:
+    """Resolve an optional selected filename to a document owned by this student."""
+    if not document_name:
+        return None
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            SELECT filename FROM documents
+            WHERE user_id = ? AND LOWER(filename) = LOWER(?)
+            ORDER BY created_at DESC
+            LIMIT 1
+            """,
+            (user_id, document_name),
+        )
+        row = cursor.fetchone()
+    finally:
+        conn.close()
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return row["filename"]
 
 def get_lesson_context(user_id: str, topic: str, target_filename: Optional[str] = None) -> tuple[str, list[str]]:
     # If a specific document is requested, prioritize loading that exact document!
@@ -108,12 +86,6 @@ def get_lesson_context(user_id: str, topic: str, target_filename: Optional[str] 
     ctx = get_tutor_context(user_id, topic, target_filename=target_filename)
     if ctx and ctx.get("has_materials"):
         return ctx["context"], ctx["sources"]
-        
-    for alt_uid in ["student_arnel", "system_knowledge", "student_demo"]:
-        if alt_uid != user_id:
-            alt_ctx = get_tutor_context(alt_uid, topic, target_filename=target_filename)
-            if alt_ctx and alt_ctx.get("has_materials"):
-                return alt_ctx["context"], alt_ctx["sources"]
 
     if not ctx or not ctx.get("has_materials"):
         raise HTTPException(404, "No lesson content found. Please upload a PDF or document in the Library first.")
@@ -339,16 +311,13 @@ def synthesize_questions_from_document(
 @router.post("/learning/summary")
 def create_summary(
     request: LessonRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
-    uid = (current_user.get("id") if isinstance(current_user, dict) else None) or request.user_id or "student_arnel"
-    context, sources = get_lesson_context(uid, request.topic, target_filename=request.document_name)
+    uid = current_user["id"]
+    document_name = get_owned_document_name(uid, request.document_name)
+    context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
     
-    if current_user and isinstance(current_user, dict) and "id" in current_user:
-        try:
-            user_service.increment_stat(current_user["id"], "summaries_generated", 1)
-        except Exception:
-            pass
+    user_service.increment_stat(current_user["id"], "summaries_generated", 1)
 
     result = generate(
         f"Summarize the following lesson about {request.topic} using simple, clear, and easy-to-understand words. "
@@ -356,21 +325,21 @@ def create_summary(
         f"unsupported facts.\n\nLESSON:\n{context}",
         system="You are KeepAI, a helpful study assistant. Explain concepts in simple, clear, everyday words."
     )
-    if current_user:
-        record_activity(
-            current_user["id"],
-            "summary_generated",
-            "Generated a lesson summary",
-            request.document_name or request.topic,
-        )
+    record_activity(
+        current_user["id"],
+        "summary_generated",
+        "Generated a lesson summary",
+        document_name or request.topic,
+    )
     return {"summary": result, "sources": sources}
 
 @router.post("/learning/quiz")
 def create_quiz(
     request: LessonRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
-    uid = (current_user.get("id") if isinstance(current_user, dict) else None) or request.user_id or "student_arnel"
+    uid = current_user["id"]
+    document_name = get_owned_document_name(uid, request.document_name)
     
     # 1. Parse requested question count (from question_count field or from topic text like '100 quiz')
     num_questions = request.question_count or 5
@@ -380,13 +349,9 @@ def create_quiz(
     num_questions = max(1, min(100, num_questions))
 
     # 2. Extract lesson context for the specified document
-    context, sources = get_lesson_context(uid, request.topic, target_filename=request.document_name)
+    context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
     
-    if current_user and isinstance(current_user, dict) and "id" in current_user:
-        try:
-            user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
-        except Exception:
-            pass
+    user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
 
     parsed_questions: List[Dict[str, Any]] = []
 
@@ -428,7 +393,7 @@ def create_quiz(
         target_count=num_questions,
         existing_questions=parsed_questions,
         topic=request.topic,
-        document_name=request.document_name or (sources[0] if sources else None)
+        document_name=document_name or (sources[0] if sources else None)
     )
 
     if current_user:
@@ -436,11 +401,11 @@ def create_quiz(
             current_user["id"],
             "quiz_generated",
             "Generated a practice quiz",
-            request.document_name or request.topic,
+            document_name or request.topic,
         )
     return {
         "topic": request.topic,
-        "document_name": request.document_name or (sources[0] if sources else "Uploaded Document"),
+        "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "total_questions": len(final_questions),
         "questions": final_questions,
         "sources": sources
@@ -635,17 +600,18 @@ def synthesize_flashcards_from_document(
 @router.post("/learning/flashcards")
 def create_flashcards(
     request: FlashcardRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Generate AI-powered flashcards from an uploaded lesson document."""
-    uid = (current_user.get("id") if isinstance(current_user, dict) else None) or request.user_id or "student_arnel"
+    uid = current_user["id"]
+    document_name = get_owned_document_name(uid, request.document_name)
     card_count = max(1, min(100, request.card_count or 10))
     card_type = request.card_type or "term-definition"
 
-    context, sources = get_lesson_context(uid, request.topic, target_filename=request.document_name)
+    context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
 
     # Load all raw chunks of target document for comprehensive synthesis
-    all_chunks = get_all_document_chunks(request.document_name, uid)
+    all_chunks = get_all_document_chunks(document_name, uid)
     full_doc_text = "\n\n".join(c.get("text", "") for c in all_chunks) if all_chunks else context
 
     # Choose prompt template by card type (default to term-definition)
@@ -694,19 +660,15 @@ def create_flashcards(
         target_count=card_count,
         card_type=card_type,
         existing_cards=parsed_cards,
-        document_name=request.document_name or (sources[0] if sources else None)
+        document_name=document_name or (sources[0] if sources else None)
     )
 
     # Track usage stats
-    if current_user and isinstance(current_user, dict) and "id" in current_user:
-        try:
-            user_service.increment_stat(current_user["id"], "flashcards_studied", len(final_cards))
-        except Exception:
-            pass
+    user_service.increment_stat(current_user["id"], "flashcards_studied", len(final_cards))
 
     return {
         "topic": request.topic,
-        "document_name": request.document_name or (sources[0] if sources else "Uploaded Document"),
+        "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "card_type": card_type,
         "total_cards": len(final_cards),
         "cards": final_cards,

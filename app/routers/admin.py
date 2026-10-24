@@ -11,8 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.security import (
     create_access_token,
-    get_current_admin_user,
-    get_optional_current_user
+    get_current_admin_user
 )
 from app.core.database import get_connection
 from app.core.config import GEMINI_MODEL, GEMINI_API_KEY
@@ -143,7 +142,7 @@ def login_admin(request: AdminLoginRequest):
 # Admin Statistics & Overview
 # -------------------------------------------------------------
 @router.get("/stats")
-def get_admin_dashboard_stats():
+def get_admin_dashboard_stats(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """
     Fetch comprehensive administrative metrics: student counts, documents, study activity.
     """
@@ -204,7 +203,7 @@ def get_admin_dashboard_stats():
 # User Management (Real MariaDB/MySQL Database Connection)
 # -------------------------------------------------------------
 @router.get("/users")
-def get_all_users():
+def get_all_users(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """
     Fetch all real user accounts (students and admins) from MariaDB database.
     """
@@ -237,7 +236,10 @@ def get_all_users():
         conn.close()
 
 @router.post("/users", status_code=status.HTTP_201_CREATED)
-def create_new_user(request: CreateUserRequest):
+def create_new_user(
+    request: CreateUserRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Add a new user directly into the real MariaDB database.
     """
@@ -287,7 +289,11 @@ def create_new_user(request: CreateUserRequest):
         conn.close()
 
 @router.put("/users/{user_id}")
-def update_user_info(user_id: str, request: UpdateUserRequest):
+def update_user_info(
+    user_id: str,
+    request: UpdateUserRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Update user information in the real MariaDB database.
     """
@@ -328,7 +334,11 @@ def update_user_info(user_id: str, request: UpdateUserRequest):
         conn.close()
 
 @router.post("/users/{user_id}/reset-password")
-def reset_user_password(user_id: str, request: ResetPasswordRequest):
+def reset_user_password(
+    user_id: str,
+    request: ResetPasswordRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Reset user password with bcrypt hash in the real MariaDB database.
     """
@@ -347,7 +357,10 @@ def reset_user_password(user_id: str, request: ResetPasswordRequest):
         conn.close()
 
 @router.delete("/users/{user_id}")
-def delete_user_permanently(user_id: str):
+def delete_user_permanently(
+    user_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Permanently delete user account from real MariaDB database.
     """
@@ -375,18 +388,21 @@ def delete_user_permanently(user_id: str):
         conn.close()
 
 @router.get("/students")
-def list_students():
+def list_students(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """
     List all registered student accounts with their activity numbers.
     """
     return user_service.list_students_with_stats()
 
 @router.delete("/students/{user_id}")
-def delete_student(user_id: str):
+def delete_student(
+    user_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Permanently delete a student account, their progress stats, and documents.
     """
-    return delete_user_permanently(user_id)
+    return delete_user_permanently(user_id, current_user)
 
 
 
@@ -394,7 +410,7 @@ def delete_student(user_id: str):
 # Global Document Library Management
 # -------------------------------------------------------------
 @router.get("/documents")
-def list_all_documents():
+def list_all_documents(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """
     List all uploaded and indexed documents in the system across all students.
     """
@@ -432,39 +448,44 @@ def list_all_documents():
         conn.close()
 
 @router.delete("/documents/{file_id}")
-def delete_document_permanently(file_id: str, filename: Optional[str] = None):
+def delete_document_permanently(
+    file_id: str,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Permanently delete a document from MySQL database and chunk storage.
     """
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, user_id, filename FROM documents WHERE id = ? OR filename = ?", (file_id, file_id))
+        cur.execute("SELECT id, user_id, filename FROM documents WHERE id = ?", (file_id,))
         doc = cur.fetchone()
-        
-        user_id = doc["user_id"] if doc else "student_arnel"
-        fn = (doc["filename"] if doc else None) or filename
-
-        # Remove from vector chunks & memory
-        delete_file_chunks(user_id, file_id, fn)
-        delete_file_chunks("student_arnel", file_id, fn)
-
-        # Permanently delete from MySQL database
-        cur.execute("DELETE FROM documents WHERE id = ? OR filename = ?", (file_id, file_id))
-        if fn:
-            cur.execute("DELETE FROM documents WHERE filename = ? OR id = ?", (fn, fn))
-        conn.commit()
-
-        return {"message": "Document permanently deleted from system.", "file_id": file_id}
+        if not doc:
+            raise HTTPException(status_code=404, detail="Document not found")
     finally:
         conn.close()
 
+    delete_file_chunks(doc["user_id"], doc["id"], doc["filename"])
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute("DELETE FROM workspace_documents WHERE document_id = ?", (doc["id"],))
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+    return {"message": "Document permanently deleted from system.", "file_id": doc["id"]}
 
 # -------------------------------------------------------------
 # AI Interactive Playground & Diagnostics
 # -------------------------------------------------------------
 @router.post("/test-ai")
-def test_ai_system(request: AITestRequest):
+def test_ai_system(
+    request: AITestRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
     """
     Interactive AI test console for administrators to verify Gemini AI answers and RAG context.
     """
@@ -519,7 +540,7 @@ def test_ai_system(request: AITestRequest):
 # System Diagnostics & Health Status
 # -------------------------------------------------------------
 @router.get("/system")
-def get_system_diagnostics():
+def get_system_diagnostics(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """
     Get detailed server environment, database status, and AI configuration.
     """
@@ -557,7 +578,7 @@ def get_system_diagnostics():
 SERVER_START_TIME = time.time()
 
 @router.get("/server/status")
-def get_server_status():
+def get_server_status(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     uptime_sec = int(time.time() - SERVER_START_TIME)
     hours, rem = divmod(uptime_sec, 3600)
     minutes, seconds = divmod(rem, 60)
@@ -584,7 +605,7 @@ def get_server_status():
     }
 
 @router.post("/server/start")
-def start_server_api():
+def start_server_api(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     return {
         "success": True,
         "status": "online",
@@ -592,7 +613,7 @@ def start_server_api():
     }
 
 @router.post("/server/stop")
-def stop_server_api():
+def stop_server_api(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     def _shutdown():
         time.sleep(0.5)
         os._exit(0)
@@ -604,7 +625,7 @@ def stop_server_api():
     }
 
 @router.post("/server/restart")
-def restart_server_api():
+def restart_server_api(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     def _restart():
         time.sleep(0.5)
         python_exe = sys.executable

@@ -658,9 +658,14 @@
             // Second attempt: Direct FastAPI call (if server is up)
             try {
                 const method = (action === 'status') ? 'GET' : 'POST';
+                const token = localStorage.getItem('admin_access_token');
+                if (!token) throw new Error('Your admin session has expired. Please sign in again.');
                 const res = await fetch(`${FASTAPI_BASE}/admin/server/${encodeURIComponent(action)}`, {
                     method: method,
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    }
                 });
                 if (res.ok) {
                     return await res.json();

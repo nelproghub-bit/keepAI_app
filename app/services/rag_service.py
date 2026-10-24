@@ -13,23 +13,56 @@ _files_meta_store: Dict[str, Dict] = {}
 _search_index: Dict[str, Dict] = {}
 
 
+def _get_user_document_refs(user_id: str) -> tuple[set, set]:
+    """Return database-confirmed document IDs and names for one owner."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "SELECT id, filename FROM documents WHERE user_id = ?",
+            (user_id,)
+        )
+        rows = cur.fetchall()
+        return (
+            {row["id"] for row in rows},
+            {row["filename"] for row in rows},
+        )
+    finally:
+        conn.close()
+
+
 def _load_user_rag_records(user_id: str) -> List[Dict[str, Any]]:
     """Load durable document chunks and metadata from the configured database."""
     conn = get_connection()
     try:
         cur = conn.cursor()
         cur.execute(
-            "SELECT filename, chunks_json, metadata_json FROM rag_documents WHERE user_id = ? ORDER BY created_at, filename",
+            """
+            SELECT r.id, r.filename, r.chunks_json, r.metadata_json
+            FROM rag_documents r
+            INNER JOIN documents d ON d.id = r.id AND d.user_id = r.user_id
+            WHERE r.user_id = ?
+            ORDER BY r.created_at, r.filename
+            """,
             (user_id,)
         )
-        return [
-            {
+        records = []
+        for row in cur.fetchall():
+            metadata = json.loads(row["metadata_json"])
+            if metadata.get("file_id") and metadata["file_id"] != row["id"]:
+                continue
+            chunks = json.loads(row["chunks_json"])
+            records.append({
+                "file_id": row["id"],
                 "filename": row["filename"],
-                "chunks": json.loads(row["chunks_json"]),
-                "metadata": json.loads(row["metadata_json"]),
-            }
-            for row in cur.fetchall()
-        ]
+                "chunks": [
+                    chunk for chunk in chunks
+                    if (not chunk.get("user_id") or chunk["user_id"] == user_id)
+                    and (not chunk.get("file_id") or chunk["file_id"] == row["id"])
+                ],
+                "metadata": metadata,
+            })
+        return records
     finally:
         conn.close()
 
@@ -118,10 +151,16 @@ def _load_user_documents(user_id: str) -> List[Dict]:
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 docs = json.load(f)
+                owned_ids, owned_filenames = _get_user_document_refs(user_id)
                 # Clean out any legacy mock placeholder chunks
                 cleaned = [
                     d for d in docs 
                     if "placeholder for PDF text extraction" not in d.get("text", "")
+                    and (not d.get("user_id") or d.get("user_id") == user_id)
+                    and (
+                        d.get("file_id") in owned_ids
+                        or (not d.get("file_id") and d.get("filename") in owned_filenames)
+                    )
                 ]
                 return cleaned
         except Exception as e:
@@ -150,7 +189,16 @@ def _load_user_files_meta(user_id: str) -> Dict[str, Any]:
     if os.path.exists(path):
         try:
             with open(path, 'r', encoding='utf-8') as f:
-                return json.load(f)
+                metadata = json.load(f)
+            owned_ids, owned_filenames = _get_user_document_refs(user_id)
+            return {
+                filename: item
+                for filename, item in metadata.items()
+                if (
+                    item.get("file_id") in owned_ids
+                    or (not item.get("file_id") and filename in owned_filenames)
+                )
+            }
         except Exception as e:
             print(f"Error loading files meta for {user_id}: {e}")
     return {}
@@ -185,7 +233,9 @@ def index_chunks(
     filename: str, 
     chunks: List[str],
     full_text: Optional[str] = None,
-    outline: Optional[List[str]] = None
+    outline: Optional[List[str]] = None,
+    size_bytes: int = 0,
+    page_count: int = 1,
 ) -> int:
     """
     Index document chunks with semantic vector embeddings and structured metadata.
@@ -245,25 +295,27 @@ def index_chunks(
     _files_meta_store[user_id] = files_meta
 
     # Synchronize to database
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
         cur.execute("SELECT id FROM documents WHERE user_id = ? AND (id = ? OR filename = ?)", (user_id, file_id, filename))
         existing_doc = cur.fetchone()
         if existing_doc:
             cur.execute(
-                "UPDATE documents SET id = ?, chunks_indexed = ?, char_count = ? WHERE id = ?",
-                (file_id, len(chunks), char_len, existing_doc["id"])
+                "UPDATE documents SET id = ?, filename = ?, chunks_indexed = ?, char_count = ?, page_count = ?, size_bytes = ? WHERE id = ? AND user_id = ?",
+                (file_id, filename, len(chunks), char_len, max(1, page_count), size_bytes, existing_doc["id"], user_id)
             )
         else:
             cur.execute(
-                "INSERT INTO documents (id, user_id, filename, chunks_indexed, char_count, page_count) VALUES (?, ?, ?, ?, ?, ?)",
-                (file_id, user_id, filename, len(chunks), char_len, max(1, len(chunks) // 2))
+                "INSERT INTO documents (id, user_id, filename, chunks_indexed, char_count, page_count, size_bytes) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                (file_id, user_id, filename, len(chunks), char_len, max(1, page_count), size_bytes)
             )
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-    except Exception as dberr:
-        print(f"⚠️ Database document sync notice: {dberr}")
     
     print(f"📚 Successfully indexed {filename}: {len(chunks)} chunks, full text saved for user {user_id}")
     return len(chunks)
@@ -297,28 +349,21 @@ def get_tutor_context(user_id: str, question: str, target_filename: Optional[str
     documents = _document_store.get(user_id) or _load_user_documents(user_id) or []
     files_meta = _files_meta_store.get(user_id) or _load_user_files_meta(user_id) or {}
     
-    # If target_filename requested, check if it exists or resolve case/cross-user
+    # Resolve an explicitly selected file only within the authenticated user's library.
     if target_filename:
-        # Check current user first (case-insensitive)
         for fn in list(files_meta.keys()) + [d.get("filename", "") for d in documents]:
             if fn.lower() == target_filename.lower():
                 target_filename = fn
                 break
-        # Cross-user fallback if not found under active uid
-        if target_filename not in files_meta and not any(d.get("filename") == target_filename for d in documents):
-            for alt_uid in ["student_arnel", "system_knowledge"]:
-                if alt_uid == user_id:
-                    continue
-                alt_meta = _files_meta_store.get(alt_uid) or _load_user_files_meta(alt_uid) or {}
-                for afn, ameta in alt_meta.items():
-                    if afn.lower() == target_filename.lower():
-                        target_filename = afn
-                        files_meta[afn] = ameta
-                        alt_docs = _document_store.get(alt_uid) or _load_user_documents(alt_uid) or []
-                        documents.extend([d for d in alt_docs if d.get("filename") == afn])
-                        break
-                if target_filename in files_meta:
-                    break
+        if target_filename not in files_meta and not any(
+            d.get("filename") == target_filename for d in documents
+        ):
+            return {
+                "context": "",
+                "sources": [],
+                "has_materials": False,
+                "read_mode": "none"
+            }
 
     if not documents and not files_meta:
         return {
@@ -467,8 +512,7 @@ def retrieve(user_id: str, question: str, limit: int = 4, target_filename: Optio
         
     if target_filename:
         filtered = [d for d in documents if d.get('filename', '').lower() == target_filename.lower()]
-        if filtered:
-            documents = filtered
+        documents = filtered
     
     # 1. Try semantic embedding for the query
     q_embedding = None
@@ -581,75 +625,54 @@ def delete_file_chunks(user_id: str, file_id: str, filename: Optional[str] = Non
     _document_store[user_id] = new_documents
     _files_meta_store[user_id] = files_meta
     
-    # Permanently delete from SQL database
+    conn = get_connection()
     try:
-        conn = get_connection()
         cur = conn.cursor()
         cur.execute(
-            "DELETE FROM documents WHERE user_id = ? AND (id = ? OR filename = ?)",
-            (user_id, file_id, file_id)
+            "DELETE FROM documents WHERE user_id = ? AND id = ?",
+            (user_id, file_id)
         )
-        for fn in target_filenames:
-            cur.execute(
-                "DELETE FROM documents WHERE user_id = ? AND (id = ? OR filename = ?)",
-                (user_id, file_id, fn)
-            )
-            # Also clean if user_id was stored under student_arnel or other ID
-            cur.execute(
-                "DELETE FROM documents WHERE filename = ? OR id = ?",
-                (fn, file_id)
-            )
         conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
         conn.close()
-    except Exception as e:
-        print(f"⚠️ SQL document delete notice: {e}")
         
     print(f"🗑️ Permanently deleted file '{file_id}' (targets: {list(target_filenames)}) for user {user_id}")
     return True
 
 def get_user_document_stats(user_id: str) -> Dict:
-    """Get statistics about user's uploaded documents synced with database"""
-    files_meta = _files_meta_store.get(user_id) or _load_user_files_meta(user_id) or {}
-    documents = _document_store.get(user_id) or _load_user_documents(user_id) or []
-    
-    # Fallback to student_arnel if user has no files yet
-    if not files_meta and user_id != "student_arnel":
-        arnel_meta = _files_meta_store.get("student_arnel") or _load_user_files_meta("student_arnel") or {}
-        if arnel_meta:
-            files_meta = arnel_meta
-            documents = _document_store.get("student_arnel") or _load_user_documents("student_arnel") or []
-    
-    files = []
-    total_chars = 0
-    if files_meta:
-        for fname, meta in files_meta.items():
-            chars = meta.get("char_count", 0)
-            chunks = meta.get("chunks_count", 0)
-            file_id = meta.get("file_id", fname)
-            total_chars += chars
-            files.append({
-                "filename": fname,
-                "file_id": file_id,
-                "chunks_indexed": chunks,
-                "char_count": chars
-            })
-    elif documents:
-        file_map = {}
-        for d in documents:
-            fname = d.get("filename", "Unknown")
-            fid = d.get("file_id", fname)
-            if fname not in file_map:
-                file_map[fname] = {"chunks": 0, "chars": 0, "file_id": fid}
-            file_map[fname]["chunks"] += 1
-            file_map[fname]["chars"] += len(d.get("text", ""))
-            total_chars += len(d.get("text", ""))
+    """Return document metadata from rows owned by this user, never shared RAG caches."""
+    conn = get_connection()
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            """
+            SELECT id, filename, chunks_indexed, char_count, page_count, size_bytes
+            FROM documents
+            WHERE user_id = ?
+            ORDER BY created_at DESC, filename
+            """,
+            (user_id,)
+        )
         files = [
-            {"filename": name, "file_id": stats["file_id"], "chunks_indexed": stats["chunks"], "char_count": stats["chars"]}
-            for name, stats in file_map.items()
+            {
+                "filename": row["filename"],
+                "file_id": row["id"],
+                "chunks_indexed": row["chunks_indexed"] or 0,
+                "char_count": row["char_count"] or 0,
+                "page_count": row["page_count"] or 1,
+                "size_bytes": row["size_bytes"] or 0,
+            }
+            for row in cur.fetchall()
         ]
-        
+    finally:
+        conn.close()
+
+    total_chars = sum(file["char_count"] for file in files)
     return {
-        "total_chunks": sum(f.get("chunks_indexed", 0) for f in files) if files else len(documents),
+        "total_chunks": sum(f["chunks_indexed"] for f in files),
         "files": files,
         "total_chars": total_chars
     }
@@ -690,15 +713,47 @@ def sync_initial_documents_to_db():
 
         conn = get_connection()
         cur = conn.cursor()
-        cur.execute("SELECT filename FROM documents")
-        existing_filenames = {row["filename"].lower() for row in cur.fetchall()}
-        
-        arnel_meta = _load_user_files_meta("student_arnel")
-        for fn, meta in arnel_meta.items():
-            if fn.lower() not in existing_filenames:
+        cur.execute("SELECT id FROM users")
+        known_users = {row["id"] for row in cur.fetchall()}
+        for user_id in known_users:
+            cur.execute(
+                "SELECT id, filename, metadata_json FROM rag_documents WHERE user_id = ?",
+                (user_id,)
+            )
+            for record in cur.fetchall():
+                filename = record["filename"]
+                file_id = record["id"]
+                meta = json.loads(record["metadata_json"])
+                if meta.get("file_id") and meta["file_id"] != file_id:
+                    continue
                 cur.execute(
-                    "INSERT INTO documents (id, user_id, filename, chunks_indexed, char_count, page_count) VALUES (?, ?, ?, ?, ?, ?)",
-                    (meta.get("file_id") or str(uuid.uuid4()), "student_arnel", fn, meta.get("chunks_count", 1), meta.get("char_count", 0), 1)
+                    "SELECT user_id FROM documents WHERE id = ?",
+                    (file_id,)
+                )
+                id_owner = cur.fetchone()
+                if id_owner and id_owner["user_id"] != user_id:
+                    continue
+                cur.execute(
+                    "SELECT id FROM documents WHERE user_id = ? AND (id = ? OR filename = ?)",
+                    (user_id, file_id, filename)
+                )
+                if cur.fetchone():
+                    continue
+                cur.execute(
+                    """
+                    INSERT INTO documents
+                        (id, user_id, filename, chunks_indexed, char_count, page_count, size_bytes)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        file_id,
+                        user_id,
+                        filename,
+                        meta.get("chunks_count", 1),
+                        meta.get("char_count", 0),
+                        1,
+                        0,
+                    )
                 )
         conn.commit()
         conn.close()

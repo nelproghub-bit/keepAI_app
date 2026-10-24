@@ -5,7 +5,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 import json
 from app.core.database import get_connection
-from app.core.security import get_current_user, get_optional_current_user
+from app.core.security import get_current_user, get_current_student_user
 from app.services.user_service import user_service
 from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context
@@ -14,12 +14,11 @@ from app.services.gemini_service import AIProviderError, generate, generate_stre
 router = APIRouter(tags=["AI Tutor"])
 
 class AskRequest(BaseModel):
-    user_id: Optional[str] = "student_arnel"
     question: str = Field(min_length=1, max_length=4000)
     teaching_style: str = "simple"
     course_level: Optional[str] = "intermediate"  # beginner | intermediate | advanced
+    document_id: Optional[str] = None
     document_name: Optional[str] = None
-    inline_context: Optional[str] = None   # Raw text content sent directly from the client (chat attach)
 
 class SaveTutorTurnRequest(BaseModel):
     conversation_id: Optional[str] = Field(default=None, max_length=64)
@@ -109,57 +108,73 @@ def build_tutor_system_prompt(
 
     return f"{base_role}{material_rules}"
 
+def get_owned_document_name(
+    user_id: str,
+    document_id: Optional[str],
+    document_name: Optional[str],
+) -> Optional[str]:
+    """Resolve a selected document only from rows owned by the authenticated user."""
+    if not document_id and not document_name:
+        return None
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        if document_id:
+            cursor.execute(
+                "SELECT filename FROM documents WHERE id = ? AND user_id = ?",
+                (document_id, user_id),
+            )
+        else:
+            cursor.execute(
+                """
+                SELECT filename FROM documents
+                WHERE user_id = ? AND LOWER(filename) = LOWER(?)
+                ORDER BY created_at DESC
+                LIMIT 1
+                """,
+                (user_id, document_name),
+            )
+        row = cursor.fetchone()
+    finally:
+        conn.close()
+
+    if not row:
+        raise HTTPException(status_code=404, detail="Document not found")
+    return row["filename"]
+
 @router.post("/tutor/stream")
 def stream_keepai(
     request: AskRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Real-time SSE token streaming for responsive ChatGPT-like interaction"""
-    uid = (current_user["id"] if current_user else None) or request.user_id or "student_arnel"
-    if current_user:
-        user_service.increment_stat(current_user["id"], "questions_asked", 1)
+    uid = current_user["id"]
+    document_name = get_owned_document_name(uid, request.document_id, request.document_name)
+    user_service.increment_stat(uid, "questions_asked", 1)
 
     course_level = request.course_level or "intermediate"
-
-    # If the client sent file text directly (chat attachment), use that as context
-    if request.inline_context and request.inline_context.strip():
-        context = request.inline_context[:12000]   # cap at ~12k chars to fit prompt window
-        fname = request.document_name or "Attached Document"
+    tutor_ctx = get_tutor_context(uid, request.question, target_filename=document_name)
+    if tutor_ctx["has_materials"]:
         system = build_tutor_system_prompt(
             teaching_style=request.teaching_style,
             course_level=course_level,
             has_materials=True,
-            sources=[fname]
+            sources=tutor_ctx.get("sources", [])
         )
-        prompt = f"Document content from '{fname}':\n{context}\n\nStudent question: {request.question}"
+        prompt = f"Lesson material from uploaded document:\n{tutor_ctx['context']}\n\nStudent question: {request.question}"
         has_sources = True
-        sources = [fname]
-        read_mode = "inline_attachment"
     else:
-        tutor_ctx = get_tutor_context(uid, request.question, target_filename=request.document_name)
-        
-        if tutor_ctx["has_materials"]:
-            context = tutor_ctx["context"]
-            system = build_tutor_system_prompt(
-                teaching_style=request.teaching_style,
-                course_level=course_level,
-                has_materials=True,
-                sources=tutor_ctx.get("sources", [])
-            )
-            prompt = f"Lesson material from uploaded document:\n{context}\n\nStudent question: {request.question}"
-            has_sources = True
-        else:
-            system = build_tutor_system_prompt(
-                teaching_style=request.teaching_style,
-                course_level=course_level,
-                has_materials=False
-            )
-            prompt = f"Student question: {request.question}"
-            has_sources = False
-            
-        sources = tutor_ctx.get("sources", [])
-        read_mode = tutor_ctx.get("read_mode", "none")
-        has_materials = tutor_ctx.get("has_materials", False)
+        system = build_tutor_system_prompt(
+            teaching_style=request.teaching_style,
+            course_level=course_level,
+            has_materials=False
+        )
+        prompt = f"Student question: {request.question}"
+        has_sources = False
+
+    sources = tutor_ctx.get("sources", [])
+    read_mode = tutor_ctx.get("read_mode", "none")
 
     def event_stream():
         meta_event = {
@@ -202,52 +217,15 @@ def stream_keepai(
 @router.post("/tutor/ask")
 def ask_keepai(
     request: AskRequest,
-    current_user: Optional[Dict[str, Any]] = Depends(get_optional_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Smart AI tutor that intelligently reads whole documents and grounds answers accurately"""
-    uid = (current_user["id"] if current_user else None) or request.user_id or "student_arnel"
-    if current_user:
-        user_service.increment_stat(current_user["id"], "questions_asked", 1)
+    uid = current_user["id"]
+    document_name = get_owned_document_name(uid, request.document_id, request.document_name)
+    user_service.increment_stat(uid, "questions_asked", 1)
 
     course_level = request.course_level or "intermediate"
-
-    # If the client sent file text directly (chat attachment), use that as context
-    if request.inline_context and request.inline_context.strip():
-        context = request.inline_context[:12000]   # cap to fit prompt window
-        fname = request.document_name or "Attached Document"
-        system = build_tutor_system_prompt(
-            teaching_style=request.teaching_style,
-            course_level=course_level,
-            has_materials=True,
-            sources=[fname]
-        )
-        try:
-            answer = generate(
-                f"Document content from '{fname}':\n{context}\n\nStudent question: {request.question}",
-                system=system,
-                user_id=uid,
-                teaching_style=request.teaching_style,
-                has_sources=True
-            )
-        except AIProviderError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        if current_user:
-            record_activity(
-                current_user["id"],
-                "tutor_question",
-                "Asked the AI tutor a study question",
-                request.document_name or "AI Tutor",
-            )
-        return {
-            "answer": answer,
-            "sources": [fname],
-            "has_materials": True,
-            "read_mode": "inline_attachment",
-            "teaching_style": request.teaching_style,
-            "course_level": course_level
-        }
-
-    tutor_ctx = get_tutor_context(uid, request.question, target_filename=request.document_name)
+    tutor_ctx = get_tutor_context(uid, request.question, target_filename=document_name)
     
     if tutor_ctx["has_materials"]:
         context = tutor_ctx["context"]
@@ -288,13 +266,12 @@ def ask_keepai(
         sources = []
         read_mode = "none"
 
-    if current_user:
-        record_activity(
-            current_user["id"],
-            "tutor_question",
-            "Asked the AI tutor a study question",
-            request.document_name or "AI Tutor",
-        )
+    record_activity(
+        uid,
+        "tutor_question",
+        "Asked the AI tutor a study question",
+        document_name or "AI Tutor",
+    )
     
     return {
         "answer": answer,

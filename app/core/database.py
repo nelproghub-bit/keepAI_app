@@ -237,9 +237,13 @@ def init_db():
             chunks_indexed INTEGER DEFAULT 0,
             char_count INTEGER DEFAULT 0,
             page_count INTEGER DEFAULT 1,
+            size_bytes BIGINT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute(
+            "ALTER TABLE documents ADD COLUMN IF NOT EXISTS size_bytes BIGINT DEFAULT 0"
+        )
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspaces (
             id VARCHAR(64) PRIMARY KEY,
@@ -397,10 +401,14 @@ def init_db():
             chunks_indexed INT DEFAULT 0,
             char_count INT DEFAULT 0,
             page_count INT DEFAULT 1,
+            size_bytes BIGINT DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_user (user_id)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("SHOW COLUMNS FROM documents LIKE 'size_bytes'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE documents ADD COLUMN size_bytes BIGINT DEFAULT 0")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspaces (
             id VARCHAR(64) PRIMARY KEY,
@@ -546,9 +554,13 @@ def init_db():
             chunks_indexed INTEGER DEFAULT 0,
             char_count INTEGER DEFAULT 0,
             page_count INTEGER DEFAULT 1,
+            size_bytes INTEGER DEFAULT 0,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        document_columns = {row["name"] for row in cursor.execute("PRAGMA table_info(documents)").fetchall()}
+        if "size_bytes" not in document_columns:
+            cursor.execute("ALTER TABLE documents ADD COLUMN size_bytes INTEGER DEFAULT 0")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS workspaces (
             id TEXT PRIMARY KEY,

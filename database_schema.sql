@@ -49,6 +49,7 @@ CREATE TABLE IF NOT EXISTS `documents` (
     `chunks_indexed` INT NOT NULL DEFAULT 0,
     `char_count` INT NOT NULL DEFAULT 0,
     `page_count` INT NOT NULL DEFAULT 1,
+    `size_bytes` BIGINT NOT NULL DEFAULT 0,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`),
     KEY `idx_documents_user` (`user_id`),

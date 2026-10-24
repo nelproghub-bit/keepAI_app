@@ -17,6 +17,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/password-visibility.css">
+<link rel="stylesheet" href="assets/css/onboarding-tour.css">
 <script src="assets/js/password-visibility.js" defer></script>
 <style>
 :root {
@@ -2038,6 +2039,7 @@ table.data-table tr:hover {
      ========================================================================= -->
 <script src="assets/js/config.js"></script>
 <script src="assets/js/app-update-notice.js"></script>
+<script src="assets/js/onboarding-tour.js"></script>
 <script>
 const API_BASE = window.API_BASE;
 let currentAdminUser = null;
@@ -2280,6 +2282,7 @@ function enterDashboard(user) {
   const requestedTab = window.location.hash.slice(1);
   switchDashboardTab(isValidAdminTab(requestedTab) ? requestedTab : 'overview', false);
   loadAdminAnnouncements();
+  window.KeepAITour?.start('admin', user);
 }
 
 function openLogoutModal() {

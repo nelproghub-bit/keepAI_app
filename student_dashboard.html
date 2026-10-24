@@ -27,6 +27,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/css/onboarding-tour.css" rel="stylesheet">
 
     <style>
         :root {
@@ -2710,6 +2711,7 @@
     <!-- ==================== CORE JAVASCRIPT ENGINE ==================== -->
     <script src="assets/js/config.js"></script>
     <script src="assets/js/app-update-notice.js"></script>
+    <script src="assets/js/onboarding-tour.js"></script>
     <script>
         var API_BASE = window.API_BASE;
 
@@ -2868,6 +2870,7 @@
 
             window.addEventListener('popstate', restoreStudentSectionFromUrl);
             window.addEventListener('hashchange', restoreStudentSectionFromUrl);
+            window.KeepAITour?.start('student', currentUser);
         }
 
         function isValidStudentSection(sectionId) {
@@ -3865,7 +3868,7 @@
                             </span>
                         </td>
                         <td>${doc.chunks_indexed || doc.chunks || 12} sections</td>
-                        <td>${doc.char_count ? Math.round(doc.char_count / 1024) + ' KB' : '15 KB'}</td>
+                        <td>${doc.size_bytes ? Math.max(1, Math.round(doc.size_bytes / 1024)) + ' KB' : (doc.char_count ? Math.max(1, Math.round(doc.char_count / 1024)) + ' KB' : '—')}</td>
                         <td>
                             <div style="display: flex; gap: 6px;">
                                 <button class="btn btn-plain btn-sm" onclick="openDocumentInTutor('${doc.file_id || doc.id}', '${escapeHTML(doc.filename)}')" title="Ask AI Tutor">
@@ -3915,7 +3918,6 @@
 
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('user_id', currentUser?.id || 'student_arnel');
             if (wsSelect.value) formData.append('workspace_id', wsSelect.value);
 
             let fileId = 'doc_' + Date.now();
@@ -3950,6 +3952,7 @@
                 workspace_id: savedWorkspaceId,
                 chunks_indexed: chunksIndexed,
                 char_count: file.size,
+                size_bytes: file.size,
                 uploaded_at: new Date().toISOString()
             };
 
@@ -4002,45 +4005,31 @@
 
             const targetId = (doc && (doc.file_id || doc.id)) ? (doc.file_id || doc.id) : docId;
 
-            // Immediately filter out and save locally
-            documents = documents.filter(d => 
-                (d.file_id || d.id) !== targetId && 
-                d.filename !== filename &&
-                d.file_id !== docId &&
-                d.id !== docId
-            );
-            saveDocumentsLocally();
-            refreshLocalWorkspaceCounts();
-            renderDocuments();
-            renderWorkspaces();
-
-            // Clear active tutor context if deleted
-            if (activeDocument && (activeDocument.file_id === targetId || activeDocument.filename === filename)) {
-                clearActiveDocument();
-            }
-
-            // Permanently delete from backend and database
             try {
                 const token = localStorage.getItem('access_token');
-                const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-                const uid = currentUser?.id || 'student_arnel';
-                const deleteUrl = `${API_BASE}/documents/${encodeURIComponent(targetId)}?user_id=${encodeURIComponent(uid)}&filename=${encodeURIComponent(filename)}`;
-                
-                const res = await fetch(deleteUrl, {
+                if (!token) throw new Error('Your session has expired. Please sign in again.');
+                const res = await fetch(`${API_BASE}/documents/${encodeURIComponent(targetId)}`, {
                     method: 'DELETE',
-                    headers: headers
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
-
-                if (res.ok) {
-                    await syncWithBackend();
-                    showToast(`"${filename}" permanently deleted.`, 'info');
-                } else {
-                    console.warn('Backend delete response status:', res.status);
-                    showToast(`"${filename}" deleted.`, 'info');
-                }
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'The document could not be deleted.');
+                documents = documents.filter(d =>
+                    (d.file_id || d.id) !== targetId &&
+                    d.file_id !== docId &&
+                    d.id !== docId
+                );
+                saveDocumentsLocally();
+                refreshLocalWorkspaceCounts();
+                renderDocuments();
+                renderWorkspaces();
+                if (activeDocument && activeDocument.file_id === targetId) clearActiveDocument();
+                await syncWithBackend();
+                showToast(`"${filename}" permanently deleted.`, 'info');
             } catch (err) {
-                console.warn('Backend delete network error:', err);
-                showToast(`"${filename}" deleted locally.`, 'info');
+                console.error('Document deletion failed:', err);
+                showToast(err.message || 'The document could not be deleted.', 'error');
+                await syncWithBackend();
             }
         }
 
@@ -4108,7 +4097,6 @@
             // Prepare multipart form upload to backend
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('user_id', currentUser?.id || 'student_arnel');
             if (targetWs) formData.append('workspace_id', targetWs.id);
 
             let fileId = 'doc_' + Date.now();
@@ -4161,6 +4149,7 @@
                 workspace_id: savedWorkspaceId,
                 chunks_indexed: chunksIndexed,
                 char_count: file.size,
+                size_bytes: file.size,
                 uploaded_at: new Date().toISOString()
             };
 
@@ -4377,10 +4366,12 @@
                     const reqBody = { 
                         question: message, 
                         teaching_style: teachingStyle,
-                        course_level: courseLevel,
-                        user_id: currentUser?.id || 'student_arnel'
+                        course_level: courseLevel
                     };
-                    if (activeDocument) reqBody.document_name = activeDocument.filename;
+                    if (activeDocument) {
+                        reqBody.document_id = activeDocument.file_id;
+                        reqBody.document_name = activeDocument.filename;
+                    }
 
                     const res = await fetch(`${API_BASE}/tutor/ask`, {
                         method: 'POST',
@@ -4549,8 +4540,7 @@
                         topic: topic,
                         document_name: selectDoc,
                         card_count: cardCount,
-                        card_type: cardType,
-                        user_id: currentUser?.id || 'student_arnel'
+                        card_type: cardType
                     })
                 });
 
@@ -4829,8 +4819,7 @@
                     body: JSON.stringify({
                         topic: topic,
                         document_name: selectDoc,
-                        question_count: qCount,
-                        user_id: currentUser?.id || 'student_arnel'
+                        question_count: qCount
                     })
                 });
 
@@ -5227,8 +5216,18 @@
                 type: 'warning'
             });
             if (confirmed) {
+                localStorage.removeItem(documentStorageKey());
+                localStorage.removeItem(workspaceStorageKey());
+                localStorage.removeItem('keepai_documents');
+                localStorage.removeItem('keepai_workspaces');
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('user');
+                documents = [];
+                workspaces = [];
+                activeDocument = null;
+                currentTutorConversationId = null;
+                document.getElementById('documents-table')?.replaceChildren();
+                document.getElementById('chat-messages')?.replaceChildren();
                 window.location.href = 'student_login.html';
             }
         }
