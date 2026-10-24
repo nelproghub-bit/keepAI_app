@@ -91,6 +91,38 @@ button { cursor: pointer; }
   background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
 }
 
+#session-restore-container {
+  min-height: 100vh;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+}
+
+#session-restore-container.active {
+  display: flex;
+}
+
+.session-restore-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px;
+  border-radius: var(--radius-xl);
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-xl);
+  text-align: center;
+}
+
+.session-restore-card p {
+  margin: 12px 0 18px;
+  color: var(--text-muted);
+}
+
+#session-restore-retry[hidden] {
+  display: none;
+}
+
 .auth-wrapper {
   width: 100%;
   max-width: 480px;
@@ -1822,6 +1854,14 @@ table.data-table tr:hover {
 </head>
 <body>
 
+<div id="session-restore-container" role="status" aria-live="polite">
+  <div class="session-restore-card">
+    <strong>Restoring administrator session</strong>
+    <p id="session-restore-message">Verifying your saved sign-in...</p>
+    <button type="button" class="btn btn-primary" id="session-restore-retry" hidden>Retry</button>
+  </div>
+</div>
+
 <!-- =========================================================================
      ADMIN AUTHENTICATION VIEW (Directly inside admin_dashboard)
      ========================================================================= -->
@@ -2715,10 +2755,19 @@ async function parseJsonResponse(res, defaultError = 'Request failed.') {
 document.addEventListener('DOMContentLoaded', async () => {
   initializeUserTableActions();
   initializeAdminSidebar();
-  await checkAdminRegistrationStatus();
-  await checkExistingSession();
   window.addEventListener('popstate', restoreAdminTabFromUrl);
   window.addEventListener('hashchange', restoreAdminTabFromUrl);
+
+  document.getElementById('session-restore-retry').addEventListener('click', restoreAdminSession);
+  if (localStorage.getItem('admin_access_token')) {
+    await restoreAdminSession();
+    if (currentAdminUser) {
+      void checkAdminRegistrationStatus();
+      return;
+    }
+    return;
+  }
+  await checkAdminRegistrationStatus();
 });
 
 // -------------------------------------------------------------
@@ -2894,9 +2943,51 @@ async function handleAdminRegister(e) {
   }
 }
 
+function showSessionRestore(message, canRetry = false) {
+  document.getElementById('auth-container').style.display = 'none';
+  document.getElementById('session-restore-message').textContent = message;
+  const retryButton = document.getElementById('session-restore-retry');
+  retryButton.hidden = !canRetry;
+  retryButton.disabled = false;
+  retryButton.textContent = 'Retry';
+  document.getElementById('session-restore-container').classList.add('active');
+}
+
+function hideSessionRestore() {
+  document.getElementById('session-restore-container').classList.remove('active');
+  document.getElementById('auth-container').style.display = '';
+}
+
+async function restoreAdminSession() {
+  const retryButton = document.getElementById('session-restore-retry');
+  retryButton.disabled = true;
+  retryButton.textContent = 'Checking...';
+  showSessionRestore('Verifying your saved sign-in...');
+
+  let result;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    result = await checkExistingSession();
+    if (result !== 'unavailable') break;
+    if (attempt < 2) {
+      showSessionRestore('The server is taking longer than usual. Retrying your saved session...');
+      await new Promise(resolve => window.setTimeout(resolve, 1500 * (attempt + 1)));
+    }
+  }
+
+  if (result === 'unavailable') {
+    showSessionRestore(
+      'We could not reach the server to verify your session. Your saved sign-in is still here; retry when the connection is ready.',
+      true
+    );
+    return;
+  }
+  hideSessionRestore();
+  if (result === 'invalid') await checkAdminRegistrationStatus();
+}
+
 async function checkExistingSession() {
   const token = localStorage.getItem('admin_access_token');
-  if (!token) return;
+  if (!token) return 'invalid';
 
   try {
     const response = await fetch(`${API_BASE}/auth/me`, {
@@ -2905,20 +2996,21 @@ async function checkExistingSession() {
     if (response.status === 401 || response.status === 403) {
       localStorage.removeItem('admin_access_token');
       localStorage.removeItem('admin_user');
-      return;
+      return 'invalid';
     }
     const data = await parseJsonResponse(response, 'Could not verify your admin session.');
     if (!response.ok) throw new Error(data.detail || 'Could not verify your admin session.');
     if (data.user?.role !== 'admin') {
       localStorage.removeItem('admin_access_token');
       localStorage.removeItem('admin_user');
-      return;
+      return 'invalid';
     }
     localStorage.setItem('admin_user', JSON.stringify(data.user));
     enterDashboard(data.user);
+    return 'authenticated';
   } catch (error) {
     console.error('Could not verify the admin session:', error);
-    showAuthAlert('Could not verify your session. Please sign in again.', 'error');
+    return 'unavailable';
   }
 }
 
