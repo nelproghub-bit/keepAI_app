@@ -176,18 +176,23 @@
 
 .keepai-tour-replay {
   position: fixed;
-  right: 22px;
-  bottom: 22px;
-  z-index: 9998;
-  min-height: 42px;
-  padding: 0 16px;
+  right: 20px;
+  bottom: 20px;
+  z-index: 800;
+  min-height: 36px;
+  padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
   background: #7d1d1d;
-  box-shadow: 0 8px 24px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 4px 16px rgba(125, 29, 29, 0.25);
   color: #fff;
-  font: 700 13px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font: 600 12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+.keepai-tour-replay:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(125, 29, 29, 0.35);
 }
 
 .keepai-tour-highlight {

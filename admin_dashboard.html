@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -744,37 +744,84 @@ table.data-table {
 table.data-table th {
   background: #f8fafc;
   color: var(--text-muted);
-  font-weight: 600;
-  font-size: 11.5px;
+  font-weight: 700;
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 12px 14px;
+  letter-spacing: 0.7px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+  position: sticky;
+  top: 0;
+  z-index: 1;
 }
 
 table.data-table td {
-  padding: 12px 14px;
+  padding: 13px 16px;
   border-bottom: 1px solid var(--border);
   color: var(--text-body);
   overflow-wrap: anywhere;
+  vertical-align: middle;
 }
 
 #users-table {
-  min-width: 900px;
-  table-layout: fixed;
+  min-width: 980px;
+  width: 100%;
+  table-layout: auto;
 }
 
-#users-table th:nth-child(1) { width: 12%; }
-#users-table th:nth-child(2) { width: 15%; }
-#users-table th:nth-child(3) { width: 20%; }
-#users-table th:nth-child(4) { width: 9%; }
-#users-table th:nth-child(5) { width: 13%; }
-#users-table th:nth-child(6) { width: 15%; }
-#users-table th:nth-child(7) { width: 16%; }
+#users-table th {
+  padding: 14px 16px;
+  background: #f8fafc;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-bottom: 2px solid var(--border);
+}
+
+#users-table th:nth-child(1) { width: 14%; min-width: 120px; }
+#users-table th:nth-child(2) { width: 17%; min-width: 150px; }
+#users-table th:nth-child(3) { width: 23%; min-width: 200px; }
+#users-table th:nth-child(4) { width: 10%; min-width: 100px; text-align: center; }
+#users-table th:nth-child(5) { width: 11%; min-width: 110px; }
+#users-table th:nth-child(6) { width: 13%; min-width: 140px; }
+#users-table th:nth-child(7) { width: 12%; min-width: 130px; text-align: center; }
 
 #users-table td {
-  overflow-wrap: anywhere;
-  word-break: break-word;
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  vertical-align: middle;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: #334155;
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
+#users-table td:nth-child(1) {
+  font-weight: 600;
+  color: #0f172a;
+  white-space: nowrap;
+}
+
+#users-table td:nth-child(3) {
+  word-break: break-all;
+  color: #475569;
+}
+
+#users-table td:nth-child(4) {
+  text-align: center;
+  white-space: nowrap;
+}
+
+#users-table td:nth-child(5),
+#users-table td:nth-child(6) {
+  white-space: nowrap;
+  color: #64748b;
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
 }
 
 #users-table td:last-child {
@@ -782,11 +829,15 @@ table.data-table td {
   white-space: nowrap;
 }
 
+#users-table tr:hover td {
+  background: #f8fafc;
+}
+
 .user-action-buttons {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .user-action-buttons .action-btn-circle {
@@ -830,103 +881,148 @@ table.data-table tr:hover {
 
 /* User Management Specific Styles */
 .user-badge-student {
-  background: #e0f2fe;
-  color: #0284c7;
-  padding: 3px 10px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.user-badge-admin {
-  background: #fee2e2;
-  color: #ef4444;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 11.5px;
-  font-weight: 600;
-  display: inline-block;
-}
-
-.action-btn-circle {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 0;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.user-badge-admin {
+  background: #fef2f2;
+  color: #991b1b;
+  border: 1px solid #fecdd3;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  line-height: 1.2;
+}
+
+.action-btn-circle {
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.18s ease-in-out;
+  background: #f8fafc;
+  color: #64748b;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+}
+
+.action-btn-circle svg {
+  width: 15px;
+  height: 15px;
+  stroke-width: 2;
+  transition: transform 0.15s ease;
 }
 
 .action-btn-circle.edit {
-  background: transparent;
-  color: #334155;
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: #475569;
 }
 .action-btn-circle.edit:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: #fff5f5;
+  border-color: #fca5a5;
+  color: #7D1D1D;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(125, 29, 29, 0.15);
 }
 
 .action-btn-circle.delete {
-  background: #e11d48;
-  color: white;
-  box-shadow: 0 2px 6px rgba(225, 29, 72, 0.35);
+  background: #fef2f2;
+  border-color: #fecdd3;
+  color: #dc2626;
 }
 .action-btn-circle.delete:hover {
-  background: #be123c;
-  transform: scale(1.05);
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.25);
 }
 
 .action-btn-circle.key {
-  background: #059669;
-  color: white;
-  box-shadow: 0 2px 6px rgba(5, 150, 105, 0.35);
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
 }
 .action-btn-circle.key:hover {
-  background: #047857;
-  transform: scale(1.05);
-}
-
-.btn-purple {
-  background: #4f46e5;
-  color: white;
-  padding: 8px 16px;
-  border-radius: var(--radius-sm);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 600;
-  font-size: 13px;
-  border: 0;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-decoration: none;
-}
-.btn-purple:hover {
-  background: #4338ca;
-  box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
-}
-
-.btn-green-add {
   background: #059669;
-  color: white;
+  border-color: #059669;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(5, 150, 105, 0.25);
+}
+
+.btn-admin-logout,
+.btn-purple {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  border: 0;
   padding: 8px 18px;
   border-radius: var(--radius-sm);
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: 13px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(125, 29, 29, 0.25);
+  transition: all 0.2s;
+  text-decoration: none;
+}
+.btn-admin-logout:hover,
+.btn-purple:hover {
+  background: var(--primary-hover);
+  box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+  transform: translateY(-1px);
+}
+
+.btn-admin-add,
+.btn-green-add {
+  background: var(--primary-gradient);
+  color: #ffffff;
+  padding: 9px 18px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 13px;
   border: 0;
   cursor: pointer;
+  box-shadow: 0 2px 8px rgba(125, 29, 29, 0.25);
   transition: all 0.2s;
+  white-space: nowrap;
+  height: 38px;
+  box-sizing: border-box;
 }
+.btn-admin-add:hover,
 .btn-green-add:hover {
-  background: #047857;
-  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.25);
+  background: var(--primary-hover);
+  box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+  transform: translateY(-1px);
 }
 
 /* AI Playground */
@@ -1342,7 +1438,7 @@ table.data-table tr:hover {
   }
 }
 
-@media (max-width: 1080px) {
+@media (max-width: 768px) {
   #users-table {
     min-width: 0;
     table-layout: auto;
@@ -1785,14 +1881,14 @@ table.data-table tr:hover {
     </div>
 
     <!-- 2. USER MANAGEMENT SECTION (Real Database Connection) -->
-    <div id="section-users" class="content-section" style="display: none;">
-      <div class="page-header" style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px;">
+    <div id="section-users" class="content-section" style="display: none; padding-bottom: 60px;">
+      <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px;">
         <div>
           <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Management</h1>
           <p style="color: var(--text-muted); font-size: 13.5px;">Manage student and admin accounts</p>
         </div>
         <div>
-          <button class="btn-purple" onclick="openLogoutModal()" title="Sign Out" style="box-shadow: 0 4px 14px rgba(79, 70, 229, 0.3);">
+          <button class="btn-admin-logout" onclick="openLogoutModal()" title="Sign Out">
             <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
             <span>Logout</span>
           </button>
@@ -1806,10 +1902,10 @@ table.data-table tr:hover {
             <p style="color: var(--text-muted); font-size: 13px;">Manage student and admin accounts</p>
           </div>
           <div id="user-management-toolbar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 260px;">
-            <button class="btn-green-add" onclick="openAddUserModal()">
-              <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              <span>+ Add User</span>
+            <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="height: 38px; box-sizing: border-box; padding: 0 14px 0 38px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 280px; background: #ffffff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\") no-repeat 12px center; transition: border-color 0.2s, box-shadow 0.2s; outline: none; color: var(--text-main);">
+            <button class="btn-admin-add" onclick="openAddUserModal()">
+              <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+              <span>Add User</span>
             </button>
           </div>
         </div>
@@ -3436,3 +3532,4 @@ function triggerPwaInstall() {
 <div id="toast-container"></div>
 </body>
 </html>
+
