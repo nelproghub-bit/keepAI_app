@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>KeepAI — Your Simple AI Study Assistant | Admin Dashboard</title>
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" href="admin-manifest.json">
 <meta name="theme-color" content="#7D1D1D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -346,15 +346,43 @@ button { cursor: pointer; }
   top: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   padding: 20px 14px;
+  z-index: 40;
+  overflow-x: hidden;
+  overflow-y: auto;
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .dash-brand {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 12px;
   padding: 6px 10px 18px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   margin-bottom: 18px;
+}
+
+.sidebar-close-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  color: #cbd5e1;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-close-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.sidebar-close-btn svg {
+  width: 20px;
+  height: 20px;
 }
 
 .dash-brand-logo {
@@ -503,7 +531,13 @@ button { cursor: pointer; }
 .dash-main {
   padding: 28px 36px;
   max-width: 1360px;
+  min-width: 0;
   overflow-y: auto;
+}
+
+.mobile-dashboard-bar,
+.dashboard-sidebar-backdrop {
+  display: none;
 }
 
 .page-header {
@@ -1058,18 +1092,108 @@ table.data-table tr:hover {
   text-align: left;
 }
 
+@keyframes admin-login-spin {
+  to { transform: rotate(360deg); }
+}
+
+.admin-login-spinner {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: admin-login-spin 0.7s linear infinite;
+}
+
 @media (max-width: 860px) {
-  #dashboard-app {
-    grid-template-columns: 1fr;
+  #dashboard-app.active {
+    display: block;
+    min-height: 100vh;
   }
   .dash-sidebar {
-    height: auto;
-    position: relative;
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100dvh;
+    padding: 20px 14px;
+    transform: translateX(-105%);
+    box-shadow: 12px 0 32px rgba(15, 23, 42, 0.24);
+    transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .dash-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .sidebar-close-btn {
+    display: inline-flex;
+  }
+  .dashboard-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(15, 23, 42, 0.48);
+    -webkit-backdrop-filter: blur(3px);
+    backdrop-filter: blur(3px);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .dashboard-sidebar-backdrop.active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .mobile-dashboard-bar {
+    display: flex;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+    align-items: center;
+    gap: 12px;
+    min-height: 58px;
+    padding: 8px 16px;
+    background: var(--bg-surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .mobile-dashboard-menu {
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    flex: 0 0 42px;
+    color: var(--primary);
+    background: var(--primary-light);
+    border: 1px solid var(--primary-border);
+    border-radius: 10px;
+  }
+  .mobile-dashboard-menu svg {
+    width: 21px;
+    height: 21px;
+  }
+  .mobile-dashboard-title {
+    color: var(--text-main);
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    font-size: 15px;
+    font-weight: 800;
   }
   .dash-main {
+    max-width: none;
     padding: 18px;
+    overflow-x: hidden;
+    overflow-y: visible;
   }
-  .table-responsive {
+  .dash-main,
+  .content-section,
+  .panel,
+  .page-header,
+  .dash-card {
+    min-width: 0;
+  }
+  .table-responsive,
+  .data-table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
     width: 100%;
@@ -1088,91 +1212,30 @@ table.data-table tr:hover {
     padding: 20px 16px;
   }
   .dash-main {
-    padding: 12px;
+    padding: 14px 12px;
+  }
+  .mobile-dashboard-bar {
+    padding-inline: 12px;
   }
   .page-header {
     flex-direction: column;
     align-items: flex-start;
     gap: 12px;
   }
-  .dash-stats-grid {
-    grid-template-columns: 1fr;
+  .page-header > div:last-child,
+  .page-header .btn {
+    max-width: 100%;
+  }
+  .stat-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
   .pwa-options-grid {
     grid-template-columns: 1fr;
   }
-  .modal-card {
-    max-width: 95vw;
-    margin: 10px;
-    padding: 20px 16px;
+  .dash-card {
+    padding: 16px;
   }
-}
-
-@keyframes admin-login-spin {
-  to { transform: rotate(360deg); }
-}
-
-.admin-login-spinner {
-  width: 17px;
-  height: 17px;
-  flex: 0 0 17px;
-  border: 2px solid rgba(255, 255, 255, 0.35);
-  border-top-color: currentColor;
-  border-radius: 50%;
-  animation: admin-login-spin 0.7s linear infinite;
-}
-
-@media (max-width: 860px) {
-  #dashboard-app.active {
-    display: flex;
-    flex-direction: column;
-  }
-  .dash-sidebar {
-    width: 100%;
-    height: auto;
-    position: relative;
-    max-height: none;
-    overflow: visible;
-    padding: 12px;
-  }
-  .dash-nav {
-    display: flex;
-    overflow-x: auto;
-    gap: 6px;
-    padding: 8px 12px;
-    -webkit-overflow-scrolling: touch;
-  }
-  .dash-nav .nav-link {
-    flex: 0 0 auto;
-    width: auto;
-    white-space: nowrap;
-  }
-  .dash-sidebar-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    padding-top: 10px;
-  }
-  .dash-main,
-  .content-section,
-  .panel,
-  .page-header {
-    min-width: 0;
-  }
-}
-
-@media (max-width: 540px) {
   .dash-brand-text span {
-    display: none;
-  }
-  .dash-nav {
-    padding-inline: 8px;
-  }
-  .dash-nav .nav-link {
-    padding: 10px;
-  }
-  .dash-nav .nav-link svg {
     display: none;
   }
   .auth-wrapper,
@@ -1182,8 +1245,14 @@ table.data-table tr:hover {
     min-width: 0;
     max-width: 100%;
   }
+  .data-table-wrapper table,
   .table-responsive table {
-    min-width: 600px;
+    min-width: 560px;
+  }
+  .modal-card {
+    max-width: 95vw;
+    margin: 10px;
+    padding: 20px 16px;
   }
 }
 </style>
@@ -1305,7 +1374,7 @@ table.data-table tr:hover {
      ========================================================================= -->
 <div id="dashboard-app">
   <!-- Sidebar -->
-  <aside class="dash-sidebar">
+  <aside class="dash-sidebar" id="admin-dashboard-sidebar">
     <div class="dash-brand">
       <div class="dash-brand-logo">
         <img src="assets/images/keepai-logo.png" alt="KeepAI logo">
@@ -1314,6 +1383,17 @@ table.data-table tr:hover {
         <h3>KeepAI Admin</h3>
         <span>Your Simple AI Study Assistant</span>
       </div>
+      <button
+        class="sidebar-close-btn"
+        type="button"
+        onclick="toggleAdminMobileSidebar(false)"
+        aria-label="Close navigation menu"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
     <!-- Navigation links -->
@@ -1375,8 +1455,33 @@ table.data-table tr:hover {
     </div>
   </aside>
 
+  <div
+    class="dashboard-sidebar-backdrop"
+    id="dashboard-sidebar-backdrop"
+    onclick="toggleAdminMobileSidebar(false)"
+    aria-hidden="true"
+  ></div>
+
   <!-- Main View -->
   <main class="dash-main">
+    <div class="mobile-dashboard-bar">
+      <button
+        class="mobile-dashboard-menu"
+        type="button"
+        onclick="toggleAdminMobileSidebar(true)"
+        aria-label="Open navigation menu"
+        aria-controls="admin-dashboard-sidebar"
+        aria-expanded="false"
+        id="admin-mobile-menu"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="4" y1="6" x2="20" y2="6"></line>
+          <line x1="4" y1="12" x2="20" y2="12"></line>
+          <line x1="4" y1="18" x2="20" y2="18"></line>
+        </svg>
+      </button>
+      <span class="mobile-dashboard-title">KeepAI Admin</span>
+    </div>
 
     <!-- 1. OVERVIEW SECTION -->
     <div id="section-overview" class="content-section active">
@@ -2204,6 +2309,26 @@ function isValidAdminTab(tabId) {
   return ['overview', 'users', 'students', 'documents', 'announcements', 'playground', 'system'].includes(tabId);
 }
 
+function toggleAdminMobileSidebar(open) {
+  const sidebar = document.getElementById('admin-dashboard-sidebar');
+  const backdrop = document.getElementById('dashboard-sidebar-backdrop');
+  const menuButton = document.getElementById('admin-mobile-menu');
+  if (!sidebar || !backdrop) return;
+
+  sidebar.classList.toggle('mobile-open', open);
+  backdrop.classList.toggle('active', open);
+  document.body.style.overflow = open ? 'hidden' : '';
+  if (menuButton) menuButton.setAttribute('aria-expanded', String(open));
+}
+
+window.addEventListener('keydown', event => {
+  if (event.key === 'Escape') toggleAdminMobileSidebar(false);
+});
+
+window.addEventListener('resize', () => {
+  if (window.innerWidth > 860) toggleAdminMobileSidebar(false);
+});
+
 function restoreAdminTabFromUrl() {
   if (!document.getElementById('dashboard-app').classList.contains('active')) return;
   const tabId = window.location.hash.slice(1);
@@ -2216,6 +2341,7 @@ function restoreAdminTabFromUrl() {
 
 function switchDashboardTab(tabId, updateHistory = true) {
   if (!isValidAdminTab(tabId)) return;
+  toggleAdminMobileSidebar(false);
   // Normalize users vs students
   const activeTabKey = (tabId === 'students' || tabId === 'users') ? 'users' : tabId;
   const nextUrl = `${window.location.pathname}${window.location.search}#${activeTabKey}`;
@@ -2351,8 +2477,7 @@ async function deactivateAdminAnnouncement(announcementId) {
 // -------------------------------------------------------------
 async function loadDashboardStats() {
   try {
-    const res = await fetch(`${API_BASE}/admin/stats`);
-    const data = await parseJsonResponse(res, 'Failed to load stats');
+    const data = await adminAnnouncementRequest('/admin/stats');
 
     document.getElementById('stat-students').textContent = data.total_students || 0;
     document.getElementById('stat-documents').textContent = data.total_documents || 0;
@@ -2377,8 +2502,7 @@ async function loadUsersList() {
   tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Connecting to database and loading users...</td></tr>`;
 
   try {
-    const res = await fetch(`${API_BASE}/admin/users`);
-    const users = await parseJsonResponse(res, 'Failed to load users');
+    const users = await adminAnnouncementRequest('/admin/users');
     allUsersCache = users;
     renderUsersTable(users);
   } catch (err) {
@@ -2480,13 +2604,10 @@ async function handleAddUserSubmit(e) {
   btn.textContent = 'Saving to Database...';
 
   try {
-    const res = await fetch(`${API_BASE}/admin/users`, {
+    await adminAnnouncementRequest('/admin/users', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ full_name, username, student_id, email, role, password })
     });
-    const data = await parseJsonResponse(res, 'Failed to create user.');
-    if (!res.ok) throw new Error(data.detail || 'Failed to create user.');
 
     closeAddUserModal();
     loadUsersList();
@@ -2536,13 +2657,10 @@ async function handleEditUserSubmit(e) {
   btn.textContent = 'Updating...';
 
   try {
-    const res = await fetch(`${API_BASE}/admin/users/${user_id}`, {
+    await adminAnnouncementRequest(`/admin/users/${user_id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ full_name, email, student_id, role })
     });
-    const data = await parseJsonResponse(res, 'Failed to update user.');
-    if (!res.ok) throw new Error(data.detail || 'Failed to update user.');
 
     closeEditUserModal();
     loadUsersList();
@@ -2589,13 +2707,10 @@ async function handleResetPasswordSubmit(e) {
   btn.textContent = 'Saving Password...';
 
   try {
-    const res = await fetch(`${API_BASE}/admin/users/${user_id}/reset-password`, {
+    await adminAnnouncementRequest(`/admin/users/${user_id}/reset-password`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ new_password })
     });
-    const data = await parseJsonResponse(res, 'Failed to reset password.');
-    if (!res.ok) throw new Error(data.detail || 'Failed to reset password.');
 
     closeResetPasswordModal();
     showInfoModal('Password Updated!', 'The user\'s password has been saved to the database successfully.', 'success');
@@ -2613,9 +2728,7 @@ async function handleResetPasswordSubmit(e) {
 function confirmDeleteUser(userId, username) {
   pendingDeleteAction = async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/users/${userId}`, { method: 'DELETE' });
-      const data = await parseJsonResponse(res, 'Could not delete user.');
-      if (!res.ok) throw new Error(data.detail || 'Could not delete user.');
+      await adminAnnouncementRequest(`/admin/users/${userId}`, { method: 'DELETE' });
       closeConfirmModal();
       loadUsersList();
       loadDashboardStats();
@@ -2683,8 +2796,7 @@ async function loadDocumentsList() {
   tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">Loading documents...</td></tr>`;
 
   try {
-    const res = await fetch(`${API_BASE}/admin/documents`);
-    const docs = await parseJsonResponse(res, 'Failed to load documents');
+    const docs = await adminAnnouncementRequest('/admin/documents');
     renderDocumentsTable(docs);
   } catch (err) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--rose); padding: 20px;">Failed to load documents: ${err.message}</td></tr>`;
@@ -2725,14 +2837,16 @@ async function handleAdminUpload(e) {
   const file = fileInput.files[0];
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('user_id', currentAdminUser ? currentAdminUser.id : 'admin');
 
   btn.disabled = true;
   statusSpan.textContent = 'Processing and indexing document...';
 
   try {
+    const token = localStorage.getItem('admin_access_token');
+    if (!token) throw new Error('Your admin session has expired. Please sign in again.');
     const res = await fetch(`${API_BASE}/documents/upload`, {
       method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
       body: formData
     });
     const data = await parseJsonResponse(res, 'Upload failed');
@@ -2752,11 +2866,9 @@ async function handleAdminUpload(e) {
 function confirmDeleteDocument(fileId, filename) {
   pendingDeleteAction = async () => {
     try {
-      const res = await fetch(`${API_BASE}/admin/documents/${fileId}?filename=${encodeURIComponent(filename)}`, { 
-        method: 'DELETE' 
+      await adminAnnouncementRequest(`/admin/documents/${encodeURIComponent(fileId)}`, {
+        method: 'DELETE'
       });
-      const data = await parseJsonResponse(res, 'Failed to delete document.');
-      if (!res.ok) throw new Error(data.detail || 'Failed to delete document.');
       closeConfirmModal();
       loadDocumentsList();
       loadDashboardStats();
@@ -2794,13 +2906,10 @@ async function runAITest() {
   outputBox.textContent = 'Contacting Google Gemini AI study engine...';
 
   try {
-    const res = await fetch(`${API_BASE}/admin/test-ai`, {
+    const data = await adminAnnouncementRequest('/admin/test-ai', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, mode: currentPlaygroundMode })
     });
-
-    const data = await parseJsonResponse(res, 'No response returned.');
     outputBox.textContent = data.response || 'No response returned.';
   } catch (err) {
     outputBox.textContent = `Error testing AI: ${err.message}`;
@@ -2814,8 +2923,7 @@ async function runAITest() {
 // -------------------------------------------------------------
 async function loadSystemDiagnostics() {
   try {
-    const res = await fetch(`${API_BASE}/admin/system`);
-    const data = await parseJsonResponse(res, 'Could not load system info');
+    const data = await adminAnnouncementRequest('/admin/system');
 
     document.getElementById('sys-os').textContent = data.os;
     document.getElementById('sys-python').textContent = `Python ${data.python_version}`;

@@ -7,6 +7,7 @@ const STATIC_ASSETS = [
   './student_login.html',
   './student_dashboard.html',
   './admin_dashboard.html',
+  './admin-manifest.json',
   './admin_panel.html',
   './manifest.json',
   './icons/favicon-32.png',
