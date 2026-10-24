@@ -16,6 +16,7 @@ const STATIC_ASSETS = [
   './icons/icon-maskable-192.png',
   './icons/icon-maskable-512.png',
   './icons/apple-touch-icon.png',
+  './assets/css/responsive-layouts.css',
   './assets/css/onboarding-tour.css',
   './assets/js/onboarding-tour.js',
   './assets/images/keepai-logo.png'

@@ -1,0 +1,202 @@
+html {
+  min-width: 320px;
+  scroll-padding-top: 16px;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea,
+button {
+  max-width: 100%;
+}
+
+input,
+select,
+textarea {
+  min-width: 0;
+}
+
+@media (max-width: 900px) {
+  .stat-grid,
+  .meta-info-grid,
+  .grid.two-col,
+  .grid.three-col,
+  .grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
+  }
+
+  .panel,
+  .dash-card,
+  .modal-content,
+  .modal-card {
+    min-width: 0;
+  }
+
+  #workspaces-grid:not([style*="grid-template-columns: 1fr"]) {
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  .auth-header,
+  .auth-body {
+    padding-inline: clamp(14px, 5vw, 24px);
+  }
+
+  .form-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .page-header,
+  .status-box {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .page-header > *,
+  .page-header .btn,
+  .controls > .btn {
+    max-width: 100%;
+  }
+
+  .controls > .btn {
+    flex: 1 1 100%;
+  }
+
+  #dashboard-app [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .topbar {
+    gap: 8px;
+  }
+
+  .topbar-left {
+    flex: 1 1 auto;
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .topbar-title-wrap {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .topbar-title-wrap h2 {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-actions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .modal-overlay,
+  .pwa-modal-overlay,
+  .success-modal {
+    align-items: flex-start;
+    justify-content: center;
+    overflow-y: auto;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom));
+  }
+
+  .modal-content,
+  .modal-card,
+  .pwa-modal-card,
+  .success-content {
+    width: 100%;
+    max-width: 560px;
+    max-height: calc(100dvh - 24px);
+    margin-block: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .modal-actions,
+  .confirm-actions {
+    flex-wrap: wrap;
+  }
+
+  .modal-actions > button,
+  .confirm-actions > button {
+    flex: 1 1 120px;
+  }
+
+  .table-responsive,
+  .data-table-wrapper,
+  .users-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .toast-container,
+  #toast-container {
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-width: none;
+  }
+
+  .toast {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .fc-type-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .panel,
+  .dash-card {
+    padding: 16px;
+  }
+
+  .modal-card,
+  .modal-content,
+  .success-content {
+    padding: 20px 16px;
+  }
+
+  .confirm-actions > button {
+    min-width: 0;
+    padding-inline: 12px;
+  }
+}
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .modal-overlay,
+  .pwa-modal-overlay,
+  .success-modal {
+    align-items: flex-start;
+    overflow-y: auto;
+  }
+
+  .modal-content,
+  .modal-card,
+  .pwa-modal-card,
+  .success-content {
+    max-height: calc(100dvh - 24px);
+    overflow-y: auto;
+  }
+}
