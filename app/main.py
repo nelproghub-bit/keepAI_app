@@ -96,6 +96,13 @@ def get_manifest():
         return FileResponse(manifest_path, media_type="application/manifest+json")
     return {"error": "manifest not found"}
 
+@app.get("/admin-manifest.json")
+def get_admin_manifest():
+    manifest_path = os.path.join(FRONTEND_DIR, "admin-manifest.json")
+    if os.path.exists(manifest_path):
+        return FileResponse(manifest_path, media_type="application/manifest+json")
+    return {"error": "admin manifest not found"}
+
 @app.get("/sw.js")
 def get_sw():
     sw_path = os.path.join(FRONTEND_DIR, "sw.js")
