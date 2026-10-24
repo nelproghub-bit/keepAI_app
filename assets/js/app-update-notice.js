@@ -1,3 +1,13 @@
+const currentUrl = new URL(window.location.href);
+if (currentUrl.searchParams.has('__keepai_refresh')) {
+    currentUrl.searchParams.delete('__keepai_refresh');
+    window.history.replaceState(
+        window.history.state,
+        '',
+        `${currentUrl.pathname}${currentUrl.search}${currentUrl.hash}`
+    );
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.APP_VERSION || window.APP_VERSION === 'local') return;
 
