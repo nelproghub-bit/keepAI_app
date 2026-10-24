@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/password-visibility.css">
 <link rel="stylesheet" href="assets/css/onboarding-tour.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/design-system.css">
 <script src="assets/js/password-visibility.js" defer></script>
 <style>
@@ -1029,44 +1030,268 @@ table.data-table tr:hover {
 .playground-box {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 18px;
 }
 
 .playground-modes {
   display: flex;
-  gap: 8px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
 .mode-chip {
-  padding: 7px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--border);
-  background: white;
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1.5px solid var(--border);
+  background: #ffffff;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   color: var(--text-muted);
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.mode-chip:hover {
+  border-color: #fca5a5;
+  background: #fff5f5;
+  color: #7D1D1D;
+  transform: translateY(-1px);
 }
 
 .mode-chip.active {
-  background: var(--primary-light);
-  border-color: var(--primary);
-  color: var(--primary);
+  background: var(--primary-gradient);
+  border-color: #7D1D1D;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.25);
+  transform: translateY(-1px);
+}
+
+.quick-prompts-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.quick-prompt-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.quick-prompt-btn {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-body);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-prompt-btn:hover {
+  background: #fff5f5;
+  border-color: #fca5a5;
+  color: #7D1D1D;
+}
+
+.ai-response-wrapper {
+  background: #ffffff;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.ai-response-wrapper:focus-within {
+  border-color: #7D1D1D;
+}
+
+.ai-response-toolbar {
+  background: #f8fafc;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.ai-response-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-main);
+}
+
+.ai-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #059669;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.2);
+  display: inline-block;
+}
+
+.ai-model-tag {
+  font-family: 'JetBrains Mono', monospace, sans-serif;
+  font-size: 11px;
+  background: #e2e8f0;
+  color: #334155;
+  padding: 2px 7px;
+  border-radius: 4px;
   font-weight: 600;
 }
 
-.response-card {
-  background: #fafafa;
+.ai-response-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-copy-response {
+  background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 18px;
-  font-size: 13.5px;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-copy-response:hover {
+  background: #fff5f5;
+  border-color: #fca5a5;
+  color: #7D1D1D;
+}
+
+.ai-response-body {
+  padding: 20px;
+  min-height: 140px;
+  font-size: 14px;
   line-height: 1.7;
   color: var(--text-main);
-  white-space: pre-wrap;
-  min-height: 120px;
+  background: #ffffff;
+}
+
+.ai-empty-prompt-state {
+  text-align: center;
+  padding: 30px 16px;
+  color: var(--text-muted);
+}
+
+.ai-empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: #fff5f5;
+  color: #7D1D1D;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
+  border: 1px solid #fecdd3;
+}
+
+.ai-empty-prompt-state h4 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+  margin-bottom: 6px;
+}
+
+.ai-empty-prompt-state p {
+  font-size: 13px;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+.ai-loading-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 0;
+  color: #7D1D1D;
+  font-weight: 600;
+  font-size: 13.5px;
+}
+
+.ai-markdown-output p {
+  margin-bottom: 12px;
+}
+
+.ai-markdown-output p:last-child {
+  margin-bottom: 0;
+}
+
+.ai-markdown-output strong {
+  color: #0f172a;
+  font-weight: 700;
+}
+
+.ai-markdown-output ul, .ai-markdown-output ol {
+  padding-left: 24px;
+  margin: 10px 0 14px;
+}
+
+.ai-markdown-output li {
+  margin-bottom: 6px;
+}
+
+.ai-markdown-output code {
+  background: #f1f5f9;
+  color: #991b1b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: monospace;
+}
+
+.ai-markdown-output pre {
+  background: #0f172a;
+  color: #f8fafc;
+  padding: 14px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  font-size: 13px;
+  margin: 14px 0;
+}
+
+.ai-markdown-output pre code {
+  background: transparent;
+  color: inherit;
+  padding: 0;
+}
+
+.ai-error-box {
+  background: #fef2f2;
+  border: 1px solid #fecdd3;
+  border-radius: 8px;
+  padding: 16px;
+  color: #991b1b;
+  font-size: 13.5px;
 }
 
 .meta-info-grid {
@@ -2055,42 +2280,101 @@ table.data-table tr:hover {
     </div>
 
     <!-- 4. AI TESTING PLAYGROUND SECTION -->
-    <div id="section-playground" class="content-section" style="display: none;">
-      <div class="page-header">
+    <div id="section-playground" class="content-section" style="display: none; padding-bottom: 60px;">
+      <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 14px;">
         <div class="page-title">
           <h1>AI System Diagnostics & Playground</h1>
-          <p>Directly test Google Gemini AI responses and verify prompt behaviors</p>
+          <p>Directly test Google Gemini AI responses, verify prompt behaviors, and benchmark study tool outputs</p>
+        </div>
+        <div>
+          <span style="display: inline-flex; align-items: center; gap: 8px; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; color: #047857;">
+            <span class="ai-live-dot"></span> Google Gemini AI Live
+          </span>
         </div>
       </div>
 
-      <div class="dash-card">
+      <div class="dash-card" style="border-radius: var(--radius-lg); border: 1px solid var(--border); box-shadow: var(--shadow-sm); padding: 24px;">
         <div class="playground-box">
           <div class="form-group" style="margin-bottom: 0;">
-            <label>Select Response Type</label>
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
+              Select Response Type
+            </label>
             <div class="playground-modes">
-              <button type="button" class="mode-chip active" data-mode="tutor" onclick="setPlaygroundMode('tutor', this)">Study Tutor</button>
-              <button type="button" class="mode-chip" data-mode="summary" onclick="setPlaygroundMode('summary', this)">Simple Summary</button>
-              <button type="button" class="mode-chip" data-mode="quiz" onclick="setPlaygroundMode('quiz', this)">Practice Quiz</button>
-              <button type="button" class="mode-chip" data-mode="flashcard" onclick="setPlaygroundMode('flashcard', this)">Flashcards</button>
+              <button type="button" class="mode-chip active" data-mode="tutor" onclick="setPlaygroundMode('tutor', this)">
+                <i class="fa-solid fa-graduation-cap"></i> <span>Study Tutor</span>
+              </button>
+              <button type="button" class="mode-chip" data-mode="summary" onclick="setPlaygroundMode('summary', this)">
+                <i class="fa-solid fa-file-lines"></i> <span>Simple Summary</span>
+              </button>
+              <button type="button" class="mode-chip" data-mode="quiz" onclick="setPlaygroundMode('quiz', this)">
+                <i class="fa-solid fa-circle-question"></i> <span>Practice Quiz</span>
+              </button>
+              <button type="button" class="mode-chip" data-mode="flashcard" onclick="setPlaygroundMode('flashcard', this)">
+                <i class="fa-solid fa-layer-group"></i> <span>Flashcards</span>
+              </button>
             </div>
           </div>
 
           <div class="form-group" style="margin-bottom: 0;">
-            <label>Test Question or Prompt</label>
-            <textarea id="ai-test-prompt" rows="3" placeholder="Enter a lesson question (e.g. What is object-oriented programming and why is it useful?)..."></textarea>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+              <label style="font-size: 11.5px; font-weight: 700; color: var(--text-main); text-transform: uppercase; letter-spacing: 0.5px; margin: 0;">
+                Test Question or Prompt
+              </label>
+              <span style="font-size: 11px; color: var(--text-muted);">Supports Markdown & code</span>
+            </div>
+            <textarea id="ai-test-prompt" rows="3" placeholder="Enter a lesson question (e.g. What is object-oriented programming and why is it useful?)..." style="width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13.5px; font-family: inherit; line-height: 1.5; color: var(--text-main); background: #ffffff; outline: none; transition: border-color 0.2s, box-shadow 0.2s;"></textarea>
+
+            <div class="quick-prompts-row">
+              <span class="quick-prompt-label"><i class="fa-regular fa-lightbulb"></i> Try sample:</span>
+              <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(0)">💡 OOP concept</button>
+              <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(1)">📝 SQL vs NoSQL</button>
+              <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(2)">❓ Python quiz</button>
+              <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(3)">🗂️ HTTP flashcards</button>
+            </div>
           </div>
 
-          <div>
-            <button class="btn btn-primary" id="btn-run-ai-test" onclick="runAITest()" style="width: auto;">
-              Send Prompt to Gemini AI ✦
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <button class="btn btn-primary" id="btn-run-ai-test" onclick="runAITest()" style="width: auto; padding: 9px 20px; font-size: 13.5px; display: inline-flex; align-items: center; gap: 8px;">
+              <i class="fa-solid fa-wand-magic-sparkles" id="ai-btn-icon"></i>
+              <span id="ai-btn-text">Send Prompt to Gemini AI</span>
             </button>
+            <button type="button" class="btn btn-secondary" onclick="clearAITest()" style="padding: 9px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+              <i class="fa-solid fa-rotate-left"></i> <span>Clear</span>
+            </button>
+            <span style="font-size: 11.5px; color: var(--text-muted); margin-left: auto;">
+              Shortcut: <kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-family: inherit;">Ctrl</kbd> + <kbd style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 11px; font-family: inherit;">Enter</kbd>
+            </span>
           </div>
 
           <div>
-            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; text-transform: uppercase;">
+            <label style="display: block; font-size: 11.5px; font-weight: 700; color: var(--text-main); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;">
               AI Response Output
             </label>
-            <div class="response-card" id="ai-test-output">Press "Send Prompt to Gemini AI" to test the AI model response...</div>
+            <div class="ai-response-wrapper">
+              <div class="ai-response-toolbar">
+                <div class="ai-response-status">
+                  <span class="ai-live-dot"></span>
+                  <strong style="color: #0f172a;">Google Gemini AI</strong>
+                  <span class="ai-model-tag">gemini-3.5-flash-lite</span>
+                  <span id="ai-mode-pill" class="tag-pill primary">STUDY TUTOR</span>
+                </div>
+                <div class="ai-response-actions">
+                  <span id="ai-response-meta" style="display: none; font-size: 12px; color: var(--text-muted);">
+                    <i class="fa-regular fa-clock"></i> <span id="ai-time-val">0.0s</span>
+                  </span>
+                  <button type="button" class="btn-copy-response" id="btn-copy-ai" onclick="copyAITestResponse()" style="display: none;">
+                    <i class="fa-regular fa-copy"></i> <span id="copy-btn-text">Copy</span>
+                  </button>
+                </div>
+              </div>
+              <div class="ai-response-body" id="ai-test-output">
+                <div class="ai-empty-prompt-state">
+                  <div class="ai-empty-icon"><i class="fa-solid fa-robot"></i></div>
+                  <h4>Gemini AI Study Engine Ready</h4>
+                  <p>Select a response type above or enter a question, then click <strong>"Send Prompt to Gemini AI"</strong> to test live responses.</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -3325,38 +3609,210 @@ function confirmDeleteDocument(fileId, filename) {
 // -------------------------------------------------------------
 // AI Testing Playground
 // -------------------------------------------------------------
+const samplePlaygroundPrompts = [
+  { mode: 'tutor', prompt: 'What is object-oriented programming, and why is it useful? Explain in simple terms with an analogy.' },
+  { mode: 'summary', prompt: 'Summarize the key differences between SQL (relational) and NoSQL (non-relational) databases.' },
+  { mode: 'quiz', prompt: 'Create 3 multiple-choice practice quiz questions on Python lists, loops, and conditions.' },
+  { mode: 'flashcard', prompt: 'Create study flashcards for HTTP status codes (200, 400, 401, 404, 500) with simple definitions.' }
+];
+
+let lastAiResponseRawText = '';
+
 function setPlaygroundMode(mode, element) {
   currentPlaygroundMode = mode;
   document.querySelectorAll('.mode-chip').forEach(c => c.classList.remove('active'));
-  element.classList.add('active');
+  if (element) {
+    element.classList.add('active');
+  } else {
+    const target = document.querySelector(`.mode-chip[data-mode="${mode}"]`);
+    if (target) target.classList.add('active');
+  }
+  const modePill = document.getElementById('ai-mode-pill');
+  if (modePill) {
+    const titles = { tutor: 'STUDY TUTOR', summary: 'SIMPLE SUMMARY', quiz: 'PRACTICE QUIZ', flashcard: 'FLASHCARDS' };
+    modePill.textContent = titles[mode] || mode.toUpperCase();
+  }
+}
+
+function useSamplePrompt(index) {
+  const item = samplePlaygroundPrompts[index];
+  if (!item) return;
+  setPlaygroundMode(item.mode, null);
+  const promptInput = document.getElementById('ai-test-prompt');
+  if (promptInput) {
+    promptInput.value = item.prompt;
+    promptInput.focus();
+  }
+}
+
+function clearAITest() {
+  const promptInput = document.getElementById('ai-test-prompt');
+  const outputBox = document.getElementById('ai-test-output');
+  const metaBadge = document.getElementById('ai-response-meta');
+  const copyBtn = document.getElementById('btn-copy-ai');
+
+  if (promptInput) promptInput.value = '';
+  if (metaBadge) metaBadge.style.display = 'none';
+  if (copyBtn) copyBtn.style.display = 'none';
+  lastAiResponseRawText = '';
+
+  if (outputBox) {
+    outputBox.innerHTML = `
+      <div class="ai-empty-prompt-state">
+        <div class="ai-empty-icon"><i class="fa-solid fa-robot"></i></div>
+        <h4>Gemini AI Study Engine Ready</h4>
+        <p>Select a response type above or enter a question, then click <strong>"Send Prompt to Gemini AI"</strong> to test live responses.</p>
+      </div>
+    `;
+  }
+}
+
+function copyAITestResponse() {
+  if (!lastAiResponseRawText) {
+    showToast('No AI response to copy.', 'warning');
+    return;
+  }
+  navigator.clipboard.writeText(lastAiResponseRawText).then(() => {
+    const copyText = document.getElementById('copy-btn-text');
+    if (copyText) {
+      copyText.textContent = 'Copied!';
+      setTimeout(() => copyText.textContent = 'Copy', 2000);
+    }
+    showToast('AI response copied to clipboard!', 'success');
+  }).catch(() => {
+    showToast('Failed to copy text.', 'error');
+  });
+}
+
+function formatAiMarkdown(text) {
+  if (!text) return '';
+  // Clean escape
+  let html = escapeHtml(text);
+
+  // Code blocks (```language ... ```)
+  html = html.replace(/```([a-zA-Z0-9_-]*)
+([\s\S]*?)```/g, (match, lang, code) => {
+    return `<pre><code>${code.trim()}</code></pre>`;
+  });
+
+  // Inline code (`...`)
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  // Bold (**text** or __text__)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/__(.*?)__/g, '<strong>$1</strong>');
+
+  // Italic (*text* or _text_)
+  html = html.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+  // Headings
+  html = html.replace(/^### (.*?)$/gm, '<h4 style="font-size: 15px; font-weight: 700; color: #0f172a; margin: 12px 0 6px;">$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3 style="font-size: 16px; font-weight: 800; color: #0f172a; margin: 14px 0 6px;">$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin: 16px 0 8px;">$1</h2>');
+
+  // Bullet items
+  html = html.replace(/^[\*\-] (.*?)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>[\s\S]*?<\/li>)/g, '<ul style="padding-left: 20px; margin: 8px 0;">$1</ul>');
+
+  // Numbered list items
+  html = html.replace(/^(\d+)\. (.*?)$/gm, '<li>$2</li>');
+
+  // Paragraph breaks
+  html = html.replace(/\n\n+/g, '</p><p>');
+  html = html.replace(/\n/g, '<br>');
+
+  return `<div class="ai-markdown-output"><p>${html}</p></div>`;
 }
 
 async function runAITest() {
   const promptInput = document.getElementById('ai-test-prompt');
   const outputBox = document.getElementById('ai-test-output');
   const btn = document.getElementById('btn-run-ai-test');
+  const btnIcon = document.getElementById('ai-btn-icon');
+  const btnText = document.getElementById('ai-btn-text');
+  const metaBadge = document.getElementById('ai-response-meta');
+  const timeVal = document.getElementById('ai-time-val');
+  const copyBtn = document.getElementById('btn-copy-ai');
 
-  const prompt = promptInput.value.trim();
+  const prompt = promptInput ? promptInput.value.trim() : '';
   if (!prompt) {
     showToast('Please type a question or prompt before running the test.', 'warning');
+    if (promptInput) promptInput.focus();
     return;
   }
 
   btn.disabled = true;
-  outputBox.textContent = 'Contacting Google Gemini AI study engine...';
+  if (btnIcon) btnIcon.className = 'fa-solid fa-spinner fa-spin';
+  if (btnText) btnText.textContent = 'Generating...';
+
+  outputBox.innerHTML = `
+    <div class="ai-loading-box">
+      <div class="spinner" style="border-color: rgba(125,29,29,0.25); border-top-color: #7D1D1D;"></div>
+      <span>Contacting Google Gemini AI study engine...</span>
+    </div>
+  `;
+
+  if (metaBadge) metaBadge.style.display = 'none';
+  if (copyBtn) copyBtn.style.display = 'none';
+
+  const startTime = performance.now();
 
   try {
     const data = await adminAnnouncementRequest('/admin/test-ai', {
       method: 'POST',
       body: JSON.stringify({ prompt, mode: currentPlaygroundMode })
     });
-    outputBox.textContent = data.response || 'No response returned.';
+
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+    if (timeVal) timeVal.textContent = `${elapsed}s`;
+    if (metaBadge) metaBadge.style.display = 'inline-flex';
+
+    if (data.status === 'error') {
+      lastAiResponseRawText = data.response || 'An error occurred with Gemini AI.';
+      outputBox.innerHTML = `
+        <div class="ai-error-box">
+          <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+            <i class="fa-solid fa-triangle-exclamation"></i> Gemini AI Warning
+          </div>
+          <div>${escapeHtml(lastAiResponseRawText)}</div>
+        </div>
+      `;
+    } else {
+      lastAiResponseRawText = data.response || 'No response returned.';
+      outputBox.innerHTML = formatAiMarkdown(lastAiResponseRawText);
+      if (copyBtn) copyBtn.style.display = 'inline-flex';
+      showToast('AI response generated successfully!', 'success');
+    }
   } catch (err) {
-    outputBox.textContent = `Error testing AI: ${err.message}`;
+    lastAiResponseRawText = `Error testing AI: ${err.message}`;
+    outputBox.innerHTML = `
+      <div class="ai-error-box">
+        <div style="font-weight: 700; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+          <i class="fa-solid fa-circle-xmark"></i> Connection Error
+        </div>
+        <div>${escapeHtml(err.message)}</div>
+      </div>
+    `;
   } finally {
     btn.disabled = false;
+    if (btnIcon) btnIcon.className = 'fa-solid fa-wand-magic-sparkles';
+    if (btnText) btnText.textContent = 'Send Prompt to Gemini AI';
   }
 }
+
+// Enable Ctrl+Enter in prompt textarea
+document.addEventListener('DOMContentLoaded', () => {
+  const promptEl = document.getElementById('ai-test-prompt');
+  if (promptEl) {
+    promptEl.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        runAITest();
+      }
+    });
+  }
+});
 
 // -------------------------------------------------------------
 // System Diagnostics

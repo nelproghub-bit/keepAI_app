@@ -855,7 +855,9 @@ ai_service = AIService()
 # Legacy functions for backward compatibility
 def generate(prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 
              user_id: str = "default", teaching_style: str = "simple", 
-             has_sources: bool = False) -> str:
+             has_sources: bool = False, system_instruction: Optional[str] = None) -> str:
+    if system_instruction is not None:
+        system = system_instruction
     return ai_service.generate(prompt, system, user_id, teaching_style, has_sources)
 
 def generate_stream(prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 

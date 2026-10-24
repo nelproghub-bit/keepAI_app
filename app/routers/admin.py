@@ -516,7 +516,7 @@ def test_ai_system(
         )
 
     try:
-        reply = generate(prompt, system_instruction=system_instruction)
+        reply = generate(prompt, system=system_instruction)
         return {
             "status": "success",
             "provider": "Google Gemini AI",
