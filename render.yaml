@@ -19,6 +19,8 @@ services:
         value: /tmp/keepai/chroma
       - key: ALLOWED_ORIGINS
         sync: false
+      - key: ALLOWED_ORIGIN_REGEX
+        value: ^https://keep-ai-app(?:-git-main)?-nelproghub-bits-projects\.vercel\.app$
       - key: AI_PROVIDER
         value: gemini
       - key: GEMINI_MODEL

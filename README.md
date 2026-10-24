@@ -44,7 +44,7 @@ The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs
 1. Use the Neon project `keepai-userdb` in AWS US West 2 (Oregon) for persistent PostgreSQL storage. Set its pooled connection string as the Render `DATABASE_URL` secret; never commit the URL.
 2. Configure Render with `DB_TYPE=postgres` and the Neon `DATABASE_URL`, then redeploy. PostgreSQL stores accounts, extracted study text, and embeddings across free-service restarts. The original uploaded file itself is not retained; re-upload it if you need the original file again.
 3. In Vercel, set `VITE_API_URL` to the Render backend origin (for example, `https://keep-ai-api.onrender.com`, without `/api`), then redeploy. Vercel builds fail intentionally if this variable is missing.
-4. Keep `ALLOWED_ORIGINS` on Render set to `https://keep-ai-app.vercel.app` and any local development origins needed. Separate origins with commas.
+4. Keep `ALLOWED_ORIGINS` on Render set to `https://keep-ai-app.vercel.app` and any local development origins needed. Separate origins with commas. The backend also permits the project's stable `keep-ai-app` and `keep-ai-app-git-main` Vercel aliases for admin sign-in; set `ALLOWED_ORIGIN_REGEX` if these Vercel aliases change. Per-deployment preview URLs are intentionally not trusted with production login.
 
 `requirements.txt` pins backend dependencies and includes the PostgreSQL driver. Local development continues to use SQLite by default; hosted PostgreSQL is selected with `DB_TYPE=postgres` and `DATABASE_URL`.
 Accounts previously written to the Render free service's temporary SQLite file are not automatically migrated. Users may need to register again once after PostgreSQL is connected.
