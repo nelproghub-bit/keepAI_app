@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -189,12 +189,12 @@
         .btn-primary {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.28);
+            box-shadow: 0 4px 12px rgba(125, 29, 29, 0.28);
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+            box-shadow: 0 6px 16px rgba(125, 29, 29, 0.40);
         }
 
         .btn-success {
@@ -395,12 +395,27 @@
         }
     </style>
     <link href="assets/css/responsive-layouts.css" rel="stylesheet">
+    <link href="assets/css/design-system.css" rel="stylesheet">
 </head>
 <body>
-    <div class="container" id="admin-panel-content" style="visibility: hidden;">
+    <!-- Branded Maroon Header Bar -->
+    <div class="page-header-ds" style="margin-bottom:0;border-radius:0;position:sticky;top:0;z-index:1000;">
+        <a href="admin_dashboard.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:12px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;">
+            <img src="icons/icon-192.png" alt="KeepAI Logo" style="width:36px;height:36px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+            KeepAI
+        </a>
+        <div style="display:flex;align-items:center;gap:10px;">
+            <span style="font-size:13px;opacity:0.85;font-family:'Plus Jakarta Sans',sans-serif;color:#fff;">Admin Panel</span>
+            <a href="admin_dashboard.html" class="btn btn-sm" style="background:rgba(255,255,255,0.18);color:#fff;border:1px solid rgba(255,255,255,0.3);font-size:12px;">
+                <i class="fas fa-arrow-left"></i> Dashboard
+            </a>
+        </div>
+    </div>
+
+    <div class="container" id="admin-panel-content" style="visibility:hidden;padding-top:24px;">
         <!-- Header -->
-        <div class="header">
-            <h1>⚙️ KeepAI Admin Panel</h1>
+        <div class="header" style="background:linear-gradient(135deg,#7D1D1D 0%,#9B2424 100%);color:#fff;border-radius:14px;margin-bottom:24px;">
+            <h1><i class="fas fa-sliders-h"></i> KeepAI Admin Panel</h1>
             <p>Server management and system control</p>
         </div>
 

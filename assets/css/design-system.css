@@ -1,0 +1,711 @@
+/**
+ * KeepAI Design System — Shared CSS Tokens & Components
+ * Brand: Maroon #7D1D1D | Hover: #651818
+ * Fonts: Inter (body) | Plus Jakarta Sans (headings/buttons)
+ * FontAwesome 6.4.0 loaded via CDN on all pages
+ */
+
+/* ============================================================
+   1. CSS Custom Properties (Design Tokens)
+   ============================================================ */
+:root {
+  /* ── Brand Colors ── */
+  --primary:            #7D1D1D;
+  --primary-hover:      #651818;
+  --primary-dark:       #4A0E0E;
+  --primary-light:      #FFF5F5;
+  --primary-border:     #F5B5B5;
+  --primary-glow:       rgba(125, 29, 29, 0.22);
+  --primary-gradient:   linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
+  --brand-gradient:     linear-gradient(135deg, #7D1D1D 0%, #A52A2A 50%, #5E1414 100%);
+
+  /* ── Semantic Colors ── */
+  --success:            #059669;
+  --success-light:      #ecfdf5;
+  --success-border:     #a7f3d0;
+  --warning:            #d97706;
+  --warning-light:      #fffbeb;
+  --warning-border:     #fde68a;
+  --danger:             #e11d48;
+  --danger-light:       #fff1f2;
+  --danger-border:      #fecdd3;
+  --info:               #3b82f6;
+  --info-light:         #eff6ff;
+  --info-border:        #bfdbfe;
+
+  /* ── Neutral / Surface ── */
+  --bg-app:             #f8fafc;
+  --bg-surface:         #ffffff;
+  --bg-subtle:          #f1f5f9;
+  --border:             #e2e8f0;
+  --border-strong:      #cbd5e1;
+  --text-main:          #0f172a;
+  --text-body:          #334155;
+  --text-muted:         #64748b;
+  --text-placeholder:   #94a3b8;
+
+  /* ── Spacing ── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ── Border Radius ── */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius-2xl: 24px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-xs:  0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-sm:  0 1px 3px rgba(15, 23, 42, 0.10);
+  --shadow:     0 4px 12px rgba(15, 23, 42, 0.10);
+  --shadow-md:  0 8px 20px rgba(15, 23, 42, 0.12);
+  --shadow-lg:  0 10px 25px rgba(15, 23, 42, 0.12);
+  --shadow-xl:  0 20px 50px -12px rgba(15, 23, 42, 0.25);
+  --shadow-primary: 0 4px 14px rgba(125, 29, 29, 0.35);
+  --shadow-primary-hover: 0 6px 18px rgba(125, 29, 29, 0.45);
+
+  /* ── Transitions ── */
+  --transition-fast:   all 0.15s ease;
+  --transition:        all 0.2s ease;
+  --transition-slow:   all 0.35s ease;
+
+  /* ── Typography ── */
+  --font-body:     'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading:  'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-mono:     'JetBrains Mono', 'Courier New', monospace;
+}
+
+/* ============================================================
+   2. Dark Mode Overrides
+   ============================================================ */
+body.dark-mode {
+  --bg-app:        #0f172a;
+  --bg-surface:    #1e293b;
+  --bg-subtle:     #1a2638;
+  --border:        #334155;
+  --border-strong: #475569;
+  --text-main:     #f1f5f9;
+  --text-body:     #cbd5e1;
+  --text-muted:    #94a3b8;
+  --text-placeholder: #64748b;
+  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow:        0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg:     0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+body.dark-mode .btn-secondary {
+  background: #1e293b;
+  color: var(--text-body);
+  border-color: var(--border);
+}
+
+body.dark-mode .btn-soft {
+  background: rgba(125, 29, 29, 0.25);
+  color: #f87171;
+}
+
+body.dark-mode .btn-plain {
+  color: var(--text-muted);
+}
+
+body.dark-mode .btn-plain:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-body);
+}
+
+/* ============================================================
+   3. Base Reset
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+/* ============================================================
+   4. Button Components
+   ============================================================ */
+
+/* Base Button */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  font-family: var(--font-heading);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--transition);
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+  vertical-align: middle;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn i,
+.btn .fa,
+.btn .fas,
+.btn .far,
+.btn .fab {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.52;
+  cursor: not-allowed;
+  pointer-events: none;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Primary — maroon gradient */
+.btn-primary {
+  background: var(--primary-gradient);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: var(--shadow-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #651818 0%, #8A2020 100%);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-primary-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-primary);
+}
+
+/* Secondary — outlined */
+.btn-secondary {
+  background: var(--bg-surface);
+  color: var(--text-body);
+  border-color: var(--border);
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-secondary:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Soft — light maroon tint */
+.btn-soft {
+  background: var(--primary-light);
+  color: var(--primary);
+  border-color: var(--primary-border);
+}
+
+.btn-soft:hover:not(:disabled) {
+  background: #FFE8E8;
+  border-color: var(--primary);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(125, 29, 29, 0.18);
+}
+
+.btn-soft:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Plain / Ghost — no background */
+.btn-plain {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.btn-plain:hover:not(:disabled) {
+  background: var(--bg-subtle);
+  color: var(--text-body);
+}
+
+/* Danger — destructive action */
+.btn-danger {
+  background: var(--danger);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(225, 29, 72, 0.28);
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #c8173d;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(225, 29, 72, 0.38);
+}
+
+.btn-danger:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Success */
+.btn-success {
+  background: var(--success);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(5, 150, 105, 0.28);
+}
+
+.btn-success:hover:not(:disabled) {
+  background: #047857;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(5, 150, 105, 0.38);
+}
+
+.btn-success:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Warning */
+.btn-warning {
+  background: var(--warning);
+  color: #fff;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.28);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: #b45309;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.38);
+}
+
+.btn-warning:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Size Modifiers */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 12px;
+  border-radius: var(--radius-sm);
+}
+
+.btn-sm i,
+.btn-sm .fas {
+  font-size: 12px;
+}
+
+.btn-lg {
+  padding: 13px 28px;
+  font-size: 15px;
+  border-radius: var(--radius-lg);
+}
+
+/* Icon-only Button */
+.btn-icon {
+  padding: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  flex-shrink: 0;
+}
+
+.btn-icon.btn-sm {
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+}
+
+.btn-icon.btn-lg {
+  width: 44px;
+  height: 44px;
+  padding: 11px;
+}
+
+/* Full width */
+.btn-block {
+  width: 100%;
+}
+
+/* ============================================================
+   5. Form / Input Fields
+   ============================================================ */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-body);
+  font-family: var(--font-body);
+}
+
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--text-main);
+  background: var(--bg-surface);
+  transition: var(--transition);
+  appearance: none;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+  color: var(--text-placeholder);
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.form-input:disabled,
+.form-select:disabled,
+.form-textarea:disabled {
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.form-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.form-error {
+  font-size: 12px;
+  color: var(--danger);
+}
+
+/* ============================================================
+   6. Alert / Toast Styles
+   ============================================================ */
+.alert-ds {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid transparent;
+  animation: ds-slideDown 0.3s ease-out;
+}
+
+@keyframes ds-slideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.alert-ds-success {
+  background: var(--success-light);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.alert-ds-warning {
+  background: var(--warning-light);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+
+.alert-ds-danger,
+.alert-ds-error {
+  background: var(--danger-light);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.alert-ds-info {
+  background: var(--info-light);
+  border-color: var(--info-border);
+  color: var(--info);
+}
+
+.alert-ds-primary {
+  background: var(--primary-light);
+  border-color: var(--primary-border);
+  color: var(--primary);
+}
+
+/* Toast notification (fixed position) */
+.toast-ds {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 12px 20px;
+  background: var(--text-main);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: var(--shadow-xl);
+  animation: ds-toastIn 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  max-width: 360px;
+}
+
+@keyframes ds-toastIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.95); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ============================================================
+   7. Modal Overlay Styles
+   ============================================================ */
+.modal-overlay-ds {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: ds-fadeIn 0.2s ease;
+}
+
+@keyframes ds-fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.modal-box-ds {
+  background: var(--bg-surface);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-xl);
+  width: 100%;
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: ds-scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes ds-scaleIn {
+  from { opacity: 0; transform: scale(0.92) translateY(10px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.modal-header-ds {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title-ds {
+  font-family: var(--font-heading);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modal-body-ds {
+  padding: 24px;
+}
+
+.modal-footer-ds {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  padding: 16px 24px;
+  border-top: 1px solid var(--border);
+}
+
+/* ============================================================
+   8. Spinner Animation
+   ============================================================ */
+.spinner-ds {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: ds-spin 0.7s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  flex-shrink: 0;
+}
+
+.spinner-ds-dark {
+  border-color: rgba(125, 29, 29, 0.2);
+  border-top-color: var(--primary);
+}
+
+@keyframes ds-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   9. Page Header — Maroon Gradient
+   ============================================================ */
+.page-header-ds {
+  background: var(--primary-gradient);
+  color: #fff;
+  padding: 20px 30px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 2px 12px rgba(125, 29, 29, 0.35);
+}
+
+.page-header-ds .brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: var(--font-heading);
+  font-weight: 800;
+  font-size: 20px;
+  color: #fff;
+  text-decoration: none;
+}
+
+.page-header-ds .brand-logo img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+}
+
+.page-header-ds .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* ============================================================
+   10. Card Component
+   ============================================================ */
+.card-ds {
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.card-ds-header {
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  font-family: var(--font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.card-ds-body {
+  padding: 20px 24px;
+}
+
+.card-ds-footer {
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+/* ============================================================
+   11. Badge / Status Indicator
+   ============================================================ */
+.badge-ds {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.badge-ds-primary  { background: var(--primary-light);  color: var(--primary);  border: 1px solid var(--primary-border); }
+.badge-ds-success  { background: var(--success-light);  color: var(--success);  border: 1px solid var(--success-border); }
+.badge-ds-warning  { background: var(--warning-light);  color: var(--warning);  border: 1px solid var(--warning-border); }
+.badge-ds-danger   { background: var(--danger-light);   color: var(--danger);   border: 1px solid var(--danger-border); }
+.badge-ds-info     { background: var(--info-light);     color: var(--info);     border: 1px solid var(--info-border); }
+
+/* Status dot for online/offline */
+.status-dot-ds {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  animation: ds-pulse 2s ease-in-out infinite;
+}
+
+.status-dot-ds.online  { background: var(--success); }
+.status-dot-ds.offline { background: var(--danger); }
+.status-dot-ds.idle    { background: var(--warning); animation: none; }
+
+@keyframes ds-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+/* ============================================================
+   12. Utility Classes
+   ============================================================ */
+.text-primary  { color: var(--primary); }
+.text-success  { color: var(--success); }
+.text-danger   { color: var(--danger); }
+.text-warning  { color: var(--warning); }
+.text-muted    { color: var(--text-muted); }
+.text-main     { color: var(--text-main); }
+
+.bg-primary-light { background: var(--primary-light); }
+.bg-success-light { background: var(--success-light); }
+.bg-danger-light  { background: var(--danger-light); }
+.bg-warning-light { background: var(--warning-light); }
+
+.border-primary { border-color: var(--primary); }
+.rounded-sm  { border-radius: var(--radius-sm); }
+.rounded-md  { border-radius: var(--radius-md); }
+.rounded-lg  { border-radius: var(--radius-lg); }
+.rounded-xl  { border-radius: var(--radius-xl); }
+.rounded-2xl { border-radius: var(--radius-2xl); }
+.rounded-full { border-radius: var(--radius-full); }
