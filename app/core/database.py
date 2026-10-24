@@ -153,7 +153,7 @@ def _try_get_mysql_connection() -> Optional[MySQLConnectionWrapper]:
         )
         return MySQLConnectionWrapper(conn)
     except Exception as e:
-        print(f"⚠️ MySQL/MariaDB connection notice: {e}. Falling back to SQLite.")
+        print(f"[KeepAI Notice] MySQL/MariaDB connection notice: {e}. Falling back to SQLite.")
         return None
 
 def _get_postgres_connection() -> PostgresConnectionWrapper:
