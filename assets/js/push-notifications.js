@@ -6,6 +6,55 @@
     return Uint8Array.from(raw, character => character.charCodeAt(0));
   }
 
+  function getPushCompatibilityMessage() {
+    const isAppleMobile = /iPhone|iPad|iPod/i.test(navigator.userAgent)
+      || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    const isInstalled = navigator.standalone === true
+      || (typeof window.matchMedia === 'function'
+        && (window.matchMedia('(display-mode: standalone)').matches
+          || window.matchMedia('(display-mode: fullscreen)').matches));
+
+    if (isAppleMobile && !isInstalled) {
+      return 'On iPhone or iPad, add KeepAI to your Home Screen and open the installed app to enable push notifications.';
+    }
+    if (!window.isSecureContext) {
+      return 'Push notifications require HTTPS. Open KeepAI using its secure https:// address.';
+    }
+    return null;
+  }
+
+  function getPushRegistrationError(error) {
+    if (error?.name === 'NotAllowedError') {
+      return 'Notifications are blocked for this site or device. Allow them in browser and device settings, then try again.';
+    }
+    if (error?.name === 'NotSupportedError') {
+      return 'This browser or device does not support web push notifications. Try an up-to-date version of Chrome, Edge, Firefox, or Safari.';
+    }
+    if (error?.name === 'InvalidStateError') {
+      return 'This app is not ready to register notifications. Reload KeepAI and try again.';
+    }
+    if (/push service|registration failed|networkerror/i.test(error?.message || '')) {
+      return 'Your browser could not reach its push service. Check your internet connection, allow notifications for KeepAI in device settings, disable any network filter that blocks push services, and retry. iPhone and iPad require KeepAI to be installed on the Home Screen.';
+    }
+    return error?.message || 'Push notifications could not be enabled. Check your browser and device notification settings, then retry.';
+  }
+
+  async function subscribeWithRetry(registration, configuration) {
+    const options = {
+      userVisibleOnly: true,
+      applicationServerKey: decodeApplicationServerKey(configuration.public_key)
+    };
+    try {
+      return await registration.pushManager.subscribe(options);
+    } catch (error) {
+      if (!/push service|registration failed|networkerror/i.test(error?.message || '')) {
+        throw error;
+      }
+      await new Promise(resolve => setTimeout(resolve, 900));
+      return registration.pushManager.subscribe(options);
+    }
+  }
+
   async function pushRequest(path, token, options = {}) {
     const response = await fetch(`${window.API_BASE}${path}`, {
       ...options,
@@ -59,7 +108,17 @@
     }
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       button.disabled = true;
-      updateStatus('This browser does not support web push notifications.', 'error');
+      updateStatus(
+        getPushCompatibilityMessage()
+          || 'This browser does not support web push notifications. Try an up-to-date Chrome, Edge, Firefox, or Safari browser.',
+        'error'
+      );
+      return;
+    }
+    const compatibilityMessage = getPushCompatibilityMessage();
+    if (compatibilityMessage) {
+      button.disabled = true;
+      updateStatus(compatibilityMessage, 'error');
       return;
     }
 
@@ -130,10 +189,8 @@
             return;
           }
 
-          const pushSubscription = await registration.pushManager.subscribe({
-            userVisibleOnly: true,
-            applicationServerKey: decodeApplicationServerKey(configuration.public_key)
-          });
+          updateStatus('Connecting to your browser push service…');
+          const pushSubscription = await subscribeWithRetry(registration, configuration);
           try {
             await pushRequest('/push/subscription', activeToken, {
               method: 'POST',
@@ -150,7 +207,10 @@
           updateStatus('Push notifications are enabled on this device.', 'enabled');
         } catch (error) {
           console.error('Could not update push notification settings:', error);
-          updateStatus(error.message || 'Push notification settings could not be updated.', 'error');
+          updateStatus(
+            getPushRegistrationError(error),
+            'error'
+          );
         } finally {
           button.disabled = false;
         }
