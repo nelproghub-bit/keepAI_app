@@ -6,6 +6,7 @@ from pydantic import BaseModel, Field
 
 from app.core.database import get_connection
 from app.core.security import get_current_admin_user, get_current_user
+from app.routers.push import send_announcement_push
 
 router = APIRouter(tags=["Announcements"])
 
@@ -156,9 +157,17 @@ def create_announcement(
             """,
             (announcement_id,),
         )
-        return _serialize_announcement(dict(cursor.fetchone()))
+        announcement = _serialize_announcement(dict(cursor.fetchone()))
     finally:
         conn.close()
+
+    delivery = send_announcement_push(
+        announcement_id,
+        title,
+        message,
+        request.kind,
+    )
+    return {**announcement, "push_delivery": delivery}
 
 
 @router.delete("/admin/announcements/{announcement_id}")

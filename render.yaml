@@ -27,3 +27,9 @@ services:
         sync: false
       - key: GEMINI_API_KEY
         sync: false
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: mailto:notifications@keepai-app.vercel.app

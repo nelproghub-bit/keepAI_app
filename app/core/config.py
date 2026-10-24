@@ -51,6 +51,9 @@ if not JWT_SECRET_KEY:
     )
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080"))  # 7 days
+VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
+VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
+VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:notifications@keepai-app.vercel.app").strip()
 
 DEFAULT_ALLOWED_ORIGINS = (
     "http://localhost:5173,http://localhost:3000,"

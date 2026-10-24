@@ -51,6 +51,18 @@ Accounts previously written to the Render free service's temporary SQLite file a
 
 KeepAI is distributed as a web app that can be installed from a supported browser.
 
+### Push notifications
+
+Students and admins can opt in per device from the dashboard notification area. Admin announcements are sent to opted-in devices even when KeepAI is not open; they remain available in the in-app announcements list as well. Push is supported by browsers that implement the Web Push API and requires HTTPS (localhost is allowed for development). On iOS, users need a home-screen-installed web app and a supported iOS version.
+
+Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` on the backend before users enable push. Generate a single P-256 VAPID key pair with:
+
+```bash
+python -c "import base64; from py_vapid import Vapid; from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat; v=Vapid(); v.generate_keys(); e=lambda b: base64.urlsafe_b64encode(b).rstrip(b'=').decode(); print('VAPID_PUBLIC_KEY='+e(v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint))); print('VAPID_PRIVATE_KEY='+e(v.private_key.private_numbers().private_value.to_bytes(32, 'big')))"
+```
+
+Configure the generated URL-safe base64 public and private values in the backend environment (for example, Render); keep the private value secret and never put it in frontend variables or source control. Use the same pair for every deployment. New subscriptions are stored per user and device; users can disable each device separately.
+
 AI Tutor conversations are saved to the configured database under the signed-in student's account. Students can reopen individual conversations, delete a chat, or clear all saved chat history from the Chat History panel. The Clear Chat action starts a fresh conversation without removing saved history.
 
 Local database and document files under `data/` are ignored and no longer tracked in the current Git tree; local copies remain on disk. Earlier commits still contain those files, so sanitize Git history if this repository is public or those files contained private data.
@@ -86,8 +98,8 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🗂️ Workspace Organization** - Create workspaces with preset or custom course categories
 - **⚙️ Student Settings** - Customize AI tutor mode, theme, and preferences
 - **🎨 Personalization** - Automatically match professional icons to custom workspace categories
-- **📣 App Announcements** - Admins can publish update-required, maintenance, and general notices to student dashboards
-- Admin announcements are published from **Admin Dashboard → Announcements**; students receive a notification badge and the dashboard checks for new notices while open.
+- **📣 App Announcements and Push Alerts** - Admins can publish update-required, maintenance, and general notices to all users; users can opt in to receive browser push notifications per device.
+- Admin announcements are published from **Admin Dashboard → Announcements**; they appear in the in-app notification list and are pushed to subscribed devices, including when KeepAI is closed.
 - **📚 Document Collections** - Organize materials by course or subject
 - **🔒 Student-Only Access** - Focused interface without admin distractions
 

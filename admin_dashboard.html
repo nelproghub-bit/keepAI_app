@@ -1866,7 +1866,14 @@ table.data-table tr:hover {
 
       <div class="dash-card" style="padding: 24px; margin-bottom: 20px;">
         <h2 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Publish an announcement</h2>
-        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 18px;">Students see new notices in the notification bell on their dashboard.</p>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 18px;">All users see notices in the app. Users who enable push notifications can receive them while KeepAI is closed.</p>
+        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:18px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;">
+          <div style="flex:1 1 220px;">
+            <strong style="display:block;color:var(--text-main);font-size:13px;">Device push notifications</strong>
+            <span id="push-notifications-status" style="display:block;margin-top:4px;color:var(--text-muted);font-size:12px;">Checking this device…</span>
+          </div>
+          <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="admin_access_token" type="button" disabled>Checking…</button>
+        </div>
         <form id="announcement-create-form" onsubmit="createAdminAnnouncement(event)">
           <label for="announcement-title" style="display:block;font-weight:700;margin-bottom:6px;">Title</label>
           <input id="announcement-title" required minlength="3" maxlength="200" placeholder="e.g., New study tools are available" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px;">
@@ -2267,6 +2274,7 @@ table.data-table tr:hover {
      CLIENT JAVASCRIPT
      ========================================================================= -->
 <script src="assets/js/config.js"></script>
+<script src="assets/js/push-notifications.js"></script>
 <script src="assets/js/app-update-notice.js"></script>
 <script src="assets/js/onboarding-tour.js"></script>
 <script>
@@ -2510,6 +2518,7 @@ function enterDashboard(user) {
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('dashboard-app').classList.add('active');
   document.getElementById('sidebar-admin-name').textContent = user.full_name || user.username;
+  window.KeepAIPushNotifications?.refresh();
 
   const requestedTab = window.location.hash.slice(1);
   switchDashboardTab(isValidAdminTab(requestedTab) ? requestedTab : 'overview', false);
@@ -2750,13 +2759,22 @@ async function createAdminAnnouncement(event) {
 
   submit.disabled = true;
   try {
-    await adminAnnouncementRequest('/admin/announcements', {
+    const published = await adminAnnouncementRequest('/admin/announcements', {
       method: 'POST',
       body: JSON.stringify({ title, message, kind: kindInput.value })
     });
     document.getElementById('announcement-create-form').reset();
     await loadAdminAnnouncements();
-    showToast('Announcement published to student dashboards.', 'success');
+    if (published.push_delivery?.configured) {
+      const sent = published.push_delivery.sent || 0;
+      const failed = published.push_delivery.failed || 0;
+      showToast(
+        `Announcement published. Push alerts sent to ${sent} device${sent === 1 ? '' : 's'}${failed ? `; ${failed} failed` : ''}.`,
+        failed ? 'warning' : 'success'
+      );
+    } else {
+      showToast('Announcement published in the app. Push delivery is not configured on the server.', 'warning');
+    }
   } catch (error) {
     console.error('Failed to publish announcement:', error);
     showToast(error.message, 'error');

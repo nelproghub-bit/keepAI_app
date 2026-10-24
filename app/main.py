@@ -12,7 +12,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, PlainTextResponse
-from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin, progress, announcements
+from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin, progress, announcements, push
 from app.core.config import ALLOWED_ORIGINS
 from app.services.knowledge_loader import initialize_knowledge_base
 from app.services.rag_service import sync_initial_documents_to_db
@@ -41,6 +41,7 @@ app.include_router(tutor.router, prefix="/api")
 app.include_router(learning_tools.router, prefix="/api")
 app.include_router(progress.router, prefix="/api")
 app.include_router(announcements.router, prefix="/api")
+app.include_router(push.router, prefix="/api")
 
 @app.get("/health")
 def deployment_health():

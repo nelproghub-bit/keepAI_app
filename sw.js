@@ -18,6 +18,7 @@ const STATIC_ASSETS = [
   './icons/apple-touch-icon.png',
   './assets/css/responsive-layouts.css',
   './assets/css/onboarding-tour.css',
+  './assets/js/push-notifications.js',
   './assets/js/onboarding-tour.js',
   './assets/images/keepai-logo.png'
 ];
@@ -39,6 +40,50 @@ self.addEventListener('activate', event => {
         keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))
       );
     }).then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener('push', event => {
+  let payload = {};
+  try {
+    payload = event.data ? event.data.json() : {};
+  } catch (error) {
+    console.error('[KeepAI Push] Could not parse notification payload:', error);
+  }
+
+  const title = typeof payload.title === 'string' && payload.title
+    ? payload.title
+    : 'KeepAI notification';
+  const options = {
+    body: typeof payload.body === 'string' ? payload.body : 'You have a new KeepAI announcement.',
+    icon: './icons/icon-192.png',
+    badge: './icons/icon-192.png',
+    tag: typeof payload.tag === 'string' ? payload.tag : 'keepai-notification',
+    data: { url: typeof payload.url === 'string' ? payload.url : './student_dashboard.html' }
+  };
+
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const requestedUrl = new URL(
+    event.notification.data?.url || './student_dashboard.html?showNotifications=1',
+    self.location.origin
+  );
+  const targetUrl = requestedUrl.origin === self.location.origin
+    ? requestedUrl.href
+    : new URL('./student_dashboard.html?showNotifications=1', self.location.origin).href;
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(windowClients => {
+      for (const client of windowClients) {
+        if (new URL(client.url).origin === self.location.origin && 'focus' in client) {
+          return client.navigate(targetUrl).then(() => client.focus());
+        }
+      }
+      return clients.openWindow(targetUrl);
+    })
   );
 });
 

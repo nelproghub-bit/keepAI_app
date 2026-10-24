@@ -2658,6 +2658,13 @@
                     <i class="fas fa-times"></i>
                 </button>
             </div>
+            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:14px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;">
+                <div style="flex:1 1 220px;">
+                    <strong style="display:block;color:var(--text-main);font-size:13px;">Device push notifications</strong>
+                    <span id="push-notifications-status" style="display:block;margin-top:4px;color:var(--text-muted);font-size:12px;">Checking this device…</span>
+                </div>
+                <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="access_token" type="button" disabled>Checking…</button>
+            </div>
             <div class="announcement-list" id="student-announcements-list" aria-live="polite">
                 <p style="color: var(--text-muted);">Loading notifications…</p>
             </div>
@@ -2711,6 +2718,7 @@
 
     <!-- ==================== CORE JAVASCRIPT ENGINE ==================== -->
     <script src="assets/js/config.js"></script>
+    <script src="assets/js/push-notifications.js"></script>
     <script src="assets/js/app-update-notice.js"></script>
     <script src="assets/js/onboarding-tour.js"></script>
     <script>
@@ -2868,6 +2876,16 @@
             updateCounters();
             const initialSection = window.location.hash.slice(1);
             showSection(isValidStudentSection(initialSection) ? initialSection : 'workspaces', false);
+            const notificationUrl = new URL(window.location.href);
+            if (notificationUrl.searchParams.get('showNotifications') === '1') {
+                notificationUrl.searchParams.delete('showNotifications');
+                window.history.replaceState(
+                    {},
+                    '',
+                    `${notificationUrl.pathname}${notificationUrl.search}${notificationUrl.hash}`
+                );
+                openStudentAnnouncements();
+            }
 
             window.addEventListener('popstate', restoreStudentSectionFromUrl);
             window.addEventListener('hashchange', restoreStudentSectionFromUrl);

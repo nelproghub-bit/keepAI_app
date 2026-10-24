@@ -189,6 +189,20 @@ CREATE TABLE IF NOT EXISTS `announcement_reads` (
     KEY `idx_announcement_reads_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `endpoint` TEXT NOT NULL,
+    `p256dh` VARCHAR(255) NOT NULL,
+    `auth_secret` VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_push_subscriptions_user` (`user_id`),
+    CONSTRAINT `fk_push_subscriptions_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Optional: Seed Default Workspace for Demo Student
 INSERT INTO `workspaces` (`id`, `user_id`, `name`, `description`, `color`, `icon`, `is_active`)
 VALUES (
