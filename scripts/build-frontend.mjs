@@ -56,6 +56,7 @@ for (const filename of [
   'student_dashboard.html',
   'admin_dashboard.html',
   'admin_panel.html',
+  'admin-manifest.json',
   'manifest.json',
   'sw.js',
 ]) {
