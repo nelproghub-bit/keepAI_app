@@ -7,8 +7,15 @@
 
         const currentPasswordGroup = document.getElementById(form.dataset.currentPasswordGroup);
         const currentPassword = currentPasswordGroup?.querySelector('input[name="current_password"]');
-        if (currentPasswordGroup) currentPasswordGroup.hidden = passwordEnabled;
+        if (currentPasswordGroup) currentPasswordGroup.hidden = !passwordEnabled;
         if (currentPassword) currentPassword.required = passwordEnabled;
+
+        const passwordLabel = form.querySelector('label[for$="-new-password"]');
+        const confirmPasswordLabel = form.querySelector('label[for$="-confirm-password"]');
+        if (passwordLabel) passwordLabel.textContent = passwordEnabled ? 'New Password' : 'Create Password';
+        if (confirmPasswordLabel) {
+            confirmPasswordLabel.textContent = passwordEnabled ? 'Confirm New Password' : 'Confirm Password';
+        }
 
         const description = document.getElementById(form.dataset.description);
         if (description) {
