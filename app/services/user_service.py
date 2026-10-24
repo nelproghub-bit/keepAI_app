@@ -181,29 +181,15 @@ class UserService:
             cur.execute(
                 """
                 SELECT id, username, email, full_name, student_id, password_hash, role
-                FROM users 
-                WHERE username = ? OR email = ?
+                FROM users
+                WHERE username = ? OR email = ? OR LOWER(student_id) = ?
                 """,
-                (ident_clean, ident_clean)
+                (ident_clean, ident_clean, ident_clean)
             )
-            row = cur.fetchone()
-            if not row:
-                cur.execute(
-                    """
-                    SELECT id, username, email, full_name, student_id, password_hash, role
-                    FROM users
-                    WHERE LOWER(student_id) = ?
-                    """,
-                    (ident_clean,)
-                )
-                student_matches = cur.fetchall()
-                if len(student_matches) == 1:
-                    row = student_matches[0]
-                elif len(student_matches) > 1:
-                    return None
-
-            if not row:
+            matching_users = cur.fetchall()
+            if len(matching_users) != 1:
                 return None
+            row = matching_users[0]
 
             user_dict = dict(row)
             if not verify_password(password, user_dict["password_hash"]):

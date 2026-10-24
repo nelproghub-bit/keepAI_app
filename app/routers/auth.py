@@ -14,7 +14,7 @@ class RegisterRequest(BaseModel):
     password: str = Field(min_length=6, max_length=128)
 
 class LoginRequest(BaseModel):
-    identifier: str = Field(min_length=3, max_length=120)  # username or email
+    identifier: str = Field(min_length=1, max_length=120)
     password: str = Field(min_length=1, max_length=128)
 
 class ProfileUpdateRequest(BaseModel):
@@ -57,7 +57,7 @@ def register_student(request: RegisterRequest):
 
 @router.post("/login")
 def login_student(request: LoginRequest):
-    """Authenticate student with username or email and password"""
+    """Authenticate a student with username, email, or student ID."""
     user = user_service.authenticate(
         identifier=request.identifier,
         password=request.password
@@ -65,7 +65,7 @@ def login_student(request: LoginRequest):
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials. Please verify your username/email and password.",
+            detail="Invalid credentials. Please verify your username, email, or student ID and password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
     
@@ -164,4 +164,3 @@ def update_student_profile(
 def get_all_students(current_user: Dict[str, Any] = Depends(get_current_user)):
     """Admin view: Retrieve list of registered student accounts"""
     return {"users": user_service.list_users()}
-

@@ -698,7 +698,7 @@ body {
         <form id="signin-form" onsubmit="handleSignIn(event)">
           <div class="form-field">
             <label>Username, Email, or Student ID</label>
-            <input type="text" id="signin-identifier" required placeholder="Enter username, email, or student ID">
+            <input type="text" id="signin-identifier" required autocomplete="username" placeholder="Enter username, email, or student ID">
           </div>
 
           <div class="form-field">
@@ -1066,7 +1066,7 @@ async function handleRegister(event) {
     if (response.ok) {
       // Show success modal
       document.getElementById('success-message').textContent = 
-        `Welcome, ${fullName}! Your account has been created successfully. Use your username "${username}" to sign in.`;
+        `Welcome, ${fullName}! Your account has been created successfully. Sign in with your username, email, or student ID.`;
       document.getElementById('success-modal').classList.add('show');
       
       // Clear form
