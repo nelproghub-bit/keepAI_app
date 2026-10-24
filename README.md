@@ -48,6 +48,7 @@ The frontend is static HTML. `vercel.json` runs `node scripts/build-frontend.mjs
 
 `requirements.txt` pins backend dependencies and includes the PostgreSQL driver. Local development continues to use SQLite by default; hosted PostgreSQL is selected with `DB_TYPE=postgres` and `DATABASE_URL`.
 Accounts previously written to the Render free service's temporary SQLite file are not automatically migrated. Users may need to register again once after PostgreSQL is connected.
+If `DB_TYPE=mysql` or `DB_TYPE=mariadb` is configured locally, start MySQL in the XAMPP Control Panel before signing in. When that database is unavailable, the backend may fall back to SQLite for other operations, but admin sign-in reports the database outage instead of rejecting credentials against a different database.
 
 KeepAI is distributed as a web app that can be installed from a supported browser.
 

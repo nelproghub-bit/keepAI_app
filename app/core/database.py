@@ -194,6 +194,10 @@ def get_connection():
     _active_engine = "sqlite"
     return _get_sqlite_connection()
 
+def is_mysql_fallback_active() -> bool:
+    """Report when configured MySQL/MariaDB is unavailable and SQLite is in use."""
+    return DB_TYPE in ["mysql", "mariadb"] and _active_engine == "sqlite"
+
 def init_db():
     """Initialize schema tables on PostgreSQL, MariaDB/MySQL, or SQLite."""
     global _active_engine

@@ -13,7 +13,7 @@ from app.core.security import (
     create_access_token,
     get_current_admin_user
 )
-from app.core.database import get_connection
+from app.core.database import get_connection, is_mysql_fallback_active
 from app.core.config import GEMINI_MODEL, GEMINI_API_KEY
 from app.services.user_service import user_service
 from app.services.rag_service import delete_file_chunks, get_tutor_context
@@ -123,6 +123,11 @@ def login_admin(request: AdminLoginRequest):
     Authenticate administrator credentials and verify admin role.
     """
     user = user_service.authenticate_admin(request.identifier, request.password)
+    if is_mysql_fallback_active():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="The configured MySQL/MariaDB database is unavailable. Start MySQL in XAMPP and try again.",
+        )
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
