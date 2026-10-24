@@ -103,7 +103,7 @@ self.addEventListener('fetch', event => {
   // Navigation requests (HTML pages): Network-first with cache fallback
   if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
-      fetch(req)
+      fetch(req, { cache: 'no-cache' })
         .then(networkResponse => {
           if (networkResponse && networkResponse.status === 200) {
             const clone = networkResponse.clone();
@@ -112,7 +112,7 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         })
         .catch(() => {
-          return caches.match(req).then(cached => {
+          return caches.match(req, { ignoreSearch: true }).then(cached => {
             if (cached) return cached;
             return caches.match('./student_login.html') || caches.match('./student_dashboard.html');
           });

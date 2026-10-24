@@ -46,7 +46,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 } catch (error) {
                     console.error('Could not save the KeepAI update confirmation:', error);
                 }
-                window.location.reload();
+                const latestUrl = new URL(window.location.href);
+                latestUrl.searchParams.set('__keepai_refresh', String(Date.now()));
+                window.location.replace(latestUrl.href);
             } catch (error) {
                 console.error('Could not refresh KeepAI after an update:', error);
                 updateButton.disabled = false;
@@ -61,7 +63,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (updateWasRequested) {
         localStorage.setItem(versionKey, window.APP_VERSION);
     } else if (previousVersion !== window.APP_VERSION) {
-        localStorage.setItem(versionKey, window.APP_VERSION);
         showUpdateNotice();
     }
 
