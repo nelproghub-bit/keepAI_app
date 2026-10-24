@@ -2281,7 +2281,7 @@
                     <div class="panel-head">
                         <div>
                             <h2>Settings</h2>
-                            <div class="sub">Preferences, progressive web application cache, and account settings</div>
+                            <div class="sub">Preferences, device notifications, app storage, and account settings</div>
                         </div>
                     </div>
 
@@ -2342,6 +2342,22 @@
                                 <i class="fas fa-save me-1"></i> Save Preferences
                             </button>
                         </form>
+                    </div>
+
+                    <div class="panel" style="max-width: 680px; margin-top: 18px;">
+                        <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:16px;">
+                            <div style="width:40px;height:40px;flex:0 0 40px;display:grid;place-items:center;border-radius:12px;background:var(--bg-subtle);color:var(--primary);">
+                                <i class="fas fa-bell" aria-hidden="true"></i>
+                            </div>
+                            <div>
+                                <h3 style="font-size:16px;font-weight:800;color:var(--text-main);margin:0 0 4px;">Push Notifications</h3>
+                                <p style="font-size:12.5px;color:var(--text-muted);margin:0;">Choose whether this device can receive KeepAI announcements when the app is closed.</p>
+                            </div>
+                        </div>
+                        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;">
+                            <span id="push-notifications-status" role="status" aria-live="polite" style="flex:1 1 220px;color:var(--text-muted);font-size:12px;">Checking this device…</span>
+                            <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="access_token" type="button" aria-pressed="false" disabled>Checking…</button>
+                        </div>
                     </div>
                 </section>
             </div>
@@ -2657,13 +2673,6 @@
                 <button class="modal-close" type="button" onclick="closeStudentAnnouncements()" aria-label="Close notifications">
                     <i class="fas fa-times"></i>
                 </button>
-            </div>
-            <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:14px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;">
-                <div style="flex:1 1 220px;">
-                    <strong style="display:block;color:var(--text-main);font-size:13px;">Device push notifications</strong>
-                    <span id="push-notifications-status" style="display:block;margin-top:4px;color:var(--text-muted);font-size:12px;">Checking this device…</span>
-                </div>
-                <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="access_token" type="button" disabled>Checking…</button>
             </div>
             <div class="announcement-list" id="student-announcements-list" aria-live="polite">
                 <p style="color: var(--text-muted);">Loading notifications…</p>

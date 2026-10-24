@@ -97,6 +97,7 @@
               throw new Error('The browser could not disable this device subscription.');
             }
             button.textContent = 'Enable push notifications';
+            button.setAttribute('aria-pressed', 'false');
             status.textContent = 'Push notifications are disabled on this device.';
             try {
               await pushRequest('/push/subscription', activeToken, {
@@ -139,6 +140,7 @@
           }
 
           button.textContent = 'Disable on this device';
+          button.setAttribute('aria-pressed', 'true');
           status.textContent = 'Push notifications are enabled on this device.';
         } catch (error) {
           console.error('Could not update push notification settings:', error);
@@ -153,6 +155,7 @@
     if (subscription) {
       button.disabled = false;
       button.textContent = 'Disable on this device';
+      button.setAttribute('aria-pressed', 'true');
       status.textContent = 'Push notifications are enabled on this device.';
       if (configuration.enabled) {
         try {
@@ -169,6 +172,7 @@
     }
 
     button.textContent = 'Enable push notifications';
+    button.setAttribute('aria-pressed', 'false');
     button.disabled = !configuration.enabled;
     if (!configuration.enabled) {
       status.textContent = configurationError
