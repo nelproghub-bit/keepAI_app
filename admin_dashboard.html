@@ -329,11 +329,16 @@ button { cursor: pointer; }
 #dashboard-app {
   display: none;
   min-height: 100vh;
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: 260px minmax(0, 1fr);
+  transition: grid-template-columns 0.24s ease;
 }
 
 #dashboard-app.active {
   display: grid;
+}
+
+#dashboard-app.sidebar-collapsed {
+  grid-template-columns: 78px minmax(0, 1fr);
 }
 
 /* Sidebar */
@@ -351,6 +356,40 @@ button { cursor: pointer; }
   overflow-x: hidden;
   overflow-y: auto;
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#dashboard-app.sidebar-collapsed .dash-sidebar {
+  padding-inline: 10px;
+}
+
+#dashboard-app.sidebar-collapsed .dash-brand {
+  justify-content: center;
+  padding-inline: 0;
+}
+
+#dashboard-app.sidebar-collapsed .dash-brand-text,
+#dashboard-app.sidebar-collapsed .nav-link > span,
+#dashboard-app.sidebar-collapsed .admin-info {
+  display: none;
+}
+
+#dashboard-app.sidebar-collapsed .nav-link {
+  justify-content: center;
+  padding-inline: 8px;
+}
+
+#dashboard-app.sidebar-collapsed .admin-badge {
+  justify-content: center;
+  padding-inline: 4px;
+}
+
+#dashboard-app.sidebar-collapsed .btn-signout {
+  font-size: 0;
+  padding: 10px 8px;
+}
+
+#dashboard-app.sidebar-collapsed .btn-signout svg {
+  margin: 0 !important;
 }
 
 .dash-brand {
@@ -541,6 +580,56 @@ button { cursor: pointer; }
   display: none;
 }
 
+.mobile-dashboard-bar {
+  display: flex;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  align-items: center;
+  gap: 12px;
+  min-height: 58px;
+  margin: -8px 0 18px;
+  padding: 8px 0;
+  background: var(--bg-app);
+}
+
+.mobile-dashboard-menu {
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  color: var(--primary);
+  background: var(--primary-light);
+  border: 1px solid var(--primary-border);
+  border-radius: 10px;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.mobile-dashboard-menu:hover {
+  background: #fce8e8;
+  transform: translateY(-1px);
+}
+
+.mobile-dashboard-menu:focus-visible,
+.nav-link:focus-visible,
+.action-btn-circle:focus-visible {
+  outline: 3px solid rgba(125, 29, 29, 0.35);
+  outline-offset: 2px;
+}
+
+.mobile-dashboard-menu svg {
+  width: 21px;
+  height: 21px;
+}
+
+.mobile-dashboard-title {
+  color: var(--text-main);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 15px;
+  font-weight: 800;
+}
+
 .page-header {
   display: flex;
   align-items: center;
@@ -638,6 +727,12 @@ button { cursor: pointer; }
   border-radius: var(--radius-sm);
 }
 
+.users-table-wrapper {
+  width: 100%;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 table.data-table {
   width: 100%;
   border-collapse: collapse;
@@ -660,6 +755,56 @@ table.data-table td {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border);
   color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+
+#users-table {
+  min-width: 900px;
+  table-layout: fixed;
+}
+
+#users-table th:nth-child(1) { width: 12%; }
+#users-table th:nth-child(2) { width: 15%; }
+#users-table th:nth-child(3) { width: 20%; }
+#users-table th:nth-child(4) { width: 9%; }
+#users-table th:nth-child(5) { width: 13%; }
+#users-table th:nth-child(6) { width: 15%; }
+#users-table th:nth-child(7) { width: 16%; }
+
+#users-table td {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+#users-table td:last-child {
+  text-align: center;
+  white-space: nowrap;
+}
+
+.user-action-buttons {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.user-action-buttons .action-btn-circle {
+  flex: 0 0 34px;
+  width: 34px;
+  height: 34px;
+}
+
+#user-management-toolbar {
+  min-width: 0;
+}
+
+#user-management-toolbar > div:last-child {
+  min-width: min(100%, 260px);
+}
+
+#user-management-toolbar input {
+  min-width: 0;
+  max-width: 100%;
 }
 
 table.data-table tr:last-child td {
@@ -1112,6 +1257,35 @@ table.data-table tr:hover {
     display: block;
     min-height: 100vh;
   }
+  #dashboard-app.sidebar-collapsed {
+    display: block;
+  }
+  #dashboard-app.sidebar-collapsed .dash-sidebar {
+    padding: 20px 14px;
+  }
+  #dashboard-app.sidebar-collapsed .dash-brand {
+    justify-content: space-between;
+    padding: 6px 10px 18px;
+  }
+  #dashboard-app.sidebar-collapsed .dash-brand-text,
+  #dashboard-app.sidebar-collapsed .nav-link > span,
+  #dashboard-app.sidebar-collapsed .admin-info {
+    display: initial;
+  }
+  #dashboard-app.sidebar-collapsed .nav-link {
+    justify-content: flex-start;
+    padding: 10px 14px;
+  }
+  #dashboard-app.sidebar-collapsed .admin-badge {
+    justify-content: space-between;
+    padding: 10px;
+  }
+  #dashboard-app.sidebar-collapsed .btn-signout {
+    font-size: 13px;
+  }
+  #dashboard-app.sidebar-collapsed .btn-signout svg {
+    margin-right: 5px !important;
+  }
   .dash-sidebar {
     position: fixed;
     inset: 0 auto 0 0;
@@ -1146,40 +1320,6 @@ table.data-table tr:hover {
     opacity: 1;
     pointer-events: auto;
   }
-  .mobile-dashboard-bar {
-    display: flex;
-    position: sticky;
-    top: 0;
-    z-index: 30;
-    align-items: center;
-    gap: 12px;
-    min-height: 58px;
-    padding: 8px 16px;
-    background: var(--bg-surface);
-    border-bottom: 1px solid var(--border);
-    box-shadow: var(--shadow-sm);
-  }
-  .mobile-dashboard-menu {
-    display: inline-grid;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    flex: 0 0 42px;
-    color: var(--primary);
-    background: var(--primary-light);
-    border: 1px solid var(--primary-border);
-    border-radius: 10px;
-  }
-  .mobile-dashboard-menu svg {
-    width: 21px;
-    height: 21px;
-  }
-  .mobile-dashboard-title {
-    color: var(--text-main);
-    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
-    font-size: 15px;
-    font-weight: 800;
-  }
   .dash-main {
     max-width: none;
     padding: 18px;
@@ -1201,6 +1341,91 @@ table.data-table tr:hover {
   }
 }
 
+@media (max-width: 1080px) {
+  #users-table {
+    min-width: 0;
+    table-layout: auto;
+  }
+  #users-table thead {
+    display: none;
+  }
+  #users-table,
+  #users-table tbody,
+  #users-table tbody tr,
+  #users-table tbody td {
+    display: block;
+    width: 100%;
+  }
+  #users-table tbody {
+    display: grid;
+    gap: 12px;
+    padding: 12px;
+    background: #f8fafc;
+  }
+  #users-table tbody tr {
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+  }
+  #users-table tbody tr:hover {
+    background: #fff;
+  }
+  #users-table tbody td {
+    display: grid;
+    grid-template-columns: minmax(88px, 0.38fr) minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 10px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    text-align: left;
+  }
+  #users-table tbody td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  #users-table tbody td:last-child {
+    white-space: normal;
+  }
+  #users-table tbody td.user-table-message {
+    display: block;
+    padding: 18px 14px;
+    text-align: center;
+  }
+  #users-table tbody td.user-table-message::before {
+    content: none;
+  }
+  .user-action-buttons {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 700px) {
+  #user-management-card {
+    padding: 16px;
+  }
+  #user-management-toolbar {
+    align-items: stretch !important;
+  }
+  #user-management-toolbar > div:last-child {
+    width: 100%;
+    min-width: 0;
+  }
+  #user-search-input {
+    width: 100% !important;
+    flex: 1 1 100%;
+  }
+  #user-management-toolbar .btn-green-add {
+    justify-content: center;
+    flex: 1 0 100%;
+  }
+}
+
 @media (max-width: 540px) {
   .auth-wrapper {
     max-width: 100%;
@@ -1214,6 +1439,9 @@ table.data-table tr:hover {
   }
   .dash-main {
     padding: 14px 12px;
+  }
+  .mobile-dashboard-bar {
+    margin-top: -2px;
   }
   .mobile-dashboard-bar {
     padding-inline: 12px;
@@ -1246,7 +1474,7 @@ table.data-table tr:hover {
     min-width: 0;
     max-width: 100%;
   }
-  .data-table-wrapper table,
+  .data-table-wrapper:not(.users-table-wrapper) table,
   .table-responsive table {
     min-width: 560px;
   }
@@ -1399,42 +1627,42 @@ table.data-table tr:hover {
 
     <!-- Navigation links -->
     <nav class="dash-nav">
-      <button class="nav-link active" onclick="switchDashboardTab('overview')">
+      <button class="nav-link active" title="Overview" onclick="switchDashboardTab('overview')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/></svg>
         <span>Overview</span>
       </button>
 
-      <button class="nav-link" onclick="switchDashboardTab('users')">
+      <button class="nav-link" title="User Management" onclick="switchDashboardTab('users')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
         <span>User Management</span>
       </button>
 
-      <button class="nav-link" onclick="switchDashboardTab('documents')">
+      <button class="nav-link" title="Documents" onclick="switchDashboardTab('documents')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
         <span>Documents</span>
       </button>
 
-      <button class="nav-link" onclick="switchDashboardTab('announcements')">
+      <button class="nav-link" title="Announcements" onclick="switchDashboardTab('announcements')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"/><path d="M10 21h4"/></svg>
         <span>Announcements</span>
       </button>
 
-      <button class="nav-link" onclick="switchDashboardTab('playground')">
+      <button class="nav-link" title="AI Test Console" onclick="switchDashboardTab('playground')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
         <span>AI Test Console</span>
       </button>
 
-      <button class="nav-link" onclick="switchDashboardTab('system')">
+      <button class="nav-link" title="System & Database" onclick="switchDashboardTab('system')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>System & Database</span>
       </button>
 
-      <a class="nav-link" href="admin_panel.html" style="text-decoration: none;">
+      <a class="nav-link" href="admin_panel.html" title="Admin Panel" style="text-decoration: none;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
         <span>Admin Panel</span>
       </a>
 
-      <button class="nav-link" onclick="openAppDownloadModal()" style="margin-top: 10px;">
+      <button class="nav-link" title="Install Web App" onclick="openAppDownloadModal()" style="margin-top: 10px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
         <span>Install Web App</span>
       </button>
@@ -1449,7 +1677,7 @@ table.data-table tr:hover {
         </div>
         <span class="tag-pill primary">Admin</span>
       </div>
-      <button class="btn-signout" onclick="openLogoutModal()">
+      <button class="btn-signout" title="Sign Out" onclick="openLogoutModal()">
         <svg style="width:14px;height:14px;vertical-align:middle;margin-right:5px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
         Sign Out
       </button>
@@ -1469,16 +1697,16 @@ table.data-table tr:hover {
       <button
         class="mobile-dashboard-menu"
         type="button"
-        onclick="toggleAdminMobileSidebar(true)"
-        aria-label="Open navigation menu"
+        onclick="toggleAdminSidebar()"
+        aria-label="Collapse navigation sidebar"
         aria-controls="admin-dashboard-sidebar"
-        aria-expanded="false"
+        aria-expanded="true"
+        title="Collapse navigation sidebar"
         id="admin-mobile-menu"
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-          <line x1="4" y1="6" x2="20" y2="6"></line>
-          <line x1="4" y1="12" x2="20" y2="12"></line>
-          <line x1="4" y1="18" x2="20" y2="18"></line>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="3" y="4" width="18" height="16" rx="2"></rect>
+          <path d="M9 4v16M15 10l-2 2 2 2"></path>
         </svg>
       </button>
       <span class="mobile-dashboard-title">KeepAI Admin</span>
@@ -1569,13 +1797,13 @@ table.data-table tr:hover {
         </div>
       </div>
 
-      <div class="dash-card" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); padding: 24px;">
+      <div id="user-management-card" class="dash-card" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); padding: 24px;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
           <div>
             <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Accounts</h2>
             <p style="color: var(--text-muted); font-size: 13px;">Manage student and admin accounts</p>
           </div>
-          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div id="user-management-toolbar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
             <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="padding: 8px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 260px;">
             <button class="btn-green-add" onclick="openAddUserModal()">
               <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
@@ -1584,7 +1812,7 @@ table.data-table tr:hover {
           </div>
         </div>
 
-        <div class="data-table-wrapper" style="border-radius: var(--radius-sm); overflow: hidden; border: 1px solid var(--border);">
+        <div class="data-table-wrapper users-table-wrapper" style="border-radius: var(--radius-sm); border: 1px solid var(--border);">
           <table class="data-table" id="users-table">
             <thead>
               <tr style="background: #f8fafc;">
@@ -1599,7 +1827,7 @@ table.data-table tr:hover {
             </thead>
             <tbody id="users-table-body">
               <tr>
-                <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
+                <td class="user-table-message" colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">
                   Connecting to MariaDB/MySQL database and loading user accounts...
                 </td>
               </tr>
@@ -2062,6 +2290,8 @@ async function parseJsonResponse(res, defaultError = 'Request failed.') {
 
 // On Page Load: Check registration status and session
 document.addEventListener('DOMContentLoaded', async () => {
+  initializeUserTableActions();
+  initializeAdminSidebar();
   await checkAdminRegistrationStatus();
   await checkExistingSession();
   window.addEventListener('popstate', restoreAdminTabFromUrl);
@@ -2271,6 +2501,7 @@ async function checkExistingSession() {
 
 function enterDashboard(user) {
   currentAdminUser = user;
+  initializeAdminSidebar();
   const loginButton = document.getElementById('btn-login');
   loginButton.disabled = false;
   loginButton.removeAttribute('aria-busy');
@@ -2321,7 +2552,60 @@ function toggleAdminMobileSidebar(open) {
   sidebar.classList.toggle('mobile-open', open);
   backdrop.classList.toggle('active', open);
   document.body.style.overflow = open ? 'hidden' : '';
-  if (menuButton) menuButton.setAttribute('aria-expanded', String(open));
+  if (menuButton) {
+    if (window.innerWidth <= 860) {
+      const label = open ? 'Close navigation menu' : 'Open navigation menu';
+      menuButton.setAttribute('aria-label', label);
+      menuButton.setAttribute('title', label);
+      menuButton.setAttribute('aria-expanded', String(open));
+    } else {
+      const collapsed = document.getElementById('dashboard-app')?.classList.contains('sidebar-collapsed') === true;
+      const label = collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar';
+      menuButton.setAttribute('aria-label', label);
+      menuButton.setAttribute('title', label);
+      menuButton.setAttribute('aria-expanded', String(!collapsed));
+    }
+  }
+}
+
+function setAdminSidebarCollapsed(collapsed, persist = true) {
+  const dashboard = document.getElementById('dashboard-app');
+  const menuButton = document.getElementById('admin-mobile-menu');
+  if (!dashboard || !menuButton) return;
+
+  dashboard.classList.toggle('sidebar-collapsed', collapsed);
+  const label = collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar';
+  menuButton.setAttribute('aria-label', label);
+  menuButton.setAttribute('title', label);
+  menuButton.setAttribute('aria-expanded', String(!collapsed));
+  if (persist) {
+    try {
+      localStorage.setItem('keepai_admin_sidebar_collapsed', String(collapsed));
+    } catch (error) {
+      console.warn('Could not save the admin sidebar preference:', error);
+    }
+  }
+}
+
+function initializeAdminSidebar() {
+  let collapsed = false;
+  try {
+    collapsed = localStorage.getItem('keepai_admin_sidebar_collapsed') === 'true';
+  } catch (error) {
+    console.warn('Could not read the admin sidebar preference:', error);
+  }
+  setAdminSidebarCollapsed(collapsed, false);
+}
+
+function toggleAdminSidebar() {
+  if (window.innerWidth <= 860) {
+    const sidebar = document.getElementById('admin-dashboard-sidebar');
+    toggleAdminMobileSidebar(!sidebar?.classList.contains('mobile-open'));
+    return;
+  }
+
+  const dashboard = document.getElementById('dashboard-app');
+  setAdminSidebarCollapsed(!dashboard?.classList.contains('sidebar-collapsed'));
 }
 
 window.addEventListener('keydown', event => {
@@ -2329,7 +2613,26 @@ window.addEventListener('keydown', event => {
 });
 
 window.addEventListener('resize', () => {
-  if (window.innerWidth > 860) toggleAdminMobileSidebar(false);
+  if (window.innerWidth > 860) {
+    toggleAdminMobileSidebar(false);
+    const dashboard = document.getElementById('dashboard-app');
+    const collapsed = dashboard?.classList.contains('sidebar-collapsed') === true;
+    const menuButton = document.getElementById('admin-mobile-menu');
+    if (menuButton) {
+      const label = collapsed ? 'Expand navigation sidebar' : 'Collapse navigation sidebar';
+      menuButton.setAttribute('aria-label', label);
+      menuButton.setAttribute('title', label);
+      menuButton.setAttribute('aria-expanded', String(!collapsed));
+    }
+  } else {
+    const menuButton = document.getElementById('admin-mobile-menu');
+    if (menuButton) {
+      const open = document.getElementById('admin-dashboard-sidebar')?.classList.contains('mobile-open') === true;
+      menuButton.setAttribute('aria-label', open ? 'Close navigation menu' : 'Open navigation menu');
+      menuButton.setAttribute('title', open ? 'Close navigation menu' : 'Open navigation menu');
+      menuButton.setAttribute('aria-expanded', String(open));
+    }
+  }
 });
 
 function restoreAdminTabFromUrl() {
@@ -2502,14 +2805,14 @@ let allUsersCache = [];
 
 async function loadUsersList() {
   const tbody = document.getElementById('users-table-body');
-  tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Connecting to database and loading users...</td></tr>`;
+  tbody.innerHTML = `<tr><td class="user-table-message" colspan="7" style="text-align: center; color: var(--text-muted); padding: 24px;">Connecting to database and loading users...</td></tr>`;
 
   try {
     const users = await adminAnnouncementRequest('/admin/users');
     allUsersCache = users;
     renderUsersTable(users);
   } catch (err) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--rose); padding: 24px;">Database error: ${err.message}</td></tr>`;
+    tbody.innerHTML = `<tr><td class="user-table-message" colspan="7" style="text-align: center; color: var(--rose); padding: 24px;">Database error: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
@@ -2519,7 +2822,7 @@ function renderUsersTable(users) {
   countDisplay.textContent = users ? users.length : 0;
 
   if (!users || users.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">No user accounts found in database. Click "+ Add User" to create one.</td></tr>`;
+    tbody.innerHTML = `<tr><td class="user-table-message" colspan="7" style="text-align: center; color: var(--text-muted); padding: 28px;">No user accounts found in database. Click "+ Add User" to create one.</td></tr>`;
     return;
   }
 
@@ -2531,24 +2834,27 @@ function renderUsersTable(users) {
     const escapedUsername = escapeHtml(u.username);
     const escapedFullname = escapeHtml(u.full_name || 'N/A');
     const escapedEmail = escapeHtml(u.email || 'N/A');
+    const escapedUserId = escapeHtml(u.id);
+    const escapedCreatedAt = escapeHtml(u.created_at || '—');
+    const escapedLastLogin = escapeHtml(u.last_login || 'Never');
 
     return `
       <tr>
-        <td><strong>${escapedUsername}</strong></td>
-        <td>${escapedFullname}</td>
-        <td>${escapedEmail}</td>
-        <td>${roleBadge}</td>
-        <td>${escapeHtml(u.created_at)}</td>
-        <td>${escapeHtml(u.last_login)}</td>
-        <td style="text-align: center;">
-          <div style="display: inline-flex; align-items: center; gap: 8px;">
-            <button class="action-btn-circle edit" onclick="openEditUserModal('${u.id}')" title="Edit User">
+        <td data-label="Username"><strong>${escapedUsername}</strong></td>
+        <td data-label="Full name">${escapedFullname}</td>
+        <td data-label="Email">${escapedEmail}</td>
+        <td data-label="Role">${roleBadge}</td>
+        <td data-label="Created">${escapedCreatedAt}</td>
+        <td data-label="Last login">${escapedLastLogin}</td>
+        <td data-label="Actions">
+          <div class="user-action-buttons">
+            <button class="action-btn-circle edit" type="button" data-user-action="edit" data-user-id="${escapedUserId}" aria-label="Edit ${escapedUsername}" title="Edit User">
               <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
             </button>
-            <button class="action-btn-circle delete" onclick="confirmDeleteUser('${u.id}', '${escapedUsername}')" title="Delete User Permanently">
+            <button class="action-btn-circle delete" type="button" data-user-action="delete" data-user-id="${escapedUserId}" data-username="${escapedUsername}" aria-label="Delete ${escapedUsername}" title="Delete User Permanently">
               <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
             </button>
-            <button class="action-btn-circle key" onclick="openResetPasswordModal('${u.id}', '${escapedUsername}')" title="Reset User Password">
+            <button class="action-btn-circle key" type="button" data-user-action="reset-password" data-user-id="${escapedUserId}" data-username="${escapedUsername}" aria-label="Reset password for ${escapedUsername}" title="Reset User Password">
               <svg style="width: 15px; height: 15px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
             </button>
           </div>
@@ -2556,6 +2862,21 @@ function renderUsersTable(users) {
       </tr>
     `;
   }).join('');
+}
+
+function initializeUserTableActions() {
+  const tbody = document.getElementById('users-table-body');
+  if (!tbody || tbody.dataset.actionsInitialized === 'true') return;
+  tbody.dataset.actionsInitialized = 'true';
+  tbody.addEventListener('click', event => {
+    const button = event.target.closest('button[data-user-action]');
+    if (!button || !tbody.contains(button)) return;
+
+    const { userAction, userId, username } = button.dataset;
+    if (userAction === 'edit') openEditUserModal(userId);
+    if (userAction === 'delete') confirmDeleteUser(userId, username);
+    if (userAction === 'reset-password') openResetPasswordModal(userId, username);
+  });
 }
 
 function filterUsersTable() {
