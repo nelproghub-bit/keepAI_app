@@ -1161,9 +1161,15 @@ async function handleCredentialResponse(response) {
       throw new Error(data.detail || 'Google sign-in could not be completed.');
     }
 
+    if (data.user?.role !== 'student') {
+      throw new Error(
+        'This Google account has an administrator role and cannot sign in through the student portal. '
+        + 'Use the admin portal, or contact an administrator if this is a student account.'
+      );
+    }
+
     const destination = storeAuthenticatedSession(data);
-    const dashboardName = data.user.role === 'admin' ? 'administrator' : 'student';
-    showAlert('signin-alert', `Google sign-in successful! Opening your ${dashboardName} dashboard…`, 'success');
+    showAlert('signin-alert', 'Google sign-in successful! Opening your student dashboard…', 'success');
     window.setTimeout(() => window.location.replace(destination), 250);
   } catch (error) {
     console.error('Google sign-in failed:', error);
@@ -1226,7 +1232,6 @@ window.addEventListener('load', renderGoogleSignIn);
 
 async function redirectExistingSession() {
   const sessions = [
-    { storageKey: 'admin_access_token', userKey: 'admin_user' },
     { storageKey: 'access_token', userKey: 'user' }
   ];
 
