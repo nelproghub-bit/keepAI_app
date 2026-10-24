@@ -2955,7 +2955,7 @@ function showSessionRestore(message, canRetry = false) {
 
 function hideSessionRestore() {
   document.getElementById('session-restore-container').classList.remove('active');
-  document.getElementById('auth-container').style.display = '';
+  document.getElementById('auth-container').style.display = currentAdminUser ? 'none' : '';
 }
 
 async function restoreAdminSession() {
