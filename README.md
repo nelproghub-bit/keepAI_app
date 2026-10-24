@@ -55,13 +55,15 @@ KeepAI is distributed as a web app that can be installed from a supported browse
 
 Students and admins can opt in per device from the dashboard notification area. Admin announcements are sent to opted-in devices even when KeepAI is not open; they remain available in the in-app announcements list as well. Push is supported by browsers that implement the Web Push API and requires HTTPS (localhost is allowed for development). On iOS, users need a home-screen-installed web app and a supported iOS version.
 
-Set `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` on the backend before users enable push. Generate a single P-256 VAPID key pair with:
+The backend derives a stable, domain-separated VAPID key pair from the required `JWT_SECRET_KEY`, so no additional Render secret setup is needed for push. Optionally set `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` together to provide a dedicated key pair, and set `VAPID_SUBJECT` to your application contact. Keep any private key secret and never put it in frontend variables or source control. Use the same pair for every backend instance. If you rotate `JWT_SECRET_KEY` while using the derived pair, devices will need to subscribe again.
+
+To create a dedicated P-256 VAPID pair:
 
 ```bash
 python -c "import base64; from py_vapid import Vapid; from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat; v=Vapid(); v.generate_keys(); e=lambda b: base64.urlsafe_b64encode(b).rstrip(b'=').decode(); print('VAPID_PUBLIC_KEY='+e(v.public_key.public_bytes(Encoding.X962, PublicFormat.UncompressedPoint))); print('VAPID_PRIVATE_KEY='+e(v.private_key.private_numbers().private_value.to_bytes(32, 'big')))"
 ```
 
-Configure the generated URL-safe base64 public and private values in the backend environment (for example, Render); keep the private value secret and never put it in frontend variables or source control. Use the same pair for every deployment. New subscriptions are stored per user and device; users can disable each device separately.
+Configure the generated URL-safe base64 public and private values in the backend environment (for example, Render). New subscriptions are stored per user and device; users can disable each device separately.
 
 AI Tutor conversations are saved to the configured database under the signed-in student's account. Students can reopen individual conversations, delete a chat, or clear all saved chat history from the Chat History panel. The Clear Chat action starts a fresh conversation without removing saved history.
 

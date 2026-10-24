@@ -29,6 +29,114 @@ textarea {
   min-width: 0;
 }
 
+.push-settings-card {
+  max-width: 680px;
+  margin-top: 18px;
+}
+
+.push-settings-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.push-settings-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 13px;
+  background: rgba(125, 29, 29, 0.09);
+  color: #7d1d1d;
+}
+
+.push-settings-heading h3 {
+  margin: 0 0 4px;
+  color: var(--text-main, #172033);
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.push-settings-heading p {
+  margin: 0;
+  color: var(--text-muted, #64748b);
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+.push-settings-control {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 58px;
+  padding: 12px 14px;
+  border: 1px solid var(--border, #dbe3ed);
+  border-radius: 12px;
+  background: var(--bg-subtle, #f1f5f9);
+}
+
+.push-settings-status {
+  flex: 1 1 220px;
+  color: var(--text-muted, #64748b);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.push-settings-status[data-state="enabled"] {
+  color: #166534;
+}
+
+.push-settings-status[data-state="error"] {
+  color: #b42318;
+}
+
+.push-settings-toggle {
+  min-width: 188px;
+  min-height: 40px;
+  border-radius: 9px;
+  font-weight: 700;
+  transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.push-settings-toggle:not(:disabled) {
+  border: 1px solid #7d1d1d;
+  background: #7d1d1d;
+  color: #fff;
+  cursor: pointer;
+}
+
+.push-settings-toggle:not(:disabled):hover {
+  border-color: #5f1515;
+  background: #5f1515;
+  box-shadow: 0 4px 12px rgba(95, 21, 21, 0.2);
+}
+
+.push-settings-toggle.is-enabled:not(:disabled) {
+  border-color: #166534;
+  background: #fff;
+  color: #166534;
+}
+
+.push-settings-toggle.is-enabled:not(:disabled):hover {
+  border-color: #14532d;
+  background: #f0fdf4;
+  box-shadow: 0 4px 12px rgba(22, 101, 52, 0.12);
+}
+
+.push-settings-toggle:focus-visible {
+  outline: 3px solid rgba(125, 29, 29, 0.28);
+  outline-offset: 2px;
+}
+
+.push-settings-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
 @media (max-width: 900px) {
   .stat-grid,
   .meta-info-grid,
@@ -75,6 +183,10 @@ textarea {
 
   .controls > .btn {
     flex: 1 1 100%;
+  }
+
+  .push-settings-toggle {
+    width: 100%;
   }
 
   #dashboard-app [style*="grid-template-columns: 1fr 1fr"] {

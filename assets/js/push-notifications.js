@@ -46,16 +46,20 @@
   }
 
   async function loadPushControls(button, status) {
+    const updateStatus = (message, state = 'info') => {
+      status.textContent = message;
+      status.dataset.state = state;
+    };
     const tokenKey = button.dataset.tokenKey;
     const token = localStorage.getItem(tokenKey);
     if (!token) {
       button.disabled = true;
-      status.textContent = 'Sign in to manage push notifications for this device.';
+      updateStatus('Sign in to manage push notifications for this device.');
       return;
     }
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       button.disabled = true;
-      status.textContent = 'This browser does not support web push notifications.';
+      updateStatus('This browser does not support web push notifications.', 'error');
       return;
     }
 
@@ -69,7 +73,7 @@
     } catch (error) {
       console.error('Could not initialize push notifications:', error);
       button.disabled = true;
-      status.textContent = error.message || 'Push notification settings could not be loaded.';
+      updateStatus(error.message || 'Push notification settings could not be loaded.', 'error');
       return;
     }
     try {
@@ -98,7 +102,8 @@
             }
             button.textContent = 'Enable push notifications';
             button.setAttribute('aria-pressed', 'false');
-            status.textContent = 'Push notifications are disabled on this device.';
+            button.classList.remove('is-enabled');
+            updateStatus('Push notifications are disabled on this device.');
             try {
               await pushRequest('/push/subscription', activeToken, {
                 method: 'DELETE',
@@ -106,7 +111,7 @@
               });
             } catch (error) {
               console.error('Could not remove the disabled device subscription from the server:', error);
-              status.textContent = `Disabled on this device. Server cleanup is pending: ${error.message}`;
+              updateStatus(`Disabled on this device. Server cleanup is pending: ${error.message}`, 'error');
             }
             return;
           }
@@ -119,9 +124,9 @@
             ? await Notification.requestPermission()
             : Notification.permission;
           if (permission !== 'granted') {
-            status.textContent = permission === 'denied'
+            updateStatus(permission === 'denied'
               ? 'Notifications are blocked. Allow them in your browser or device settings.'
-              : 'Notification permission was not granted.';
+              : 'Notification permission was not granted.', 'error');
             return;
           }
 
@@ -141,10 +146,11 @@
 
           button.textContent = 'Disable on this device';
           button.setAttribute('aria-pressed', 'true');
-          status.textContent = 'Push notifications are enabled on this device.';
+          button.classList.add('is-enabled');
+          updateStatus('Push notifications are enabled on this device.', 'enabled');
         } catch (error) {
           console.error('Could not update push notification settings:', error);
-          status.textContent = error.message || 'Push notification settings could not be updated.';
+          updateStatus(error.message || 'Push notification settings could not be updated.', 'error');
         } finally {
           button.disabled = false;
         }
@@ -156,7 +162,8 @@
       button.disabled = false;
       button.textContent = 'Disable on this device';
       button.setAttribute('aria-pressed', 'true');
-      status.textContent = 'Push notifications are enabled on this device.';
+      button.classList.add('is-enabled');
+      updateStatus('Push notifications are enabled on this device.', 'enabled');
       if (configuration.enabled) {
         try {
           await pushRequest('/push/subscription', token, {
@@ -165,7 +172,7 @@
           });
         } catch (error) {
           console.error('Could not synchronize this device push subscription:', error);
-          status.textContent = `This device subscription could not be synchronized: ${error.message}`;
+          updateStatus(`This device subscription could not be synchronized: ${error.message}`, 'error');
         }
       }
       return;
@@ -173,15 +180,16 @@
 
     button.textContent = 'Enable push notifications';
     button.setAttribute('aria-pressed', 'false');
+    button.classList.remove('is-enabled');
     button.disabled = !configuration.enabled;
     if (!configuration.enabled) {
-      status.textContent = configurationError
+      updateStatus(configurationError
         ? `Push settings could not be loaded: ${configurationError.message}`
-        : 'Push notifications are not configured on this server yet.';
+        : 'Push notifications are not configured on this server yet.', 'error');
     } else if (Notification.permission === 'denied') {
-      status.textContent = 'Notifications are blocked. Allow them in your browser or device settings.';
+      updateStatus('Notifications are blocked. Allow them in your browser or device settings.', 'error');
     } else {
-      status.textContent = 'Optional alerts for new KeepAI announcements on this device.';
+      updateStatus('Ready to receive KeepAI announcements on this device.');
     }
   }
 

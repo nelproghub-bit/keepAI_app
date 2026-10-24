@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import os
 import secrets
 import warnings
@@ -54,6 +57,29 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1008
 VAPID_PUBLIC_KEY = os.getenv("VAPID_PUBLIC_KEY", "").strip()
 VAPID_PRIVATE_KEY = os.getenv("VAPID_PRIVATE_KEY", "").strip()
 VAPID_SUBJECT = os.getenv("VAPID_SUBJECT", "mailto:notifications@keepai-app.vercel.app").strip()
+if bool(VAPID_PUBLIC_KEY) != bool(VAPID_PRIVATE_KEY):
+    raise RuntimeError("Set both VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY, or leave both unset.")
+if not VAPID_PUBLIC_KEY:
+    from cryptography.hazmat.primitives import serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+
+    _p256_order = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632551
+    _vapid_seed = hmac.new(
+        JWT_SECRET_KEY.encode("utf-8"),
+        b"keepai:web-push:vapid:p256:v1",
+        hashlib.sha256,
+    ).digest()
+    _vapid_scalar = int.from_bytes(_vapid_seed, "big") % (_p256_order - 1) + 1
+    _vapid_private_key = ec.derive_private_key(_vapid_scalar, ec.SECP256R1())
+    VAPID_PRIVATE_KEY = base64.urlsafe_b64encode(
+        _vapid_scalar.to_bytes(32, "big")
+    ).rstrip(b"=").decode("ascii")
+    VAPID_PUBLIC_KEY = base64.urlsafe_b64encode(
+        _vapid_private_key.public_key().public_bytes(
+            serialization.Encoding.X962,
+            serialization.PublicFormat.UncompressedPoint,
+        )
+    ).rstrip(b"=").decode("ascii")
 
 DEFAULT_ALLOWED_ORIGINS = (
     "http://localhost:5173,http://localhost:3000,"

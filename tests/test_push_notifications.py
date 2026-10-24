@@ -1,10 +1,14 @@
+import base64
 import unittest
 from unittest.mock import patch
 
+from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from py_vapid import Vapid
 from pydantic import ValidationError
 
 from app.routers import push
 from app.routers.push import PushSubscriptionRequest
+from app.core.config import VAPID_PRIVATE_KEY, VAPID_PUBLIC_KEY
 
 
 class FakeCursor:
@@ -37,6 +41,21 @@ class FakeConnection:
 
 
 class PushSubscriptionValidationTests(unittest.TestCase):
+    def test_configured_vapid_key_pair_is_valid_and_publicly_advertised(self):
+        self.assertTrue(VAPID_PRIVATE_KEY)
+        self.assertTrue(VAPID_PUBLIC_KEY)
+        vapid = Vapid.from_string(VAPID_PRIVATE_KEY)
+        public_bytes = vapid.public_key.public_bytes(
+            encoding=Encoding.X962,
+            format=PublicFormat.UncompressedPoint,
+        )
+        encoded_public = base64.urlsafe_b64encode(public_bytes).rstrip(b"=").decode()
+        self.assertEqual(encoded_public, VAPID_PUBLIC_KEY)
+        self.assertEqual(push.get_push_public_key(), {
+            "enabled": True,
+            "public_key": VAPID_PUBLIC_KEY,
+        })
+
     def test_accepts_supported_push_service_endpoints(self):
         endpoints = (
             "https://fcm.googleapis.com/fcm/send/example",
