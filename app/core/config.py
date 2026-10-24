@@ -17,6 +17,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.5-flash-lite")
 GEMINI_EMBED_MODEL = os.getenv("GEMINI_EMBED_MODEL", "gemini-embedding-001")
 GEMINI_PROJECT_ID = os.getenv("GEMINI_PROJECT_ID")
+GOOGLE_OAUTH_CLIENT_ID = os.getenv(
+    "GOOGLE_OAUTH_CLIENT_ID",
+    "495955126205-jfajsdml27qi172pfc88ub5hed20pd16.apps.googleusercontent.com",
+).strip()
 
 # Alternative AI API Configuration (optional)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")

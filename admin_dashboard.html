@@ -21,6 +21,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/design-system.css">
 <script src="assets/js/password-visibility.js" defer></script>
+<script src="assets/js/account-password.js" defer></script>
 <style>
 :root {
   --primary: #7D1D1D;
@@ -2425,6 +2426,33 @@ table.data-table tr:hover {
           </div>
         </div>
       </div>
+
+      <div class="dash-card" style="margin-top: 18px; max-width: 680px;">
+        <div class="dash-card-header">
+          <div>
+            <div class="dash-card-title">Administrator Password</div>
+            <div class="dash-card-subtitle" id="admin-password-description">Change your password. Your current password is required.</div>
+          </div>
+        </div>
+        <form id="admin-password-form" data-account-password-form data-token-key="admin_access_token" data-current-password-group="admin-password-current-group" data-description="admin-password-description" data-status="admin-password-status">
+          <div id="admin-password-current-group" class="form-group" hidden>
+            <label for="admin-current-password">Current Password</label>
+            <input type="password" id="admin-current-password" name="current_password" autocomplete="current-password" placeholder="Enter your current password">
+          </div>
+          <div class="form-group">
+            <label for="admin-new-password">New Password</label>
+            <input type="password" id="admin-new-password" name="new_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="At least 8 characters">
+          </div>
+          <div class="form-group">
+            <label for="admin-confirm-password">Confirm New Password</label>
+            <input type="password" id="admin-confirm-password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="Re-enter your new password">
+          </div>
+          <p id="admin-password-status" role="status" aria-live="polite" style="margin: 0 0 14px; font-size: 13px;"></p>
+          <button type="submit" class="btn btn-primary" id="admin-password-submit">
+            Update Password
+          </button>
+        </form>
+      </div>
     </div>
 
   </main>
@@ -2897,6 +2925,7 @@ async function checkExistingSession() {
 function enterDashboard(user) {
   currentAdminUser = user;
   initializeAdminSidebar();
+  window.KeepAIAccountPasswordSettings.update('admin-password-form', user);
   const loginButton = document.getElementById('btn-login');
   loginButton.disabled = false;
   loginButton.removeAttribute('aria-busy');

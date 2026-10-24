@@ -21,6 +21,8 @@ services:
         sync: false
       - key: ALLOWED_ORIGIN_REGEX
         value: ^https://keep-ai-app(?:-git-main)?-nelproghub-bits-projects\.vercel\.app$
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        value: 495955126205-jfajsdml27qi172pfc88ub5hed20pd16.apps.googleusercontent.com
       - key: AI_PROVIDER
         value: gemini
       - key: GEMINI_MODEL

@@ -1,7 +1,11 @@
 from typing import Optional, List, Dict, Any
+import time
+
+import requests
 from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
 from app.core.security import create_access_token, get_current_user
+from app.core.config import GOOGLE_OAUTH_CLIENT_ID
 from app.services.user_service import user_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Security"])
@@ -79,52 +83,113 @@ def login_student(request: LoginRequest):
     }
 
 class GoogleLoginRequest(BaseModel):
-    credential: str
-    client_id: Optional[str] = None
+    credential: str = Field(min_length=1, max_length=10000)
+
+class PasswordUpdateRequest(BaseModel):
+    current_password: Optional[str] = Field(default=None, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 @router.post("/google")
 def google_auth(request: GoogleLoginRequest):
-    """Authenticate or register student using Google Identity Services credential (JWT)"""
-    import base64
-    import json
-    import uuid
+    """Verify a Google ID token, then authenticate or create its account."""
     try:
-        parts = request.credential.split(".")
-        if len(parts) < 2:
-            raise HTTPException(status_code=400, detail="Invalid Google credential token.")
-            
-        padding = 4 - len(parts[1]) % 4
-        payload_str = base64.urlsafe_b64decode(parts[1] + "=" * padding).decode("utf-8")
-        payload = json.loads(payload_str)
-        
-        email = payload.get("email")
-        if not email:
-            raise HTTPException(status_code=400, detail="Google token does not contain an email address.")
-            
-        name = payload.get("name") or email.split("@")[0]
-        sub = payload.get("sub", str(uuid.uuid4()))
-        picture = payload.get("picture")
-        
+        verification = requests.get(
+            "https://oauth2.googleapis.com/tokeninfo",
+            params={"id_token": request.credential},
+            timeout=(3, 10),
+        )
+    except requests.RequestException as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in could not be verified right now. Please try again.",
+        ) from exc
+
+    if verification.status_code == 429 or verification.status_code >= 500:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Google sign-in is temporarily unavailable. Please try again.",
+        )
+    if verification.status_code != 200:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google sign-in token is invalid or expired. Please try again.",
+        )
+
+    try:
+        payload = verification.json()
+        token_expiry = int(payload.get("exp", 0))
+    except (ValueError, TypeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google returned an invalid sign-in response.",
+        ) from exc
+
+    if (
+        payload.get("aud") != GOOGLE_OAUTH_CLIENT_ID
+        or payload.get("azp") not in (None, GOOGLE_OAUTH_CLIENT_ID)
+        or payload.get("iss") not in {"accounts.google.com", "https://accounts.google.com"}
+        or token_expiry <= int(time.time())
+        or payload.get("email_verified") not in (True, "true")
+        or not payload.get("email")
+        or not payload.get("sub")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Google sign-in token could not be verified for this application.",
+        )
+
+    email = payload["email"]
+    name = payload.get("name") or email.split("@")[0]
+    sub = payload["sub"]
+
+    try:
         user = user_service.get_or_create_google_user(
             email=email,
             full_name=name,
             google_id=sub,
-            picture=picture
         )
-        
-        token = create_access_token({"sub": user["id"], "username": user["username"]})
-        stats = user_service.get_stats(user["id"])
-        
-        return {
-            "access_token": token,
-            "token_type": "bearer",
-            "user": user,
-            "stats": stats
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Google authentication failed: {str(e)}")
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+
+    token = create_access_token({"sub": user["id"], "username": user["username"]})
+    stats = user_service.get_stats(user["id"])
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "full_name": user["full_name"],
+            "student_id": user["student_id"],
+            "role": user.get("role", "student"),
+            "google_linked": True,
+            "password_login_enabled": bool(user.get("password_login_enabled", True)),
+        },
+        "stats": stats,
+    }
+
+@router.put("/password")
+def update_password(
+    request: PasswordUpdateRequest,
+    current_user: Dict[str, Any] = Depends(get_current_user),
+):
+    """Set a password for a Google-linked account or change an existing password."""
+    try:
+        user_service.update_password(
+            user_id=current_user["id"],
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    return {"message": "Password updated successfully."}
 
 @router.get("/me")
 def get_current_student_profile(current_user: Dict[str, Any] = Depends(get_current_user)):

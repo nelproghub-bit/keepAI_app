@@ -715,14 +715,7 @@ body {
           <span>OR</span>
         </div>
 
-        <!-- Google Sign-In Container -->
-        <div id="g_id_onload"
-             data-client_id="495955126205-jfajsdml27qi172pfc88ub5hed20pd16.apps.googleusercontent.com"
-             data-context="signin"
-             data-ux_mode="popup"
-             data-callback="handleCredentialResponse"
-             data-auto_prompt="false">
-        </div>
+        <!-- Google Identity Services is initialized by the page script below. -->
         <div id="google-signin-btn" class="google-btn-wrapper"></div>
 
         <p class="footer-text">
@@ -963,16 +956,14 @@ async function handleSignIn(event) {
     const data = await response.json();
     
     if (response.ok) {
-      // Store token and user data
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
+      const destination = storeAuthenticatedSession(data);
       loginSucceeded = true;
       
       // Show success and redirect
-      showAlert('signin-alert', 'Login successful! Redirecting...', 'success');
+      const dashboardName = data.user?.role === 'admin' ? 'administrator' : 'student';
+      showAlert('signin-alert', `Login successful! Opening your ${dashboardName} dashboard...`, 'success');
       
       setTimeout(() => {
-        const destination = getStudentReturnPath();
         window.location.assign(destination);
       }, 1000);
     } else {
@@ -1007,6 +998,27 @@ function getStudentReturnPath() {
     }
   }
   return 'student_dashboard.html';
+}
+
+function storeAuthenticatedSession(data) {
+  const user = data.user;
+  if (!user || !data.access_token) {
+    throw new Error('The server returned an incomplete sign-in response.');
+  }
+
+  if (user.role === 'admin') {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('user');
+    localStorage.setItem('admin_access_token', data.access_token);
+    localStorage.setItem('admin_user', JSON.stringify(user));
+    return 'admin_dashboard.html';
+  }
+
+  localStorage.removeItem('admin_access_token');
+  localStorage.removeItem('admin_user');
+  localStorage.setItem('access_token', data.access_token);
+  localStorage.setItem('user', JSON.stringify(user));
+  return getStudentReturnPath();
 }
 
 async function handleRegister(event) {
@@ -1112,24 +1124,9 @@ document.getElementById('success-modal').addEventListener('click', function(e) {
 });
 
 // ==================== GOOGLE IDENTITY SERVICES (GIS) ====================
-const GOOGLE_CLIENT_ID = '495955126205-jfajsdml27qi172pfc88ub5hed20pd16.apps.googleusercontent.com';
-
-/**
- * Decode JWT credential response returned by Google Identity Services
- */
-function decodeJwtResponse(token) {
-  try {
-    const base64Url = token.split('.')[1];
-    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-    const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-      return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-    }).join(''));
-    return JSON.parse(jsonPayload);
-  } catch (err) {
-    console.error('Failed to decode JWT response:', err);
-    return null;
-  }
-}
+const GOOGLE_CLIENT_ID = window.GOOGLE_OAUTH_CLIENT_ID
+  || '495955126205-jfajsdml27qi172pfc88ub5hed20pd16.apps.googleusercontent.com';
+let googleIdentityInitialized = false;
 
 /**
  * Handle the credential response returned by Google Sign-In
@@ -1140,62 +1137,44 @@ async function handleCredentialResponse(response) {
     return;
   }
 
-  const responsePayload = decodeJwtResponse(response.credential);
-  if (!responsePayload) {
-    showAlert('signin-alert', 'Unable to decode Google credential token.');
-    return;
-  }
-
-  console.log("ID: " + responsePayload.sub);
-  console.log('Full Name: ' + responsePayload.name);
-  console.log('Given Name: ' + responsePayload.given_name);
-  console.log('Family Name: ' + responsePayload.family_name);
-  console.log("Image URL: " + responsePayload.picture);
-  console.log("Email: " + responsePayload.email);
-
-  showAlert('signin-alert', `Google account verified: ${responsePayload.name}. Signing in...`, 'success');
-  showAlert('register-alert', `Google account verified: ${responsePayload.name}. Signing in...`, 'success');
-
-  let serverLoggedIn = false;
+  const buttonContainers = [
+    document.getElementById('google-signin-btn'),
+    document.getElementById('google-register-btn')
+  ].filter(Boolean);
+  buttonContainers.forEach(container => {
+    container.setAttribute('aria-busy', 'true');
+    container.style.pointerEvents = 'none';
+    container.style.opacity = '0.65';
+  });
 
   try {
-    const res = await fetchApi('/auth/google', {
+    showAlert('signin-alert', 'Verifying your Google account…', 'success');
+    const responseFromServer = await fetchApi('/auth/google', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        credential: response.credential,
-        client_id: GOOGLE_CLIENT_ID
+        credential: response.credential
       })
     });
-
-    if (res && res.ok) {
-      const data = await res.json();
-      localStorage.setItem('access_token', data.access_token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      serverLoggedIn = true;
+    const data = await responseFromServer.json();
+    if (!responseFromServer.ok) {
+      throw new Error(data.detail || 'Google sign-in could not be completed.');
     }
-  } catch (netErr) {
-    console.warn('Backend /auth/google note, using local session:', netErr);
-  }
 
-  if (!serverLoggedIn) {
-    const studentUser = {
-      id: 'usr_g_' + (responsePayload.sub ? responsePayload.sub.slice(-8) : Date.now()),
-      full_name: responsePayload.name || 'Google Student',
-      username: responsePayload.email ? responsePayload.email.split('@')[0].replace(/\./g, '_') : 'student_user',
-      email: responsePayload.email || '',
-      student_id: 'G-' + (responsePayload.sub ? responsePayload.sub.slice(-6) : '000000'),
-      picture: responsePayload.picture || '',
-      auth_provider: 'google'
-    };
-    localStorage.setItem('access_token', response.credential);
-    localStorage.setItem('user', JSON.stringify(studentUser));
+    const destination = storeAuthenticatedSession(data);
+    const dashboardName = data.user.role === 'admin' ? 'administrator' : 'student';
+    showAlert('signin-alert', `Google sign-in successful! Opening your ${dashboardName} dashboard…`, 'success');
+    window.setTimeout(() => window.location.replace(destination), 250);
+  } catch (error) {
+    console.error('Google sign-in failed:', error);
+    showAlert('signin-alert', error.message || 'Google sign-in failed. Please try again.');
+  } finally {
+    buttonContainers.forEach(container => {
+      container.removeAttribute('aria-busy');
+      container.style.pointerEvents = '';
+      container.style.opacity = '';
+    });
   }
-
-  showAlert('signin-alert', `Welcome, ${responsePayload.name}! Redirecting to student dashboard...`, 'success');
-  setTimeout(() => {
-    window.location.href = 'student_dashboard.html';
-  }, 900);
 }
 
 /**
@@ -1203,12 +1182,15 @@ async function handleCredentialResponse(response) {
  */
 function renderGoogleSignIn() {
   if (typeof google !== 'undefined' && google.accounts && google.accounts.id) {
-    google.accounts.id.initialize({
-      client_id: GOOGLE_CLIENT_ID,
-      callback: handleCredentialResponse,
-      auto_select: false,
-      cancel_on_tap_outside: true
-    });
+    if (!googleIdentityInitialized) {
+      google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
+      googleIdentityInitialized = true;
+    }
 
     const signinContainer = document.getElementById('google-signin-btn');
     if (signinContainer) {
@@ -1242,10 +1224,41 @@ function renderGoogleSignIn() {
 
 window.addEventListener('load', renderGoogleSignIn);
 
-// Check if already logged in
-if (localStorage.getItem('access_token')) {
-  window.location.href = 'student_dashboard.html';
+async function redirectExistingSession() {
+  const sessions = [
+    { storageKey: 'admin_access_token', userKey: 'admin_user' },
+    { storageKey: 'access_token', userKey: 'user' }
+  ];
+
+  for (const session of sessions) {
+    const token = localStorage.getItem(session.storageKey);
+    if (!token) continue;
+
+    try {
+      const response = await fetchApi('/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.status === 401 || response.status === 403) {
+        localStorage.removeItem(session.storageKey);
+        localStorage.removeItem(session.userKey);
+        continue;
+      }
+      if (!response.ok) return;
+
+      const data = await response.json();
+      const destination = storeAuthenticatedSession({
+        access_token: token,
+        user: data.user
+      });
+      window.location.replace(destination);
+      return;
+    } catch (error) {
+      console.warn('Could not verify the saved sign-in session:', error);
+      return;
+    }
+  }
 }
+void redirectExistingSession();
 
 // Hide admin portal link if an admin is already registered
 async function checkAdminLinkVisibility() {

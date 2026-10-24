@@ -214,12 +214,18 @@ def init_db():
             student_id VARCHAR(64) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
             role VARCHAR(32) NOT NULL DEFAULT 'student',
+            google_id VARCHAR(255),
+            password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         )
         """)
         cursor.execute(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(32) NOT NULL DEFAULT 'student'"
+        )
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)")
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE"
         )
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (
@@ -387,6 +393,8 @@ def init_db():
             student_id VARCHAR(64) NOT NULL,
             password_hash VARCHAR(255) NOT NULL,
             role VARCHAR(32) NOT NULL DEFAULT 'student',
+            google_id VARCHAR(255),
+            password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -395,6 +403,14 @@ def init_db():
         if not cursor.fetchone():
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN role VARCHAR(32) NOT NULL DEFAULT 'student'"
+            )
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'google_id'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id VARCHAR(255) NULL")
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'password_login_enabled'")
+        if not cursor.fetchone():
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE"
             )
 
         cursor.execute("""
@@ -553,6 +569,8 @@ def init_db():
             student_id TEXT NOT NULL,
             password_hash TEXT NOT NULL,
             role TEXT NOT NULL DEFAULT 'student',
+            google_id TEXT,
+            password_login_enabled INTEGER NOT NULL DEFAULT 1,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )
@@ -561,6 +579,12 @@ def init_db():
         if "role" not in user_columns:
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN role TEXT NOT NULL DEFAULT 'student'"
+            )
+        if "google_id" not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+        if "password_login_enabled" not in user_columns:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN password_login_enabled INTEGER NOT NULL DEFAULT 1"
             )
 
         cursor.execute("""

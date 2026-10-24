@@ -29,6 +29,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="assets/css/onboarding-tour.css" rel="stylesheet">
     <link href="assets/css/design-system.css" rel="stylesheet">
+    <script src="assets/js/account-password.js" defer></script>
 
     <style>
         :root {
@@ -2345,6 +2346,33 @@
                         </form>
                     </div>
 
+                    <div class="panel" style="max-width: 680px; margin-top: 18px;">
+                        <div class="panel-head">
+                            <div>
+                                <h3>Account Password</h3>
+                                <div class="sub" id="student-password-description">Set a password to sign in with your email, username, or student number.</div>
+                            </div>
+                        </div>
+                        <form id="student-password-form" data-account-password-form data-token-key="access_token" data-current-password-group="student-password-current-group" data-description="student-password-description" data-status="student-password-status">
+                            <div id="student-password-current-group" class="form-field" hidden>
+                                <label for="student-current-password">Current Password</label>
+                                <input type="password" id="student-current-password" name="current_password" autocomplete="current-password" placeholder="Enter your current password">
+                            </div>
+                            <div class="form-field">
+                                <label for="student-new-password">New Password</label>
+                                <input type="password" id="student-new-password" name="new_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="At least 8 characters">
+                            </div>
+                            <div class="form-field">
+                                <label for="student-confirm-password">Confirm New Password</label>
+                                <input type="password" id="student-confirm-password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="Re-enter your new password">
+                            </div>
+                            <p id="student-password-status" role="status" aria-live="polite" style="margin: 0 0 14px; font-size: 13px;"></p>
+                            <button type="submit" class="btn btn-primary" id="student-password-submit" style="width: 100%;">
+                                Set Account Password
+                            </button>
+                        </form>
+                    </div>
+
                     <div class="panel push-settings-card">
                         <div class="push-settings-heading">
                             <div class="push-settings-icon">
@@ -2883,6 +2911,7 @@
             renderWorkspaces();
             renderDocuments();
             updateUIProfile();
+            window.KeepAIAccountPasswordSettings.update('student-password-form', currentUser);
             updateCounters();
             const initialSection = window.location.hash.slice(1);
             showSection(isValidStudentSection(initialSection) ? initialSection : 'workspaces', false);

@@ -113,8 +113,7 @@ class UserService:
         self, 
         email: str, 
         full_name: str, 
-        google_id: str, 
-        picture: Optional[str] = None
+        google_id: str,
     ) -> Dict[str, Any]:
         """Authenticate or register a student using Google Identity Services credentials"""
         email_clean = email.strip().lower()
@@ -122,21 +121,61 @@ class UserService:
         try:
             cur = conn.cursor()
             cur.execute(
-                "SELECT id, username, email, full_name, student_id FROM users WHERE email = ?", 
+                """
+                SELECT id, username, email, full_name, student_id, role,
+                       google_id, password_login_enabled
+                FROM users
+                WHERE LOWER(email) = ?
+                """,
                 (email_clean,)
             )
-            user = cur.fetchone()
-            if user:
-                return dict(user)
+            matching_users = cur.fetchall()
+            if len(matching_users) > 1:
+                raise ValueError("More than one account uses this Google email address.")
+            if matching_users:
+                user_dict = dict(matching_users[0])
+                linked_google_id = user_dict.get("google_id")
+                if linked_google_id and linked_google_id != google_id:
+                    raise ValueError("This email is already linked to a different Google account.")
+
+                if not linked_google_id:
+                    is_legacy_google_account = str(user_dict["id"]).startswith("usr_g_")
+                    cur.execute(
+                        """
+                        UPDATE users
+                        SET google_id = ?, password_login_enabled = ?
+                        WHERE id = ? AND google_id IS NULL
+                        """,
+                        (
+                            google_id,
+                            not is_legacy_google_account,
+                            user_dict["id"],
+                        ),
+                    )
+                    conn.commit()
+                    cur.execute(
+                        """
+                        SELECT id, username, email, full_name, student_id, role,
+                               google_id, password_login_enabled
+                        FROM users
+                        WHERE id = ?
+                        """,
+                        (user_dict["id"],),
+                    )
+                    linked_user = cur.fetchone()
+                    if not linked_user or linked_user["google_id"] != google_id:
+                        raise ValueError("This email is already linked to a different Google account.")
+                    user_dict = dict(linked_user)
+                user_dict["google_linked"] = True
+                return user_dict
             
             # Create a new student account linked to Google
-            new_id = f"usr_g_{google_id[-8:]}" if len(google_id) >= 8 else str(uuid.uuid4())
-            base_username = email_clean.split("@")[0].replace(".", "_")
-            username_clean = base_username
-            
+            new_id = str(uuid.uuid4())
+            base_username = email_clean.split("@")[0].replace(".", "_")[:48]
+            username_clean = f"{base_username}_{google_id[-6:]}"
             cur.execute("SELECT id FROM users WHERE username = ?", (username_clean,))
             if cur.fetchone():
-                username_clean = f"{base_username}_{google_id[-4:]}"
+                username_clean = f"{base_username}_{uuid.uuid4().hex[:8]}"
                 
             pw_hash = hash_password(str(uuid.uuid4()))
             student_id = f"G-{google_id[-6:]}" if len(google_id) >= 6 else "GoogleStudent"
@@ -144,22 +183,22 @@ class UserService:
             
             cur.execute(
                 """
-                INSERT INTO users (id, username, email, full_name, student_id, password_hash)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO users (
+                    id, username, email, full_name, student_id, password_hash,
+                    role, google_id, password_login_enabled
+                )
+                VALUES (?, ?, ?, ?, ?, ?, 'student', ?, FALSE)
                 """,
-                (new_id, username_clean, email_clean, clean_name, student_id, pw_hash)
+                (new_id, username_clean, email_clean, clean_name, student_id, pw_hash, google_id)
             )
             
-            try:
-                cur.execute(
-                    """
-                    INSERT INTO student_stats (user_id, questions_asked, summaries_generated, quizzes_attempted, questions_tested, study_minutes, study_plans)
-                    VALUES (?, 0, 0, 0, 0, 0, '[]')
-                    """,
-                    (new_id,)
-                )
-            except Exception:
-                pass
+            cur.execute(
+                """
+                INSERT INTO student_stats (user_id, questions_asked, summaries_generated, quizzes_attempted, questions_tested, study_minutes, study_plans)
+                VALUES (?, 0, 0, 0, 0, 0, '[]')
+                """,
+                (new_id,)
+            )
                 
             conn.commit()
             return {
@@ -167,8 +206,60 @@ class UserService:
                 "username": username_clean,
                 "email": email_clean,
                 "full_name": clean_name,
-                "student_id": student_id
+                "student_id": student_id,
+                "role": "student",
+                "google_id": google_id,
+                "password_login_enabled": False,
+                "google_linked": True,
             }
+        finally:
+            conn.close()
+
+    def update_password(
+        self,
+        user_id: str,
+        current_password: Optional[str],
+        new_password: str,
+    ) -> bool:
+        """Set or change the authenticated account's password."""
+        if len(new_password) < 8:
+            raise ValueError("Password must be at least 8 characters long.")
+
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT password_hash, google_id, password_login_enabled
+                FROM users
+                WHERE id = ?
+                """,
+                (user_id,),
+            )
+            row = cur.fetchone()
+            if not row:
+                raise ValueError("Account not found.")
+
+            user = dict(row)
+            password_login_enabled = bool(user.get("password_login_enabled", True))
+            if password_login_enabled:
+                if not current_password or not verify_password(
+                    current_password, user["password_hash"]
+                ):
+                    raise ValueError("Current password is incorrect.")
+            elif not user.get("google_id"):
+                raise ValueError("A password cannot be set for this account.")
+
+            cur.execute(
+                """
+                UPDATE users
+                SET password_hash = ?, password_login_enabled = TRUE
+                WHERE id = ?
+                """,
+                (hash_password(new_password), user_id),
+            )
+            conn.commit()
+            return True
         finally:
             conn.close()
 
@@ -180,7 +271,8 @@ class UserService:
             cur = conn.cursor()
             cur.execute(
                 """
-                SELECT id, username, email, full_name, student_id, password_hash, role
+                SELECT id, username, email, full_name, student_id, password_hash,
+                       role, password_login_enabled
                 FROM users
                 WHERE username = ? OR email = ? OR LOWER(student_id) = ?
                 """,
@@ -192,6 +284,8 @@ class UserService:
             row = matching_users[0]
 
             user_dict = dict(row)
+            if not user_dict["password_login_enabled"]:
+                return None
             if not verify_password(password, user_dict["password_hash"]):
                 return None
 

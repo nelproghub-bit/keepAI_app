@@ -93,10 +93,21 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, username, email, full_name, student_id, role, created_at FROM users WHERE id = ?", (user_id,))
+        cur.execute(
+            """
+            SELECT id, username, email, full_name, student_id, role, created_at,
+                   google_id, password_login_enabled
+            FROM users
+            WHERE id = ?
+            """,
+            (user_id,),
+        )
         row = cur.fetchone()
         if row:
-            return dict(row)
+            user = dict(row)
+            user["google_linked"] = bool(user.pop("google_id", None))
+            user["password_login_enabled"] = bool(user["password_login_enabled"])
+            return user
         return None
     finally:
         conn.close()
