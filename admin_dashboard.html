@@ -3690,8 +3690,7 @@ function formatAiMarkdown(text) {
   let html = escapeHtml(text);
 
   // Code blocks (```language ... ```)
-  html = html.replace(/```([a-zA-Z0-9_-]*)
-([\s\S]*?)```/g, (match, lang, code) => {
+  html = html.replace(/```([a-zA-Z0-9_-]*)\n([\s\S]*?)```/g, (match, lang, code) => {
     return `<pre><code>${code.trim()}</code></pre>`;
   });
 
@@ -3988,4 +3987,3 @@ function triggerPwaInstall() {
 <div id="toast-container"></div>
 </body>
 </html>
-
