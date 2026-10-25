@@ -1493,6 +1493,59 @@
             transition: background 0.2s ease;
         }
 
+        .quiz-type-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 10px;
+        }
+
+        .quiz-type-option {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) 72px;
+            align-items: center;
+            gap: 10px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-subtle);
+        }
+
+        .quiz-type-option:has(input[type="checkbox"]:checked) {
+            border-color: var(--primary-border);
+            background: var(--primary-light);
+        }
+
+        .quiz-type-option > input[type="checkbox"] {
+            width: 17px;
+            height: 17px;
+            accent-color: var(--primary);
+        }
+
+        .quiz-type-copy { min-width: 0; }
+        .quiz-type-copy strong { display: block; color: var(--text-main); font-size: 12px; }
+        .quiz-type-copy span { display: block; margin-top: 3px; color: var(--text-muted); font-size: 10px; line-height: 1.4; }
+
+        .quiz-type-count {
+            width: 100%;
+            min-width: 0;
+            padding: 7px 6px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xs);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            font-size: 12px;
+            text-align: center;
+        }
+
+        .quiz-type-count:disabled { opacity: .5; }
+        .quiz-type-total { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; color: var(--text-muted); font-size: 11px; }
+        .quiz-type-total strong { color: var(--text-main); }
+        .quiz-type-total.invalid strong { color: var(--rose); }
+
+        @media (max-width: 520px) {
+            .quiz-type-grid { grid-template-columns: 1fr; }
+        }
+
         /* Progress & Stat Cards */
         .stat-grid {
             display: grid;
@@ -2590,14 +2643,38 @@
                 <input type="text" id="lesson-topic" placeholder="e.g., IoT Core Concepts, Protocols, or Leave blank for full doc">
             </div>
             <div class="form-field" id="quiz-count-group">
-                <label for="quiz-question-count">Number of Questions to Generate</label>
-                <select id="quiz-question-count">
-                    <option value="5">5 Questions (Quick Test)</option>
-                    <option value="10">10 Questions (Standard Quiz)</option>
-                    <option value="20">20 Questions (In-Depth Review)</option>
-                    <option value="50">50 Questions (Comprehensive Exam)</option>
-                    <option value="100" selected>100 Questions (Full Mastery Review)</option>
-                </select>
+                <label>Question formats and counts</label>
+                <p style="margin: -2px 0 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5;">Choose one or more formats and set how many of each to include. Matching activities include three pairs each. Maximum total: 100.</p>
+                <div class="quiz-type-grid" id="quiz-type-grid">
+                    <label class="quiz-type-option">
+                        <input type="checkbox" data-quiz-type="identification" onchange="updateQuizTypeSelection()">
+                        <span class="quiz-type-copy"><strong>Identification</strong><span>Type the correct term or answer.</span></span>
+                        <input class="quiz-type-count" type="number" data-quiz-count="identification" min="1" max="100" value="5" aria-label="Number of identification questions" disabled oninput="updateQuizTypeSelection()">
+                    </label>
+                    <label class="quiz-type-option">
+                        <input type="checkbox" data-quiz-type="multiple_choice" checked onchange="updateQuizTypeSelection()">
+                        <span class="quiz-type-copy"><strong>Multiple choice</strong><span>Select one of four answers.</span></span>
+                        <input class="quiz-type-count" type="number" data-quiz-count="multiple_choice" min="1" max="100" value="10" aria-label="Number of multiple choice questions" oninput="updateQuizTypeSelection()">
+                    </label>
+                    <label class="quiz-type-option">
+                        <input type="checkbox" data-quiz-type="true_false" onchange="updateQuizTypeSelection()">
+                        <span class="quiz-type-copy"><strong>True or false</strong><span>Decide whether each statement is correct.</span></span>
+                        <input class="quiz-type-count" type="number" data-quiz-count="true_false" min="1" max="100" value="5" aria-label="Number of true or false questions" disabled oninput="updateQuizTypeSelection()">
+                    </label>
+                    <label class="quiz-type-option">
+                        <input type="checkbox" data-quiz-type="fill_blank" onchange="updateQuizTypeSelection()">
+                        <span class="quiz-type-copy"><strong>Fill in the blanks</strong><span>Complete the missing answer.</span></span>
+                        <input class="quiz-type-count" type="number" data-quiz-count="fill_blank" min="1" max="100" value="5" aria-label="Number of fill in the blanks questions" disabled oninput="updateQuizTypeSelection()">
+                    </label>
+                    <label class="quiz-type-option">
+                        <input type="checkbox" data-quiz-type="matching" onchange="updateQuizTypeSelection()">
+                        <span class="quiz-type-copy"><strong>Matching type</strong><span>Match three lesson questions with their answers.</span></span>
+                        <input class="quiz-type-count" type="number" data-quiz-count="matching" min="1" max="100" value="5" aria-label="Number of matching activities" disabled oninput="updateQuizTypeSelection()">
+                    </label>
+                </div>
+                <div class="quiz-type-total" id="quiz-type-total" role="status" aria-live="polite">
+                    <span>Assessment total</span><strong id="quiz-type-total-value">10 questions</strong>
+                </div>
             </div>
             <button class="btn btn-primary" onclick="processLearningToolAction()" id="process-tool-btn" style="width: 100%;">
                 <i class="fas fa-magic me-1"></i> Generate with AI
@@ -4796,6 +4873,50 @@
         let activeQuizData = null;
         let userQuizAnswers = {};
 
+        function getSelectedQuizQuestionCounts() {
+            const counts = {};
+            document.querySelectorAll('#quiz-type-grid [data-quiz-type]').forEach(typeToggle => {
+                if (!typeToggle.checked) return;
+                const questionType = typeToggle.dataset.quizType;
+                const countInput = document.querySelector(`[data-quiz-count="${questionType}"]`);
+                const count = Number.parseInt(countInput?.value || '', 10);
+                if (countInput && Number.isInteger(count) && count >= 1 && count <= 100) {
+                    counts[questionType] = count;
+                }
+            });
+            return counts;
+        }
+
+        function updateQuizTypeSelection() {
+            const grid = document.getElementById('quiz-type-grid');
+            const total = document.getElementById('quiz-type-total');
+            const totalValue = document.getElementById('quiz-type-total-value');
+            const generateButton = document.getElementById('process-tool-btn');
+            if (!grid || !total || !totalValue || !generateButton) return;
+
+            let invalidSelection = false;
+            grid.querySelectorAll('[data-quiz-type]').forEach(toggle => {
+                const countInput = grid.querySelector(`[data-quiz-count="${toggle.dataset.quizType}"]`);
+                if (!countInput) return;
+                countInput.disabled = !toggle.checked;
+                if (toggle.checked
+                    && (!Number.isInteger(Number(countInput.value))
+                        || Number(countInput.value) < 1
+                        || Number(countInput.value) > 100)) {
+                    invalidSelection = true;
+                }
+            });
+
+            const counts = getSelectedQuizQuestionCounts();
+            const questionTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
+            const isValid = questionTotal > 0 && questionTotal <= 100 && !invalidSelection;
+            total.classList.toggle('invalid', !isValid);
+            totalValue.textContent = invalidSelection
+                ? 'Enter a count from 1 to 100'
+                : `${questionTotal} ${questionTotal === 1 ? 'question' : 'questions'}${questionTotal > 100 ? ' — maximum is 100' : ''}`;
+            generateButton.disabled = !isValid;
+        }
+
         function showToolModal(type) {
             currentToolType = type;
             const titleMap = {
@@ -4808,6 +4929,12 @@
             const countGroup = document.getElementById('quiz-count-group');
             if (countGroup) {
                 countGroup.style.display = (type === 'quiz') ? 'block' : 'none';
+            }
+            if (type === 'quiz') {
+                updateQuizTypeSelection();
+            } else {
+                const generateButton = document.getElementById('process-tool-btn');
+                if (generateButton) generateButton.disabled = false;
             }
 
             // Populate document select with actual uploaded library documents
@@ -4826,17 +4953,12 @@
 
         async function processLearningToolAction() {
             const selectDoc = document.getElementById('lesson-select').value;
-            let topicInput = document.getElementById('lesson-topic').value.trim();
-            const countSelect = document.getElementById('quiz-question-count');
-            let qCount = parseInt(countSelect ? countSelect.value : 5) || 5;
-
-            // Automatically detect requested question count if student typed e.g. "make a 100 quiz multiple choice"
-            if (topicInput) {
-                const countMatch = topicInput.match(/\b(\d{1,3})\s*-?\s*(?:questions?|quizzes|quiz|items?|mcqs?|multiple\s*choice)\b|\b(?:quiz|exam|test)\s+(?:of|with|for)\s+(\d{1,3})\b/i);
-                if (countMatch) {
-                    const requestedCount = parseInt(countMatch[1] || countMatch[2], 10);
-                    if (requestedCount >= 1) qCount = Math.min(100, requestedCount);
-                }
+            const topicInput = document.getElementById('lesson-topic').value.trim();
+            const questionCounts = currentToolType === 'quiz' ? getSelectedQuizQuestionCounts() : {};
+            const qCount = Object.values(questionCounts).reduce((sum, count) => sum + count, 0);
+            if (currentToolType === 'quiz' && (!qCount || qCount > 100)) {
+                showToast('Choose question formats and enter a total between 1 and 100.', 'warning');
+                return;
             }
 
             const topic = topicInput || `Comprehensive ${selectDoc ? selectDoc.replace('.pdf', '') : 'IoT'} Assessment`;
@@ -4856,7 +4978,17 @@
             const statsBanner = document.getElementById('quiz-stats-banner');
             const docSubtitle = document.getElementById('quiz-modal-doc-subtitle');
 
-            if (docSubtitle) docSubtitle.textContent = `Document: ${selectDoc} • Generating ${qCount} Questions...`;
+            const typeLabels = {
+                identification: 'Identification',
+                multiple_choice: 'Multiple choice',
+                true_false: 'True or false',
+                fill_blank: 'Fill in the blanks',
+                matching: 'Matching',
+            };
+            const formatSummary = Object.entries(questionCounts)
+                .map(([type, count]) => `${count} ${typeLabels[type]}`)
+                .join(' · ');
+            if (docSubtitle) docSubtitle.textContent = `Document: ${selectDoc} • ${qCount} questions`;
             if (statsBanner) statsBanner.style.display = 'none';
 
             quizContent.innerHTML = `
@@ -4864,9 +4996,9 @@
                     <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 16px; font-size: 24px;">
                         <i class="fas fa-spinner fa-spin"></i>
                     </div>
-                    <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Generating ${qCount} Practice Questions</h4>
+                    <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Building your ${qCount}-question assessment</h4>
                     <p style="color: var(--text-muted); font-size: 13.5px; max-width: 480px; margin: 0 auto;">
-                        AI is analyzing <strong>${escapeHTML(selectDoc)}</strong> and synthesizing ${qCount} multiple-choice items with 4 options, answers, and explanations...
+                        AI is analyzing <strong>${escapeHTML(selectDoc)}</strong> and preparing ${escapeHTML(formatSummary)} with answers and explanations...
                     </p>
                 </div>
             `;
@@ -4883,7 +5015,8 @@
                     body: JSON.stringify({
                         topic: topic,
                         document_name: selectDoc,
-                        question_count: qCount
+                        question_count: qCount,
+                        question_counts: questionCounts
                     })
                 });
 
@@ -4892,13 +5025,38 @@
                     activeQuizData = data;
                     renderFullQuizQuestions(data);
                 } else {
-                    console.warn('Backend returned non-200, generating client questions');
-                    fallbackClientQuizGeneration(selectDoc, topic, qCount);
+                    let message = `Quiz generation failed (${res.status}).`;
+                    try {
+                        const errorData = await res.json();
+                        if (typeof errorData.detail === 'string') message = errorData.detail;
+                    } catch (error) {
+                        console.warn('Could not read quiz generation error details:', error);
+                    }
+                    showQuizGenerationError(message);
                 }
             } catch (err) {
-                console.warn('Network issue during quiz generation, generating client questions:', err);
-                fallbackClientQuizGeneration(selectDoc, topic, qCount);
+                console.error('Quiz generation request failed:', err);
+                showQuizGenerationError('KeepAI could not reach the quiz service. Check your connection and try again.');
             }
+        }
+
+        function showQuizGenerationError(message) {
+            const quizContent = document.getElementById('quiz-content');
+            const statsBanner = document.getElementById('quiz-stats-banner');
+            if (statsBanner) statsBanner.style.display = 'none';
+            if (!quizContent) return;
+            quizContent.innerHTML = `
+                <div role="alert" style="max-width: 520px; margin: auto; padding: 32px 20px; text-align: center;">
+                    <div style="width: 54px; height: 54px; display: grid; place-items: center; margin: 0 auto 14px; border-radius: 50%; background: var(--rose-light); color: var(--rose); font-size: 21px;">
+                        <i class="fas fa-triangle-exclamation" aria-hidden="true"></i>
+                    </div>
+                    <h4 style="margin: 0 0 8px; color: var(--text-main);">We couldn’t generate this assessment</h4>
+                    <p style="margin: 0 0 18px; color: var(--text-muted); font-size: 13px; line-height: 1.6;">${escapeHTML(message)}</p>
+                    <button type="button" class="btn btn-plain" onclick="closeModal('quiz-modal'); document.getElementById('learning-tool-modal').classList.add('show');">
+                        Review quiz settings
+                    </button>
+                </div>
+            `;
         }
 
         function renderFullQuizQuestions(data) {
@@ -4910,7 +5068,17 @@
             userQuizAnswers = {};
             quizCompletionRecorded = false;
             if (statsBanner) statsBanner.style.display = 'flex';
-            if (docSubtitle) docSubtitle.textContent = `Document: ${data.document_name || 'Selected Material'} • ${questions.length} Questions Generated`;
+            if (docSubtitle) {
+                const formatCounts = questions.reduce((counts, item) => {
+                    const type = item.question_type || 'multiple_choice';
+                    counts[type] = (counts[type] || 0) + 1;
+                    return counts;
+                }, {});
+                const formats = Object.entries(formatCounts)
+                    .map(([type, count]) => `${count} ${type.replaceAll('_', ' ')}`)
+                    .join(' · ');
+                docSubtitle.textContent = `Document: ${data.document_name || 'Selected Material'} • ${questions.length} Questions • ${formats}`;
+            }
 
             updateQuizStatsDisplay(questions.length);
 
@@ -4932,7 +5100,52 @@
 
             questions.forEach((q, idx) => {
                 const qNum = idx + 1;
+                const questionType = q.question_type || 'multiple_choice';
                 const choices = q.choices || q.options || [];
+                let interaction = '';
+                if (questionType === 'multiple_choice' || questionType === 'true_false') {
+                    interaction = `
+                        <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 40px;" id="q-choices-${qNum}">
+                            ${choices.map((choice, cIdx) => {
+                                const choiceLetter = questionType === 'true_false'
+                                    ? ''
+                                    : `${String.fromCharCode(65 + cIdx)})`;
+                                return `
+                                    <button type="button" class="btn btn-plain btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 14px; border-radius: var(--radius-sm); white-space: normal; line-height: 1.4;"
+                                        onclick="handleQuizChoiceClick(${idx}, ${cIdx}, this)">
+                                        ${choiceLetter ? `<span style="font-weight: 800; margin-right: 8px; color: var(--text-muted);">${choiceLetter}</span>` : ''}
+                                        <span>${escapeHTML(choice)}</span>
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    `;
+                } else if (questionType === 'identification' || questionType === 'fill_blank') {
+                    interaction = `
+                        <div style="display: flex; gap: 8px; margin-left: 40px; flex-wrap: wrap;">
+                            <input type="text" id="q-text-answer-${qNum}" autocomplete="off"
+                                aria-label="${questionType === 'fill_blank' ? 'Fill in the blank' : 'Your answer'}"
+                                placeholder="${questionType === 'fill_blank' ? 'Type the missing answer' : 'Type your answer'}"
+                                style="flex: 1; min-width: 180px; padding: 10px 12px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="handleQuizTextAnswer(${idx})">Check answer</button>
+                        </div>
+                    `;
+                } else if (questionType === 'matching') {
+                    interaction = `
+                        <div style="display: flex; flex-direction: column; gap: 10px; margin-left: 40px;" id="q-matching-${qNum}">
+                            ${(q.pairs || []).map((pair, pairIdx) => `
+                                <label style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(160px, 1fr); align-items: center; gap: 10px; color: var(--text-body); font-size: 12px;">
+                                    <span>${escapeHTML(pair.left)}</span>
+                                    <select id="q-match-answer-${qNum}-${pairIdx}" style="min-width: 0; padding: 9px; background: var(--bg-surface); color: var(--text-main); border: 1px solid var(--border); border-radius: var(--radius-sm);">
+                                        <option value="">Select a match</option>
+                                        ${(q.choices || []).map(choice => `<option value="${escapeHTML(choice)}">${escapeHTML(choice)}</option>`).join('')}
+                                    </select>
+                                </label>
+                            `).join('')}
+                            <button type="button" class="btn btn-primary btn-sm" style="align-self: flex-start;" onclick="handleQuizMatchingAnswer(${idx})">Check matches</button>
+                        </div>
+                    `;
+                }
                 html += `
                     <div class="panel" style="padding: 18px; border: 1px solid var(--border);" id="q-card-${qNum}">
                         <div style="display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px;">
@@ -4941,18 +5154,8 @@
                             </span>
                             <strong style="font-size: 14px; color: var(--text-main); line-height: 1.5;">${escapeHTML(q.question)}</strong>
                         </div>
-                        <div style="display: flex; flex-direction: column; gap: 8px; margin-left: 40px;" id="q-choices-${qNum}">
-                            ${choices.map((choice, cIdx) => {
-                                const choiceLetter = String.fromCharCode(65 + cIdx);
-                                return `
-                                    <button type="button" class="btn btn-plain btn-sm" style="text-align: left; justify-content: flex-start; padding: 10px 14px; border-radius: var(--radius-sm); white-space: normal; line-height: 1.4;" 
-                                        onclick="handleQuizChoiceClick(${idx}, ${cIdx}, this)">
-                                        <span style="font-weight: 800; margin-right: 8px; color: var(--text-muted);">${choiceLetter})</span>
-                                        <span>${escapeHTML(choice)}</span>
-                                    </button>
-                                `;
-                            }).join('')}
-                        </div>
+                        <div style="margin-bottom: 12px;"><span class="mini-pill" style="background: var(--bg-subtle); color: var(--text-muted); padding: 4px 8px; font-size: 10px;">${escapeHTML(questionType.replaceAll('_', ' '))}</span></div>
+                        ${interaction}
                         <div id="q-exp-${qNum}" style="display: none; margin-left: 40px; margin-top: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.5;"></div>
                     </div>
                 `;
@@ -5018,6 +5221,76 @@
             updateQuizStatsDisplay(total);
         }
 
+        function showQuizAnswerFeedback(qNum, isCorrect, message, explanation) {
+            const feedback = document.getElementById(`q-exp-${qNum}`);
+            if (!feedback) return;
+            feedback.style.display = 'block';
+            feedback.style.background = isCorrect ? 'var(--emerald-light)' : 'var(--rose-light)';
+            feedback.style.color = isCorrect ? 'var(--emerald)' : 'var(--rose)';
+            feedback.style.border = `1px solid ${isCorrect ? 'var(--emerald-border)' : 'var(--rose-border)'}`;
+            feedback.innerHTML = `<strong>${isCorrect ? 'Correct!' : 'Not quite.'}</strong> ${escapeHTML(message)}${explanation ? `<br><span style="color: var(--text-body);">${escapeHTML(explanation)}</span>` : ''}`;
+        }
+
+        function normalizeQuizAnswer(answer) {
+            return String(answer || '').trim().toLocaleLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ');
+        }
+
+        function handleQuizTextAnswer(qIdx) {
+            if (!activeQuizData?.questions?.[qIdx]) return;
+            const q = activeQuizData.questions[qIdx];
+            const qNum = qIdx + 1;
+            const input = document.getElementById(`q-text-answer-${qNum}`);
+            const answer = input?.value || '';
+            if (!answer.trim()) {
+                showToast('Enter an answer before checking.', 'warning');
+                input?.focus();
+                return;
+            }
+            const accepted = q.accepted_answers || [q.correct_answer];
+            const isCorrect = accepted.some(item => normalizeQuizAnswer(item) === normalizeQuizAnswer(answer));
+            userQuizAnswers[qNum] = isCorrect;
+            if (input) input.disabled = true;
+            const button = input?.parentElement?.querySelector('button');
+            if (button) button.disabled = true;
+            showQuizAnswerFeedback(
+                qNum,
+                isCorrect,
+                isCorrect ? 'Your answer matches the lesson.' : `Expected answer: ${q.correct_answer}`,
+                q.explanation || ''
+            );
+            updateQuizStatsDisplay(activeQuizData.questions.length);
+        }
+
+        function handleQuizMatchingAnswer(qIdx) {
+            if (!activeQuizData?.questions?.[qIdx]) return;
+            const q = activeQuizData.questions[qIdx];
+            const qNum = qIdx + 1;
+            const pairs = q.pairs || [];
+            const answers = pairs.map((_, pairIdx) =>
+                document.getElementById(`q-match-answer-${qNum}-${pairIdx}`)
+            );
+            if (answers.some(answer => !answer?.value)) {
+                showToast('Complete every matching pair before checking.', 'warning');
+                return;
+            }
+
+            const isCorrect = pairs.every((pair, pairIdx) =>
+                normalizeQuizAnswer(answers[pairIdx].value) === normalizeQuizAnswer(pair.right)
+            );
+            userQuizAnswers[qNum] = isCorrect;
+            answers.forEach(answer => { answer.disabled = true; });
+            const button = document.querySelector(`#q-matching-${qNum} button`);
+            if (button) button.disabled = true;
+            const correctPairs = pairs.map(pair => `${pair.left} → ${pair.right}`).join(' | ');
+            showQuizAnswerFeedback(
+                qNum,
+                isCorrect,
+                isCorrect ? 'All pairs match.' : `Correct matches: ${correctPairs}`,
+                q.explanation || ''
+            );
+            updateQuizStatsDisplay(activeQuizData.questions.length);
+        }
+
         function updateQuizStatsDisplay(total) {
             const answeredKeys = Object.keys(userQuizAnswers);
             const answeredCount = answeredKeys.length;
@@ -5063,45 +5336,6 @@
 
         function printOrExportQuiz() {
             window.print();
-        }
-
-        function fallbackClientQuizGeneration(docName, topic, count) {
-            const generated = [];
-            const subjects = [
-                ["Internet of Things (IoT)", "A network of physical devices connected to the internet that collect and share data", "A software database table", "An offline CD music player", "An old television broadcast system"],
-                ["Actuators", "Parts that convert electrical signals into physical movement, like a motor or pump", "Sensors that only read temperature", "A file saved on a USB drive", "A math formula written on paper"],
-                ["Smart plant watering system", "An automated setup that measures soil moisture and turns on a water pump when dry", "A spreadsheet tracking expenses", "An uncompiled code file", "A security camera without internet"],
-                ["MQTT Protocol", "A simple, lightweight messaging system made for smart devices with low battery or slow internet", "A heavy program needing lots of memory", "An electrical wire carrying raw voltage", "A special cable exclusive to mainframes"],
-                ["Raspberry Pi", "A small, complete computer on a single board that can run Linux and programs", "A simple microchip without an operating system", "A basic analog temperature sensor", "An RFID tag with no memory"],
-                ["Sensors Layer", "The physical sensors that detect and measure real-world conditions like temperature or light", "A website dashboard showing charts", "A database server storing user passwords", "An undersea internet cable"],
-                ["Machine Learning Overfitting", "When a computer model memorizes practice examples too closely and fails on new examples", "When a smart sensor runs completely out of battery", "When too many wires are connected together", "When the internet connection gets overloaded"],
-                ["Edge Computing", "Processing data right on or near the smart device instead of sending everything to the cloud", "Sending all data to remote overseas servers", "Running programs exclusively inside virtual machines", "Broadcasting music over an open radio channel"],
-                ["LoRaWAN", "A long-range, low-power wireless connection built for battery-powered smart sensors", "A short HDMI video cable", "A high-speed fiber internet cable", "A wireless Bluetooth headphone connection"],
-                ["Analog-to-Digital Converter (ADC)", "Translates real-world analog signals (like temperature voltage) into digital numbers a computer can read", "Converts code into home electrical power", "A firewall protecting computers from viruses", "A Wi-Fi password encryption tool"]
-            ];
-
-            for (let i = 0; i < count; i++) {
-                const item = subjects[i % subjects.length];
-                const subj = item[0];
-                const correct = item[1];
-                const choices = [correct, item[2], item[3], item[4]];
-                choices.sort(() => (i % 2 === 0 ? 0.5 : -0.5));
-                
-                generated.push({
-                    question: (count > subjects.length ? `Item ${i+1}: ` : '') + `In the study material "${docName || 'IoT Notes'}", what is the primary characteristic of ${subj}?`,
-                    choices: choices,
-                    correct_answer: correct,
-                    explanation: `According to ${docName || 'the lesson'}, ${subj} is defined as: ${correct}.`
-                });
-            }
-
-            activeQuizData = {
-                topic: topic,
-                document_name: docName || "Machine Learning - IoT Notes 1.pdf",
-                total_questions: generated.length,
-                questions: generated
-            };
-            renderFullQuizQuestions(activeQuizData);
         }
 
         // ==================== SETTINGS & MISC ====================

@@ -3,7 +3,7 @@ import re
 import random
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from app.core.security import get_current_student_user
 from app.core.database import get_connection
 from app.services.user_service import user_service
@@ -17,6 +17,26 @@ class LessonRequest(BaseModel):
     topic: str = Field(default="Quiz", max_length=500)
     document_name: Optional[str] = None
     question_count: Optional[int] = Field(default=5, ge=1, le=100)
+    question_counts: Optional[Dict[str, int]] = None
+
+    @model_validator(mode="after")
+    def validate_question_counts(self):
+        if self.question_counts is None:
+            return self
+        valid_types = {
+            "identification",
+            "multiple_choice",
+            "true_false",
+            "fill_blank",
+            "matching",
+        }
+        if not self.question_counts or set(self.question_counts) - valid_types:
+            raise ValueError("Choose at least one supported question type.")
+        if any(count < 1 for count in self.question_counts.values()):
+            raise ValueError("Each selected question type must have at least one question.")
+        if sum(self.question_counts.values()) > 100:
+            raise ValueError("The total quiz size cannot exceed 100 questions.")
+        return self
 
 
 QUESTION_COUNT_PATTERNS = (
@@ -308,6 +328,102 @@ def synthesize_questions_from_document(
 
     return questions[:target_count]
 
+
+def build_typed_quiz_questions(
+    source_questions: List[Dict[str, Any]],
+    question_counts: Dict[str, int],
+) -> List[Dict[str, Any]]:
+    """Format grounded multiple-choice source items into requested assessment types."""
+    result: List[Dict[str, Any]] = []
+    source_index = 0
+
+    for question_type, count in question_counts.items():
+        if question_type == "matching":
+            for _ in range(count):
+                pair_sources = [
+                    source_questions[(source_index + offset) % len(source_questions)]
+                    for offset in range(min(3, len(source_questions)))
+                ]
+                source_index += len(pair_sources)
+                pairs = [
+                    {
+                        "left": item["question"],
+                        "right": item["correct_answer"],
+                    }
+                    for item in pair_sources
+                ]
+                choices = [pair["right"] for pair in pairs]
+                random.shuffle(choices)
+                result.append(
+                    {
+                        "question_type": question_type,
+                        "question": "Match each study question with its correct answer.",
+                        "pairs": pairs,
+                        "choices": choices,
+                        "explanation": "Review each question and connect it to the answer supported by the lesson.",
+                    }
+                )
+            continue
+
+        for question_number in range(count):
+            source = source_questions[source_index % len(source_questions)]
+            source_index += 1
+            correct_answer = source["correct_answer"]
+            question = source["question"]
+            explanation = source.get("explanation", "")
+
+            if question_type == "multiple_choice":
+                result.append({**source, "question_type": question_type})
+            elif question_type == "identification":
+                result.append(
+                    {
+                        "question_type": question_type,
+                        "question": question,
+                        "correct_answer": correct_answer,
+                        "accepted_answers": [correct_answer],
+                        "explanation": explanation,
+                    }
+                )
+            elif question_type == "true_false":
+                choices = source.get("choices", [])
+                is_true = question_number % 2 == 0 and correct_answer in choices
+                statement_answer = (
+                    correct_answer
+                    if is_true
+                    else next(
+                        (choice for choice in choices if choice != correct_answer),
+                        correct_answer,
+                    )
+                )
+                result.append(
+                    {
+                        "question_type": question_type,
+                        "question": (
+                            f'The answer to "{question}" is "{statement_answer}". '
+                            "True or false?"
+                        ),
+                        "choices": ["True", "False"],
+                        "correct_answer": "True" if is_true else "False",
+                        "explanation": (
+                            explanation if is_true
+                            else f"The correct answer is: {correct_answer}. {explanation}"
+                        ),
+                    }
+                )
+            elif question_type == "fill_blank":
+                result.append(
+                    {
+                        "question_type": question_type,
+                        "question": f'The answer to "{question}" is ____.',
+                        "correct_answer": correct_answer,
+                        "accepted_answers": [correct_answer],
+                        "explanation": explanation,
+                    }
+                )
+
+    return result
+
+
 @router.post("/learning/summary")
 def create_summary(
     request: LessonRequest,
@@ -341,12 +457,20 @@ def create_quiz(
     uid = current_user["id"]
     document_name = get_owned_document_name(uid, request.document_name)
     
-    # 1. Parse requested question count (from question_count field or from topic text like '100 quiz')
-    num_questions = request.question_count or 5
-    topic_count = requested_question_count(request.topic)
-    if topic_count is not None:
-        num_questions = topic_count
-    num_questions = max(1, min(100, num_questions))
+    if request.question_counts:
+        question_counts = request.question_counts
+        source_count = sum(
+            count * (3 if question_type == "matching" else 1)
+            for question_type, count in question_counts.items()
+        )
+    else:
+        num_questions = request.question_count or 5
+        topic_count = requested_question_count(request.topic)
+        if topic_count is not None:
+            num_questions = topic_count
+        num_questions = max(1, min(100, num_questions))
+        question_counts = {"multiple_choice": num_questions}
+        source_count = num_questions
 
     # 2. Extract lesson context for the specified document
     context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
@@ -356,7 +480,7 @@ def create_quiz(
     parsed_questions: List[Dict[str, Any]] = []
 
     # 3. Request initial question batch from LLM if running with smaller count
-    model_count = min(10, num_questions)
+    model_count = min(10, source_count)
     prompt = (
         f"Create {model_count} multiple-choice questions based only on the lesson below. "
         "Use simple, clear, and easy-to-understand words. "
@@ -390,11 +514,12 @@ def create_quiz(
     # 4. Synthesize questions from the specific document to meet the exact requested count (up to 100)
     final_questions = synthesize_questions_from_document(
         context=context,
-        target_count=num_questions,
+        target_count=source_count,
         existing_questions=parsed_questions,
         topic=request.topic,
         document_name=document_name or (sources[0] if sources else None)
     )
+    typed_questions = build_typed_quiz_questions(final_questions, question_counts)
 
     if current_user:
         record_activity(
@@ -406,8 +531,9 @@ def create_quiz(
     return {
         "topic": request.topic,
         "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
-        "total_questions": len(final_questions),
-        "questions": final_questions,
+        "total_questions": len(typed_questions),
+        "question_counts": question_counts,
+        "questions": typed_questions,
         "sources": sources
     }
 

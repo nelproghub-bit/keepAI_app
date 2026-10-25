@@ -116,7 +116,7 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **📚 Document Library** - Upload and organize PDF materials
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
 - **📝 Smart Summaries** - Generate structured study notes
-- **🎯 Practice Quizzes** - Create multiple-choice exams
+- **🎯 Practice Quizzes** - Generate identification, multiple-choice, true/false, fill-in-the-blank, and matching questions; mix formats and set a custom count for each (up to 100 total).
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 
