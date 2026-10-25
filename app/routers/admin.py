@@ -18,6 +18,10 @@ from app.core.config import GEMINI_MODEL, GEMINI_API_KEY
 from app.services.user_service import user_service
 from app.services.rag_service import delete_file_chunks, get_tutor_context
 from app.services.gemini_service import generate
+from app.services.platform_settings import (
+    get_student_registration_setting,
+    set_student_registration_setting,
+)
 
 router = APIRouter(prefix="/admin", tags=["Admin Control Panel"])
 
@@ -38,6 +42,9 @@ class AdminLoginRequest(BaseModel):
 class AITestRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=3000)
     mode: str = "tutor"  # tutor, summary, quiz, flashcard
+
+class StudentRegistrationSettingRequest(BaseModel):
+    enabled: bool
 
 import uuid
 from app.core.security import hash_password
@@ -574,6 +581,33 @@ def get_system_diagnostics(current_user: Dict[str, Any] = Depends(get_current_ad
             "api_key_configured": bool(GEMINI_API_KEY)
         },
         "system_status": "Healthy" if db_connected and bool(GEMINI_API_KEY) else "Needs Attention"
+    }
+
+
+@router.get("/settings")
+def get_admin_settings(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
+    return {
+        "student_registration": get_student_registration_setting(),
+        "ai_engine": {
+            "provider": "Google Gemini AI",
+            "model": GEMINI_MODEL,
+            "api_key_configured": bool(GEMINI_API_KEY),
+        },
+    }
+
+
+@router.put("/settings/student-registration")
+def update_student_registration_setting(
+    request: StudentRegistrationSettingRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
+    setting = set_student_registration_setting(
+        enabled=request.enabled,
+        admin_id=current_user["id"],
+    )
+    return {
+        "message": "Student registration settings saved.",
+        "student_registration": setting,
     }
 
 

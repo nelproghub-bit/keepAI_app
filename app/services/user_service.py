@@ -5,6 +5,11 @@ from typing import Optional, Dict, Any
 from app.core.database import get_connection
 from app.core.security import hash_password, verify_password
 
+
+class StudentRegistrationDisabledError(ValueError):
+    pass
+
+
 class UserService:
     """Service handling student registration, authentication, and academic profile state"""
 
@@ -114,6 +119,7 @@ class UserService:
         email: str, 
         full_name: str, 
         google_id: str,
+        allow_create: bool = True,
     ) -> Dict[str, Any]:
         """Authenticate or register a student using Google Identity Services credentials"""
         email_clean = email.strip().lower()
@@ -170,6 +176,10 @@ class UserService:
                 return user_dict
             
             # Create a new student account linked to Google
+            if not allow_create:
+                raise StudentRegistrationDisabledError(
+                    "Student registration is currently paused. Please contact your administrator."
+                )
             new_id = str(uuid.uuid4())
             base_username = email_clean.split("@")[0].replace(".", "_")[:48]
             username_clean = f"{base_username}_{google_id[-6:]}"

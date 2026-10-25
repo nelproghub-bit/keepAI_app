@@ -1849,8 +1849,220 @@ table.data-table tr:hover {
     padding: 20px 16px;
   }
 }
+
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+}
+
+.settings-card {
+  min-width: 0;
+  margin: 0;
+  padding: 22px;
+}
+
+.settings-card-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.settings-icon {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: #fff1ef;
+  color: var(--primary);
+  font-size: 16px;
+}
+
+.settings-card-heading h2 {
+  margin: 0;
+  color: var(--text-main);
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.settings-card-heading p,
+.settings-row p {
+  margin: 3px 0 0;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  line-height: 1.55;
+}
+
+.settings-account {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 22px;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-subtle);
+}
+
+.settings-avatar {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+}
+
+.settings-account > div { min-width: 0; flex: 1; }
+.settings-account strong, .settings-account > div span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.settings-account strong { color: var(--text-main); font-size: 12px; }
+.settings-account > div span { margin-top: 2px; color: var(--text-muted); font-size: 10.5px; }
+.settings-subheading { margin: 0 0 4px; color: var(--text-main); font-size: 13px; }
+.settings-card .form-group { margin-top: 14px; }
+.settings-status { min-height: 18px; margin: 8px 0 12px; color: var(--text-muted); font-size: 11.5px; }
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.settings-row:first-of-type { padding-top: 0; }
+.settings-row:last-of-type { border-bottom: 0; }
+.settings-row > div { min-width: 0; }
+.settings-row label, .settings-row strong { color: var(--text-main); font-size: 12px; font-weight: 700; }
+.settings-select { width: min(190px, 48%); min-height: 40px; padding: 8px 10px; border: 1px solid var(--border-strong); border-radius: 8px; background: var(--bg-surface); color: var(--text-main); }
+.settings-checkbox { width: 20px; height: 20px; flex: 0 0 20px; accent-color: var(--primary); cursor: pointer; }
+.settings-checkbox:disabled { cursor: wait; opacity: .55; }
+.settings-feedback { margin-top: 14px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-subtle); color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
+.settings-feedback[data-state="success"] { border-color: #a7f3d0; background: #ecfdf5; color: #166534; }
+.settings-feedback[data-state="error"] { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.settings-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+.settings-meta { color: var(--text-muted); font-size: 10px; }
+.notification-setting-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 13px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-subtle); }
+.notification-setting-row > div { min-width: 170px; flex: 1; }
+.notification-setting-row strong, .notification-setting-row span { display: block; }
+.notification-setting-row strong { color: var(--text-main); font-size: 12px; }
+.notification-setting-row span { margin-top: 4px; color: var(--text-muted); font-size: 10.5px; line-height: 1.5; }
+.settings-note { margin-top: 13px; padding-left: 11px; border-left: 2px solid var(--primary-border); color: var(--text-muted); font-size: 10.5px; line-height: 1.6; }
+.settings-ai-card { grid-column: 1 / -1; }
+.settings-ai-status { border: 0; }
+
+#dashboard-app.admin-theme-dark {
+  --bg-app: #11151d;
+  --bg-surface: #1b2230;
+  --bg-subtle: #222b3a;
+  --border: #354052;
+  --border-strong: #48566b;
+  --text-main: #f2f4f8;
+  --text-body: #d5dbe5;
+  --text-muted: #a6b0c0;
+  color-scheme: dark;
+  color: var(--text-body);
+  background: var(--bg-app);
+}
+
+#dashboard-app.admin-theme-dark .dash-main,
+#dashboard-app.admin-theme-dark .mobile-dashboard-bar,
+#dashboard-app.admin-theme-dark .settings-ai-card,
+#dashboard-app.admin-theme-dark .settings-ai-card .settings-row,
+#dashboard-app.admin-theme-dark .stat-card,
+#dashboard-app.admin-theme-dark .dash-card,
+#dashboard-app.admin-theme-dark .info-item,
+#dashboard-app.admin-theme-dark .settings-account,
+#dashboard-app.admin-theme-dark .notification-setting-row,
+#dashboard-app.admin-theme-dark .settings-feedback {
+  background-color: var(--bg-surface);
+  color: var(--text-body);
+}
+
+#dashboard-app.admin-theme-dark .dash-main,
+#dashboard-app.admin-theme-dark .mobile-dashboard-bar {
+  background-color: var(--bg-app);
+}
+
+#dashboard-app.admin-theme-dark .notification-setting-row,
+#dashboard-app.admin-theme-dark .settings-account,
+#dashboard-app.admin-theme-dark .settings-feedback,
+#dashboard-app.admin-theme-dark .settings-select,
+#dashboard-app.admin-theme-dark .form-group input,
+#dashboard-app.admin-theme-dark .form-group select,
+#dashboard-app.admin-theme-dark .form-group textarea,
+#dashboard-app.admin-theme-dark input:not([type="checkbox"]),
+#dashboard-app.admin-theme-dark select,
+#dashboard-app.admin-theme-dark textarea {
+  border-color: var(--border);
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+#dashboard-app.admin-theme-dark .data-table th,
+#dashboard-app.admin-theme-dark .ai-response-toolbar,
+#dashboard-app.admin-theme-dark .mobile-dashboard-menu {
+  border-color: var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+#dashboard-app.admin-theme-dark .data-table td,
+#dashboard-app.admin-theme-dark .settings-row {
+  border-color: var(--border);
+}
+
+#dashboard-app.admin-theme-dark .data-table tr:hover td {
+  background: #293446;
+}
+
+#dashboard-app.admin-theme-dark .settings-icon {
+  background: #41252b;
+  color: #f2a6a6;
+}
+
+#dashboard-app.admin-theme-dark .settings-feedback[data-state="success"] {
+  border-color: #236848;
+  background: #16372a;
+  color: #a7f3d0;
+}
+
+#dashboard-app.admin-theme-dark .settings-feedback[data-state="error"] {
+  border-color: #783a43;
+  background: #3b2228;
+  color: #fecaca;
+}
+
+#dashboard-app.admin-theme-dark .settings-note {
+  border-color: #a65353;
+}
+
+@media (max-width: 900px) {
+  .settings-grid { grid-template-columns: minmax(0, 1fr); }
+  .settings-ai-card { grid-column: auto; }
+}
+
+@media (max-width: 520px) {
+  .settings-card { padding: 18px 16px; }
+  .settings-row { align-items: flex-start; gap: 12px; }
+  .settings-select { width: min(160px, 46%); }
+  .settings-actions { align-items: flex-start; flex-direction: column; }
+}
 </style>
 <link rel="stylesheet" href="assets/css/responsive-layouts.css">
+<style>
+@media (max-width: 320px) {
+  html:root,
+  body {
+    min-width: 0;
+  }
+}
+</style>
 </head>
 <body>
 
@@ -2029,6 +2241,11 @@ table.data-table tr:hover {
       <button class="nav-link" title="System & Database" onclick="switchDashboardTab('system')">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>System & Database</span>
+      </button>
+
+      <button class="nav-link" title="Admin Settings" onclick="switchDashboardTab('settings')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33 1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82 1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Settings</span>
       </button>
 
       <a class="nav-link" href="admin_panel.html" title="Admin Panel" style="text-decoration: none;">
@@ -2235,13 +2452,6 @@ table.data-table tr:hover {
       <div class="dash-card" style="padding: 24px; margin-bottom: 20px;">
         <h2 style="font-size: 18px; font-weight: 800; margin-bottom: 4px;">Publish an announcement</h2>
         <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 18px;">All users see notices in the app. Users who enable push notifications can receive them while KeepAI is closed.</p>
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin-bottom:18px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:12px;">
-          <div style="flex:1 1 220px;">
-            <strong style="display:block;color:var(--text-main);font-size:13px;">Device push notifications</strong>
-            <span id="push-notifications-status" style="display:block;margin-top:4px;color:var(--text-muted);font-size:12px;">Checking this device…</span>
-          </div>
-          <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="admin_access_token" type="button" disabled>Checking…</button>
-        </div>
         <form id="announcement-create-form" onsubmit="createAdminAnnouncement(event)">
           <label for="announcement-title" style="display:block;font-weight:700;margin-bottom:6px;">Title</label>
           <input id="announcement-title" required minlength="3" maxlength="200" placeholder="e.g., New study tools are available" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:14px;">
@@ -2470,28 +2680,112 @@ table.data-table tr:hover {
       <div class="dash-card" style="margin-top: 18px; max-width: 680px;">
         <div class="dash-card-header">
           <div>
-            <div class="dash-card-title">Administrator Password</div>
-            <div class="dash-card-subtitle" id="admin-password-description">Change your password. Your current password is required.</div>
+            <div class="dash-card-title">Administrator settings</div>
+            <div class="dash-card-subtitle">Manage your account security and platform preferences from Admin Settings.</div>
           </div>
+          <button type="button" class="btn btn-secondary" onclick="switchDashboardTab('settings')">Open settings</button>
         </div>
-        <form id="admin-password-form" data-account-password-form data-token-key="admin_access_token" data-current-password-group="admin-password-current-group" data-description="admin-password-description" data-status="admin-password-status">
-          <div id="admin-password-current-group" class="form-group" hidden>
-            <label for="admin-current-password">Current Password</label>
-            <input type="password" id="admin-current-password" name="current_password" autocomplete="current-password" placeholder="Enter your current password">
+      </div>
+    </div>
+
+    <div id="section-settings" class="content-section" style="display: none;">
+      <div class="page-header">
+        <div class="page-title">
+          <h1>Admin Settings</h1>
+          <p>Manage your account, dashboard preferences, student access, and alerts.</p>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <section class="dash-card settings-card">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-user-shield" aria-hidden="true"></i></span>
+            <div><h2>Account &amp; security</h2><p>Administrator access and password protection.</p></div>
           </div>
-          <div class="form-group">
-            <label for="admin-new-password">Create Password</label>
-            <input type="password" id="admin-new-password" name="new_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="At least 8 characters">
+          <div class="settings-account">
+            <span class="settings-avatar" id="settings-admin-avatar">A</span>
+            <div><strong id="settings-admin-name">Administrator</strong><span id="settings-admin-email">Primary administrator</span></div>
+            <span class="tag-pill primary">Admin</span>
           </div>
-          <div class="form-group">
-            <label for="admin-confirm-password">Confirm Password</label>
-            <input type="password" id="admin-confirm-password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="Re-enter your new password">
+          <form id="admin-password-form" data-account-password-form data-token-key="admin_access_token" data-current-password-group="admin-password-current-group" data-description="admin-password-description" data-status="admin-password-status">
+            <h3 class="settings-subheading">Change administrator password</h3>
+            <p class="dash-card-subtitle" id="admin-password-description">Change your password. Your current password is required.</p>
+            <div id="admin-password-current-group" class="form-group" hidden>
+              <label for="admin-current-password">Current password</label>
+              <input type="password" id="admin-current-password" name="current_password" autocomplete="current-password" placeholder="Enter your current password">
+            </div>
+            <div class="form-group">
+              <label for="admin-new-password">New password</label>
+              <input type="password" id="admin-new-password" name="new_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="At least 8 characters">
+            </div>
+            <div class="form-group">
+              <label for="admin-confirm-password">Confirm new password</label>
+              <input type="password" id="admin-confirm-password" name="confirm_password" autocomplete="new-password" minlength="8" maxlength="128" required placeholder="Re-enter your new password">
+            </div>
+            <p id="admin-password-status" role="status" aria-live="polite" class="settings-status"></p>
+            <button type="submit" class="btn btn-primary" id="admin-password-submit">Update password</button>
+          </form>
+        </section>
+
+        <section class="dash-card settings-card">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-sliders" aria-hidden="true"></i></span>
+            <div><h2>Appearance &amp; preferences</h2><p>Personal settings saved in this browser.</p></div>
           </div>
-          <p id="admin-password-status" role="status" aria-live="polite" style="margin: 0 0 14px; font-size: 13px;"></p>
-          <button type="submit" class="btn btn-primary" id="admin-password-submit">
-            Update Password
-          </button>
-        </form>
+          <div class="settings-row">
+            <div><label for="admin-theme-select">Dashboard theme</label><p>Choose a comfortable look for the admin dashboard.</p></div>
+            <select id="admin-theme-select" class="settings-select">
+              <option value="system">Use device setting</option>
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+            </select>
+          </div>
+          <div class="settings-row">
+            <div><label for="admin-compact-sidebar">Compact sidebar</label><p>Keep navigation collapsed on larger screens.</p></div>
+            <input id="admin-compact-sidebar" class="settings-checkbox" type="checkbox">
+          </div>
+          <p id="admin-appearance-status" class="settings-status" role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="dash-card settings-card">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-user-group" aria-hidden="true"></i></span>
+            <div><h2>Student access</h2><p>Control whether new students can create accounts.</p></div>
+          </div>
+          <div class="settings-row">
+            <div><label for="student-registration-enabled">Student registration</label><p>Existing students can still sign in when registration is paused.</p></div>
+            <input id="student-registration-enabled" class="settings-checkbox" type="checkbox" disabled>
+          </div>
+          <div class="settings-feedback" id="student-registration-feedback" role="status" aria-live="polite">Loading platform settings…</div>
+          <div class="settings-actions">
+            <span id="student-registration-updated" class="settings-meta"></span>
+            <button type="button" id="save-platform-settings" class="btn btn-primary" onclick="saveAdminPlatformSettings()" disabled>Save access settings</button>
+          </div>
+        </section>
+
+        <section class="dash-card settings-card">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></span>
+            <div><h2>Admin notifications</h2><p>Receive KeepAI announcements on this device.</p></div>
+          </div>
+          <div class="notification-setting-row">
+            <div><strong>Browser push notifications</strong><span id="push-notifications-status" role="status" aria-live="polite">Checking this device…</span></div>
+            <button id="push-notifications-toggle" class="btn btn-secondary" data-token-key="admin_access_token" type="button" disabled>Checking…</button>
+          </div>
+          <div class="settings-note">Push alerts are sent when administrators publish announcements. Notification permission can also be managed in your browser settings.</div>
+        </section>
+
+        <section class="dash-card settings-card settings-ai-card">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i></span>
+            <div><h2>AI service configuration</h2><p>Current provider status; credentials remain protected in deployment settings.</p></div>
+          </div>
+          <div class="settings-row settings-ai-status">
+            <div><strong>AI provider and model</strong><p id="admin-settings-ai-status">Open System &amp; Database to inspect service health.</p></div>
+            <button type="button" class="btn btn-secondary" onclick="switchDashboardTab('system')">View diagnostics</button>
+          </div>
+          <div class="settings-note">API keys and model secrets are not displayed here. Update them through your secure server environment.</div>
+        </section>
       </div>
     </div>
 
@@ -3017,6 +3311,7 @@ async function checkExistingSession() {
 function enterDashboard(user) {
   currentAdminUser = user;
   initializeAdminSidebar();
+  initializeAdminAppearance();
   window.KeepAIAccountPasswordSettings.update('admin-password-form', user);
   const loginButton = document.getElementById('btn-login');
   loginButton.disabled = false;
@@ -3025,6 +3320,9 @@ function enterDashboard(user) {
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('dashboard-app').classList.add('active');
   document.getElementById('sidebar-admin-name').textContent = user.full_name || user.username;
+  document.getElementById('settings-admin-name').textContent = user.full_name || user.username;
+  document.getElementById('settings-admin-email').textContent = user.email || 'Primary administrator';
+  document.getElementById('settings-admin-avatar').textContent = (user.full_name || user.username || 'A').trim().charAt(0).toUpperCase();
   window.KeepAIPushNotifications?.refresh();
 
   const requestedTab = window.location.hash.slice(1);
@@ -3057,7 +3355,64 @@ function handleAdminSignOut() {
 // Dashboard Navigation & Views
 // -------------------------------------------------------------
 function isValidAdminTab(tabId) {
-  return ['overview', 'users', 'students', 'documents', 'announcements', 'playground', 'system'].includes(tabId);
+  return ['overview', 'users', 'students', 'documents', 'announcements', 'playground', 'system', 'settings'].includes(tabId);
+}
+
+const ADMIN_THEME_STORAGE_KEY = 'keepai_admin_theme';
+let adminThemePreference = 'system';
+
+function applyAdminTheme(theme) {
+  const dashboard = document.getElementById('dashboard-app');
+  if (!dashboard) return;
+  adminThemePreference = ['system', 'light', 'dark'].includes(theme) ? theme : 'system';
+  const useDarkTheme = adminThemePreference === 'dark'
+    || (adminThemePreference === 'system'
+      && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  dashboard.classList.toggle('admin-theme-dark', useDarkTheme);
+}
+
+function initializeAdminAppearance() {
+  const themeSelect = document.getElementById('admin-theme-select');
+  const compactSidebar = document.getElementById('admin-compact-sidebar');
+  const status = document.getElementById('admin-appearance-status');
+  try {
+    const storedTheme = localStorage.getItem(ADMIN_THEME_STORAGE_KEY) || 'system';
+    adminThemePreference = ['system', 'light', 'dark'].includes(storedTheme) ? storedTheme : 'system';
+    if (themeSelect) themeSelect.value = adminThemePreference;
+    if (compactSidebar) compactSidebar.checked = localStorage.getItem('keepai_admin_sidebar_collapsed') === 'true';
+  } catch (error) {
+    console.warn('Could not load admin appearance preferences:', error);
+    if (status) status.textContent = 'Browser storage is unavailable; appearance changes may not persist.';
+  }
+  applyAdminTheme(adminThemePreference);
+
+  if (themeSelect && themeSelect.dataset.preferenceReady !== 'true') {
+    themeSelect.addEventListener('change', () => {
+      applyAdminTheme(themeSelect.value);
+      try {
+        localStorage.setItem(ADMIN_THEME_STORAGE_KEY, themeSelect.value);
+        if (status) status.textContent = 'Theme preference saved in this browser.';
+      } catch (error) {
+        console.error('Could not save the admin theme preference:', error);
+        if (status) status.textContent = 'Theme updated for this session, but could not be saved in browser storage.';
+      }
+    });
+    themeSelect.dataset.preferenceReady = 'true';
+  }
+  if (compactSidebar && compactSidebar.dataset.preferenceReady !== 'true') {
+    compactSidebar.addEventListener('change', () => {
+      setAdminSidebarCollapsed(compactSidebar.checked);
+      if (status) status.textContent = 'Sidebar preference saved in this browser.';
+    });
+    compactSidebar.dataset.preferenceReady = 'true';
+  }
+
+  if (!window.adminThemeListenerReady) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+      if (adminThemePreference === 'system') applyAdminTheme('system');
+    });
+    window.adminThemeListenerReady = true;
+  }
 }
 
 function toggleAdminMobileSidebar(open) {
@@ -3203,6 +3558,7 @@ function switchDashboardTab(tabId, updateHistory = true) {
   if (activeTabKey === 'documents') loadDocumentsList();
   if (activeTabKey === 'announcements') loadAdminAnnouncements();
   if (activeTabKey === 'system') loadSystemDiagnostics();
+  if (activeTabKey === 'settings') loadAdminSettings();
 }
 
 async function adminAnnouncementRequest(path, options = {}) {
@@ -3219,6 +3575,93 @@ async function adminAnnouncementRequest(path, options = {}) {
   const data = await parseJsonResponse(response, 'Announcement request failed.');
   if (!response.ok) throw new Error(data.detail || 'Announcement request failed.');
   return data;
+}
+
+async function loadAdminSettings() {
+  const registrationToggle = document.getElementById('student-registration-enabled');
+  const registrationFeedback = document.getElementById('student-registration-feedback');
+  const saveButton = document.getElementById('save-platform-settings');
+  if (!registrationToggle || !registrationFeedback || !saveButton) return;
+
+  registrationToggle.disabled = true;
+  saveButton.disabled = true;
+  registrationFeedback.textContent = 'Loading platform settings…';
+  registrationFeedback.dataset.state = 'loading';
+
+  try {
+    const settings = await adminAnnouncementRequest('/admin/settings');
+    const registration = settings.student_registration;
+    registrationToggle.checked = registration.enabled === true;
+    registrationToggle.dataset.savedValue = String(registrationToggle.checked);
+    registrationToggle.disabled = false;
+    saveButton.disabled = true;
+    registrationFeedback.textContent = registrationToggle.checked
+      ? 'New student accounts are currently allowed.'
+      : 'New student accounts are paused. Existing students can still sign in.';
+    registrationFeedback.dataset.state = 'success';
+
+    const updated = document.getElementById('student-registration-updated');
+    if (updated) {
+      updated.textContent = registration.updated_at
+        ? `Last updated ${new Date(registration.updated_at).toLocaleString()}`
+        : 'Using the default setting';
+    }
+
+    const aiStatus = document.getElementById('admin-settings-ai-status');
+    if (aiStatus) {
+      aiStatus.textContent = `${settings.ai_engine.provider} · ${settings.ai_engine.model} · ${settings.ai_engine.api_key_configured ? 'Credentials configured' : 'Credentials missing'}`;
+    }
+
+    if (registrationToggle.dataset.changeReady !== 'true') {
+      registrationToggle.addEventListener('change', () => {
+        saveButton.disabled = String(registrationToggle.checked) === registrationToggle.dataset.savedValue;
+      });
+      registrationToggle.dataset.changeReady = 'true';
+    }
+  } catch (error) {
+    console.error('Could not load administrator settings:', error);
+    registrationFeedback.textContent = `Platform settings could not be loaded: ${error.message}`;
+    registrationFeedback.dataset.state = 'error';
+    registrationToggle.disabled = true;
+  }
+}
+
+async function saveAdminPlatformSettings() {
+  const registrationToggle = document.getElementById('student-registration-enabled');
+  const registrationFeedback = document.getElementById('student-registration-feedback');
+  const saveButton = document.getElementById('save-platform-settings');
+  const updated = document.getElementById('student-registration-updated');
+  if (!registrationToggle || !registrationFeedback || !saveButton || registrationToggle.disabled) return;
+
+  saveButton.disabled = true;
+  registrationToggle.disabled = true;
+  registrationFeedback.textContent = 'Saving student access settings…';
+  registrationFeedback.dataset.state = 'loading';
+  try {
+    const result = await adminAnnouncementRequest('/admin/settings/student-registration', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled: registrationToggle.checked }),
+    });
+    const registration = result.student_registration;
+    registrationToggle.checked = registration.enabled === true;
+    registrationToggle.dataset.savedValue = String(registrationToggle.checked);
+    registrationFeedback.textContent = registrationToggle.checked
+      ? 'Saved. New student accounts are now allowed.'
+      : 'Saved. New student accounts are paused; existing students can still sign in.';
+    registrationFeedback.dataset.state = 'success';
+    if (updated) {
+      updated.textContent = registration.updated_at
+        ? `Last updated ${new Date(registration.updated_at).toLocaleString()}`
+        : 'Saved just now';
+    }
+  } catch (error) {
+    console.error('Could not save student registration settings:', error);
+    registrationFeedback.textContent = `Settings were not saved: ${error.message}`;
+    registrationFeedback.dataset.state = 'error';
+    saveButton.disabled = false;
+  } finally {
+    registrationToggle.disabled = false;
+  }
 }
 
 async function loadAdminAnnouncements() {
@@ -3955,6 +4398,10 @@ async function loadSystemDiagnostics() {
       ? '✓ Connected (MariaDB / MySQL)' 
       : `⚠️ Error: ${data.database.error}`;
     document.getElementById('sys-ai').textContent = `${data.ai_engine.provider} (${data.ai_engine.model})`;
+    const settingsAiStatus = document.getElementById('admin-settings-ai-status');
+    if (settingsAiStatus) {
+      settingsAiStatus.textContent = `${data.ai_engine.provider} · ${data.ai_engine.model} · ${data.ai_engine.api_key_configured ? 'Credentials configured' : 'Credentials missing'}`;
+    }
     document.getElementById('sys-health').innerHTML = data.system_status === 'Healthy'
       ? '<span class="tag-pill success">All Systems Operational</span>'
       : '<span class="tag-pill neutral">Needs Configuration</span>';

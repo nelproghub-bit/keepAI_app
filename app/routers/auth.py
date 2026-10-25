@@ -6,7 +6,8 @@ from fastapi import APIRouter, HTTPException, Depends, status
 from pydantic import BaseModel, Field
 from app.core.security import create_access_token, get_current_user
 from app.core.config import GOOGLE_OAUTH_CLIENT_ID
-from app.services.user_service import user_service
+from app.services.platform_settings import is_student_registration_enabled
+from app.services.user_service import StudentRegistrationDisabledError, user_service
 
 router = APIRouter(prefix="/auth", tags=["Authentication & Security"])
 
@@ -38,6 +39,11 @@ class StatsSyncRequest(BaseModel):
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 def register_student(request: RegisterRequest):
     """Register a new student account securely with encrypted password"""
+    if not is_student_registration_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Student registration is currently paused. Please contact your administrator.",
+        )
     try:
         user = user_service.register(
             full_name=request.full_name,
@@ -88,6 +94,11 @@ class GoogleLoginRequest(BaseModel):
 class PasswordUpdateRequest(BaseModel):
     current_password: Optional[str] = Field(default=None, max_length=128)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+@router.get("/registration-status")
+def get_student_registration_status():
+    return {"enabled": is_student_registration_enabled()}
 
 @router.post("/google")
 def google_auth(request: GoogleLoginRequest):
@@ -147,7 +158,13 @@ def google_auth(request: GoogleLoginRequest):
             email=email,
             full_name=name,
             google_id=sub,
+            allow_create=is_student_registration_enabled(),
         )
+    except StudentRegistrationDisabledError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=str(exc),
+        ) from exc
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,

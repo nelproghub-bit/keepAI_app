@@ -107,6 +107,10 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **📚 Document Collections** - Organize materials by course or subject
 - **🔒 Student-Only Access** - Focused interface without admin distractions
 
+### Admin Dashboard Features
+- **⚙️ Admin Settings** - Update the administrator password, choose a light/dark/system theme, manage push notifications, and control new student registration.
+- Student registration changes are enforced by the API for password and Google sign-ups; existing student accounts can still sign in.
+
 ### Core Functionality
 - **📚 Document Library** - Upload and organize PDF materials
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
