@@ -9,7 +9,7 @@ from app.core.database import get_connection
 from app.services.user_service import user_service
 from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context, _load_user_documents, _load_user_files_meta
-from app.services.gemini_service import generate
+from app.services.gemini_service import AIProviderError, generate
 
 router = APIRouter(tags=["Learning Tools"])
 
@@ -134,199 +134,119 @@ def extract_document_facts(context: str, target_filename: Optional[str] = None, 
             
     return facts
 
-def synthesize_questions_from_document(
+def generate_grounded_quiz_questions(
     context: str,
     target_count: int,
-    existing_questions: List[Dict[str, Any]],
     topic: str,
-    document_name: Optional[str] = None
 ) -> List[Dict[str, Any]]:
-    """Synthesize high-quality multiple-choice questions grounded in the actual document content."""
-    questions = list(existing_questions)
-    needed = target_count - len(questions)
-    if needed <= 0:
-        return questions[:target_count]
+    """Generate quiz questions only when their answer is supported by source evidence."""
+    if not context.strip():
+        raise HTTPException(404, "No readable content was found in the selected document.")
 
-    # Pre-defined domain concept templates derived from the uploaded IoT & Machine Learning curriculum
-    core_iot_concepts = [
-        {
-            "q": "What is the primary definition of the Internet of Things (IoT) according to the lesson?",
-            "c": [
-                "A system where physical objects/devices are connected so they can collect, exchange, and act on data.",
-                "A purely software-based relational database management system.",
-                "A desktop application framework used exclusively for offline graphic design.",
-                "A telecommunications standard restricted only to satellite television broadcasting."
-            ],
-            "a": "A system where physical objects/devices are connected so they can collect, exchange, and act on data.",
-            "e": "The lesson defines IoT as a system where physical objects/devices are connected so they can collect, exchange, and sometimes act on data."
-        },
-        {
-            "q": "In an IoT system, what role do actuators perform?",
-            "c": [
-                "They convert electrical control signals into physical mechanical motion or action.",
-                "They passively measure temperature without any power source.",
-                "They compress database tables inside the cloud repository.",
-                "They generate random cryptographic keys for user logins."
-            ],
-            "a": "They convert electrical control signals into physical mechanical motion or action.",
-            "e": "Actuators receive electrical signals and convert them into physical movement or operations (e.g. water pumps, relays, servos)."
-        },
-        {
-            "q": "Which example is specifically highlighted in the lesson to demonstrate an IoT closed loop?",
-            "c": [
-                "A smart plant system that measures soil moisture and automatically turns on a water pump.",
-                "An automated word processor that reformats document margins.",
-                "A standalone CD player with optical audio output.",
-                "A video rendering application running on a mainframe computer."
-            ],
-            "a": "A smart plant system that measures soil moisture and automatically turns on a water pump.",
-            "e": "The lesson explicitly provides the example: 'A smart plant system measures soil moisture and automatically turns on a water pump.'"
-        },
-        {
-            "q": "Why is MQTT preferred over HTTP for constrained IoT sensor devices?",
-            "c": [
-                "MQTT has an extremely lightweight 2-byte fixed header and uses an efficient publish/subscribe architecture.",
-                "MQTT requires a minimum of 16 GB of RAM on the micro-controller.",
-                "HTTP cannot transmit data over the Internet protocol.",
-                "MQTT only transmits video streams rather than telemetry."
-            ],
-            "a": "MQTT has an extremely lightweight 2-byte fixed header and uses an efficient publish/subscribe architecture.",
-            "e": "MQTT fixed header is only 2 bytes and operates on publish/subscribe, minimizing power and bandwidth consumption."
-        },
-        {
-            "q": "How does the lesson contrast a Raspberry Pi with a traditional microcontroller like Arduino?",
-            "c": [
-                "A Raspberry Pi is more like a complete single-board computer, whereas a microcontroller executes dedicated low-level firmware.",
-                "A Raspberry Pi lacks an operating system and cannot execute Python programs.",
-                "A microcontroller requires full desktop operating systems to read analog voltages.",
-                "There is no architectural difference between them."
-            ],
-            "a": "A Raspberry Pi is more like a complete single-board computer, whereas a microcontroller executes dedicated low-level firmware.",
-            "e": "The lesson notes emphasize that a Raspberry Pi functions as a full small computer capable of hosting an OS and complex workloads."
-        },
-        {
-            "q": "What is the primary function of the Sensing Layer in the 4-layer IoT architecture?",
-            "c": [
-                "To interact directly with the physical environment via sensors and transducers.",
-                "To render web dashboards and charts for user management.",
-                "To host large relational SQL databases in remote regions.",
-                "To negotiate fiber optic billing tariffs between ISPs."
-            ],
-            "a": "To interact directly with the physical environment via sensors and transducers.",
-            "e": "The Sensing Layer comprises hardware sensors that detect physical stimuli (temperature, humidity, pressure, vibration)."
-        },
-        {
-            "q": "In Machine Learning applied to IoT telemetry, how is 'overfitting' described?",
-            "c": [
-                "When a model memorizes training noise so closely that it fails to generalize to fresh telemetry data.",
-                "When an IoT sensor runs out of battery power during packet transmission.",
-                "When too many sensors are plugged into a single GPIO pin.",
-                "When an MQTT broker reaches maximum socket connections."
-            ],
-            "a": "When a model memorizes training noise so closely that it fails to generalize to fresh telemetry data.",
-            "e": "Overfitting occurs when a learning model fits training data and noise too strictly, impairing its real-world generalization."
-        },
-        {
-            "q": "What is the purpose of Edge Computing in an IoT architecture?",
-            "c": [
-                "Processing telemetry locally near the sensor to decrease latency and reduce cloud bandwidth.",
-                "Moving all storage physically to offshore undersea cables.",
-                "Increasing the wireless transmit power to maximum levels.",
-                "Eliminating the need for any microcontrollers in the system."
-            ],
-            "a": "Processing telemetry locally near the sensor to decrease latency and reduce cloud bandwidth.",
-            "e": "Edge computing executes local preprocessing and inference near devices to ensure fast real-time response and bandwidth savings."
-        },
-        {
-            "q": "Which wireless communication protocol is known for long-range, low-power telemetry over kilometers?",
-            "c": [
-                "LoRaWAN",
-                "High-Speed HDMI",
-                "Bluetooth Low Energy (Class 3)",
-                "Standard USB 2.0"
-            ],
-            "a": "LoRaWAN",
-            "e": "LoRaWAN (Long Range Wide Area Network) is designed specifically for long-range wireless sensor nodes with minimal power drain."
-        },
-        {
-            "q": "What role does an Analog-to-Digital Converter (ADC) play in microcontroller sensor circuits?",
-            "c": [
-                "It converts continuous physical analog voltages from sensors into discrete digital numeric values.",
-                "It converts digital code directly into 220V AC mains electricity.",
-                "It serves as a software firewall protecting against denial-of-service attacks.",
-                "It stores user session cookies in browser local storage."
-            ],
-            "a": "It converts continuous physical analog voltages from sensors into discrete digital numeric values.",
-            "e": "Microcontrollers use ADCs to quantify analog sensor output voltages into discrete binary integer readings."
-        }
-    ]
+    def normalize(value: str) -> str:
+        return re.sub(r"\s+", " ", value).strip().casefold()
 
-    # Synthesize additional variations and deep-dive items until target_count is reached
-    variation_templates = [
-        ("Which of the following statements regarding {subject} is supported by the document?", "statement"),
-        ("In system implementation, what is a primary consideration when evaluating {subject}?", "eval"),
-        ("Based on the course syllabus, what is the key advantage of {subject}?", "advantage"),
-        ("How does the lesson categorize the functionality of {subject}?", "category"),
-        ("When designing a resilient IoT workflow, what role does {subject} satisfy?", "workflow"),
-        ("Which factor most directly influences the performance of {subject} in production?", "perf"),
-        ("According to the lesson notes, what failure mode must be prevented in {subject}?", "failure"),
-        ("In the context of emerging IoT technologies, how does {subject} optimize data flow?", "dataflow"),
-        ("What is the operational dependency between {subject} and upstream sensor nodes?", "dep"),
-        ("Which design decision is recommended when deploying {subject} in the field?", "deploy")
-    ]
+    questions: List[Dict[str, Any]] = []
+    seen_questions = set()
+    attempts = 0
+    max_attempts = ((target_count + 9) // 10) * 3
 
-    subjects = [
-        ("MQTT Broker architecture", "Publish-subscribe message routing with QoS delivery guarantees", "Synchronous HTTP polling loops", "Unencrypted UDP broadcast floods", "Single-threaded batch file copying"),
-        ("Soil moisture sensor calibration", "Mapping analog voltage resistance to volumetric water content", "Measuring ambient atmospheric pressure", "Regulating battery discharge current", "Estimating solar radiation angles"),
-        ("Relay actuator control", "Using small logic signals from GPIO pins to safely switch high-power circuits", "Filtering high-frequency radio noise", "Directly storing machine learning weights", "Compressing MQTT JSON payloads"),
-        ("IoT Gateway nodes", "Bridging local field protocols like ZigBee/BLE to IP networks over WiFi/Cellular", "Directly measuring soil pH balance", "Powering passive RFID tags remotely", "Compiling microcontroller bootloaders"),
-        ("Microcontroller GPIO pins", "Configuring general purpose input/output pins for digital or analog signaling", "Transmitting optical laser pulses", "Cooling high-performance CPU heatsinks", "Managing cloud billing instances"),
-        ("Sensor sampling rate", "Balancing Nyquist telemetry fidelity against device battery endurance", "Increasing cloud subscription fees", "Decreasing physical sensor dimensions", "Overheating the printed circuit board"),
-        ("QoS 1 in MQTT", "Ensuring messages are delivered at least once with a PUBACK acknowledgment", "Guaranteeing zero latency without network packets", "Restricting messages to internal localhost only", "Discarding packets immediately upon transmit"),
-        ("BLE (Bluetooth Low Energy)", "Short-range power-efficient wireless personal area communication", "Transmitting telemetry across multi-kilometer agricultural fields", "Replacing Ethernet in core cloud data centers", "Broadcasting FM radio frequencies"),
-        ("CoAP protocol", "A specialized web transfer protocol for constrained nodes operating over UDP", "An enterprise messaging protocol replacing Apache Kafka", "A local serial bus protocol like I2C", "An operating system kernel module"),
-        ("Deep sleep power modes", "Disabling non-essential microcontroller peripherals to extend battery life for months", "Running CPU cores at maximum clock speed continuously", "Increasing wireless packet beacon intervals to 1ms", "Clearing flash memory firmware completely")
-    ]
+    while len(questions) < target_count and attempts < max_attempts:
+        batch_count = min(10, target_count - len(questions))
+        attempts += 1
+        prompt = (
+            f"Create exactly {batch_count} multiple-choice questions for the focus topic: {topic}. "
+            "Use only facts explicitly stated in the selected lesson. Do not use prior knowledge, "
+            "other documents, or invented facts. Each question must have four distinct choices, "
+            "one correct_answer copied exactly from its evidence, and a concise explanation. "
+            "The evidence field must be an exact excerpt copied from the lesson and must contain "
+            "the correct_answer verbatim. If the lesson does not support a requested question, "
+            "do not invent one. Return a JSON array only, with each object containing: question, "
+            "choices, correct_answer, explanation, evidence.\n"
+            f"FOCUS TOPIC: {topic}\nSELECTED LESSON:\n{context}"
+        )
+        try:
+            raw = generate(
+                prompt,
+                system=(
+                    "You create document-grounded assessments. Treat the selected lesson as the only "
+                    "source of truth. Never fill gaps with general knowledge. Return valid JSON only."
+                ),
+                has_sources=True,
+            )
+        except AIProviderError as exc:
+            raise HTTPException(
+                502,
+                "The quiz AI is temporarily unavailable. No quiz was generated.",
+            ) from exc
 
-    # Add core questions first
-    for item in core_iot_concepts:
-        if len(questions) >= target_count:
-            break
-        # Avoid duplicate question texts
-        if not any(q["question"] == item["q"] for q in questions):
-            questions.append({
-                "question": item["q"],
-                "choices": item["c"],
-                "correct_answer": item["a"],
-                "explanation": item["e"]
-            })
+        if not isinstance(raw, str):
+            continue
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+            if cleaned.endswith("```"):
+                cleaned = cleaned.rsplit("```", 1)[0]
+        try:
+            parsed = json.loads(cleaned.strip())
+        except json.JSONDecodeError:
+            continue
+        if not isinstance(parsed, list):
+            continue
 
-    # Generate numbered variations from subjects to reach requested count (up to 100)
-    counter = 1
-    while len(questions) < target_count:
-        for subj, correct, dist1, dist2, dist3 in subjects:
-            if len(questions) >= target_count:
+        normalized_context = normalize(context)
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            question = item.get("question")
+            choices = item.get("choices")
+            answer = item.get("correct_answer")
+            explanation = item.get("explanation")
+            evidence = item.get("evidence")
+            if (
+                not isinstance(question, str)
+                or not question.strip()
+                or not isinstance(choices, list)
+                or len(choices) != 4
+                or any(not isinstance(choice, str) or not choice.strip() for choice in choices)
+                or len({normalize(choice) for choice in choices}) != 4
+                or not isinstance(answer, str)
+                or not isinstance(explanation, str)
+                or not isinstance(evidence, str)
+                or not evidence.strip()
+                or len(evidence) > 500
+            ):
+                continue
+            normalized_evidence = normalize(evidence)
+            if (
+                normalized_evidence not in normalized_context
+                or normalize(answer) not in normalized_evidence
+                or normalize(answer) not in {normalize(choice) for choice in choices}
+            ):
+                continue
+            normalized_question = normalize(question)
+            if normalized_question in seen_questions:
+                continue
+
+            seen_questions.add(normalized_question)
+            questions.append(
+                {
+                    "question": question.strip(),
+                    "choices": choices,
+                    "correct_answer": answer,
+                    "explanation": explanation.strip(),
+                    "source_excerpt": evidence.strip(),
+                }
+            )
+            if len(questions) == target_count:
                 break
-            template_q, tag = variation_templates[counter % len(variation_templates)]
-            q_text = template_q.format(subject=subj)
-            
-            # Ensure unique question phrasing
-            if any(q["question"] == q_text for q in questions):
-                q_text = f"Item {len(questions) + 1}: " + q_text
-                
-            choices = [correct, dist1, dist2, dist3]
-            random.seed(len(questions) + 42)
-            random.shuffle(choices)
-            
-            questions.append({
-                "question": q_text,
-                "choices": choices,
-                "correct_answer": correct,
-                "explanation": f"According to the {document_name or 'course'} materials, {subj.lower()} is characterized by: {correct}."
-            })
-            counter += 1
 
-    return questions[:target_count]
+    if len(questions) != target_count:
+        raise HTTPException(
+            502,
+            "The quiz AI could not create enough questions with verifiable evidence from the selected document. Try fewer questions or a narrower focus topic.",
+        )
+    return questions
 
 
 def build_typed_quiz_questions(
@@ -361,6 +281,11 @@ def build_typed_quiz_questions(
                         "pairs": pairs,
                         "choices": choices,
                         "explanation": "Review each question and connect it to the answer supported by the lesson.",
+                        "source_excerpt": "\n\n".join(
+                            item["source_excerpt"]
+                            for item in pair_sources
+                            if item.get("source_excerpt")
+                        ),
                     }
                 )
             continue
@@ -382,6 +307,7 @@ def build_typed_quiz_questions(
                         "correct_answer": correct_answer,
                         "accepted_answers": [correct_answer],
                         "explanation": explanation,
+                        "source_excerpt": source.get("source_excerpt", ""),
                     }
                 )
             elif question_type == "true_false":
@@ -408,6 +334,7 @@ def build_typed_quiz_questions(
                             explanation if is_true
                             else f"The correct answer is: {correct_answer}. {explanation}"
                         ),
+                        "source_excerpt": source.get("source_excerpt", ""),
                     }
                 )
             elif question_type == "fill_blank":
@@ -418,6 +345,7 @@ def build_typed_quiz_questions(
                         "correct_answer": correct_answer,
                         "accepted_answers": [correct_answer],
                         "explanation": explanation,
+                        "source_excerpt": source.get("source_excerpt", ""),
                     }
                 )
 
@@ -475,51 +403,13 @@ def create_quiz(
     # 2. Extract lesson context for the specified document
     context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
     
-    user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
-
-    parsed_questions: List[Dict[str, Any]] = []
-
-    # 3. Request initial question batch from LLM if running with smaller count
-    model_count = min(10, source_count)
-    prompt = (
-        f"Create {model_count} multiple-choice questions based only on the lesson below. "
-        "Use simple, clear, and easy-to-understand words. "
-        "Return valid JSON only, as an array. Each item must have: question, "
-        "choices (array of 4 strings), correct_answer (exactly one choice), "
-        "and explanation.\n"
-        f"TOPIC: {request.topic}\nLESSON:\n{context}"
-    )
-
-    try:
-        raw = generate(
-            prompt,
-            system="You create clear and simple practice quizzes based directly on the provided lesson. Use straightforward, everyday words. Return valid JSON array only, without markdown code fences."
-        )
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
-            if cleaned.endswith("```"):
-                cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-
-        parsed = json.loads(cleaned)
-        if isinstance(parsed, list):
-            for item in parsed:
-                if all(k in item for k in ("question", "choices", "correct_answer", "explanation")):
-                    if len(item["choices"]) == 4 and item["correct_answer"] in item["choices"]:
-                        parsed_questions.append(item)
-    except Exception as e:
-        print(f"Notice: LLM generation returned non-JSON format, switching to document synthesis: {e}")
-
-    # 4. Synthesize questions from the specific document to meet the exact requested count (up to 100)
-    final_questions = synthesize_questions_from_document(
+    source_questions = generate_grounded_quiz_questions(
         context=context,
         target_count=source_count,
-        existing_questions=parsed_questions,
         topic=request.topic,
-        document_name=document_name or (sources[0] if sources else None)
     )
-    typed_questions = build_typed_quiz_questions(final_questions, question_counts)
+    typed_questions = build_typed_quiz_questions(source_questions, question_counts)
+    user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
 
     if current_user:
         record_activity(

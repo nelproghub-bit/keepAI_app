@@ -5156,6 +5156,12 @@
                         </div>
                         <div style="margin-bottom: 12px;"><span class="mini-pill" style="background: var(--bg-subtle); color: var(--text-muted); padding: 4px 8px; font-size: 10px;">${escapeHTML(questionType.replaceAll('_', ' '))}</span></div>
                         ${interaction}
+                        ${q.source_excerpt ? `
+                            <details style="margin: 12px 0 0 40px; color: var(--text-muted); font-size: 12px;">
+                                <summary style="cursor: pointer; font-weight: 700; color: var(--primary);">View source evidence</summary>
+                                <p style="margin: 8px 0 0; padding: 10px 12px; border-left: 3px solid var(--primary); background: var(--bg-subtle); border-radius: var(--radius-sm); color: var(--text-body); line-height: 1.5;">${escapeHTML(q.source_excerpt)}</p>
+                            </details>
+                        ` : ''}
                         <div id="q-exp-${qNum}" style="display: none; margin-left: 40px; margin-top: 10px; padding: 10px 14px; border-radius: var(--radius-sm); font-size: 12.5px; line-height: 1.5;"></div>
                     </div>
                 `;

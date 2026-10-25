@@ -176,6 +176,8 @@ The backend provides these REST endpoints:
 - `POST /api/learning/summary` - Generate summaries
 - `POST /api/learning/quiz` - Generate practice quizzes
 
+Quiz questions are generated from the selected document and expose a source excerpt for verification. If the AI cannot provide enough answers supported by that document, generation fails instead of filling the quiz with unrelated questions.
+
 ## 🔧 Configuration
 
 ### Environment Variables
