@@ -20,8 +20,11 @@ from app.services.rag_service import delete_file_chunks, get_tutor_context
 from app.services.gemini_service import generate
 from app.services.platform_settings import (
     get_student_registration_setting,
+    get_system_maintenance_setting,
     set_student_registration_setting,
+    set_system_maintenance_setting,
 )
+from app.routers.push import send_announcement_push
 
 router = APIRouter(prefix="/admin", tags=["Admin Control Panel"])
 
@@ -44,6 +47,9 @@ class AITestRequest(BaseModel):
     mode: str = "tutor"  # tutor, summary, quiz, flashcard
 
 class StudentRegistrationSettingRequest(BaseModel):
+    enabled: bool
+
+class SystemMaintenanceSettingRequest(BaseModel):
     enabled: bool
 
 import uuid
@@ -588,11 +594,43 @@ def get_system_diagnostics(current_user: Dict[str, Any] = Depends(get_current_ad
 def get_admin_settings(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     return {
         "student_registration": get_student_registration_setting(),
+        "system_maintenance": get_system_maintenance_setting(),
         "ai_engine": {
             "provider": "Google Gemini AI",
             "model": GEMINI_MODEL,
             "api_key_configured": bool(GEMINI_API_KEY),
         },
+    }
+
+
+@router.put("/settings/maintenance")
+def update_system_maintenance_setting(
+    request: SystemMaintenanceSettingRequest,
+    current_user: Dict[str, Any] = Depends(get_current_admin_user),
+):
+    result = set_system_maintenance_setting(
+        enabled=request.enabled,
+        admin_id=current_user["id"],
+    )
+    announcement = result["recovery_announcement"]
+    if announcement:
+        result["recovery_announcement"] = {
+            **announcement,
+            "push_delivery": send_announcement_push(
+                announcement["id"],
+                announcement["title"],
+                announcement["message"],
+                announcement["kind"],
+            ),
+        }
+    return {
+        "message": (
+            "Maintenance mode is enabled."
+            if result["setting"]["enabled"]
+            else "Maintenance mode is disabled."
+        ),
+        "system_maintenance": result["setting"],
+        "recovery_announcement": result["recovery_announcement"],
     }
 
 

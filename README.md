@@ -108,8 +108,9 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🔒 Student-Only Access** - Focused interface without admin distractions
 
 ### Admin Dashboard Features
-- **⚙️ Admin Settings** - Update the administrator password, choose a light/dark/system theme, manage push notifications, and control new student registration.
+- **⚙️ Admin Settings** - Update the administrator password, choose a light/dark/system theme, manage push notifications, control new student registration, and enable system maintenance mode.
 - Student registration changes are enforced by the API for password and Google sign-ups; existing student accounts can still sign in.
+- Maintenance mode pauses public/student pages and non-admin API access while keeping the admin portal available. Disabling it publishes a service-restored announcement and sends push notifications to subscribed devices when configured.
 
 ### Core Functionality
 - **📚 Document Library** - Upload and organize PDF materials

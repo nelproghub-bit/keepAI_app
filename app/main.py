@@ -14,23 +14,18 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, PlainTextResponse
 from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin, progress, announcements, push
 from app.core.config import ALLOWED_ORIGINS, ALLOWED_ORIGIN_REGEX
+from app.core.maintenance import (
+    MAINTENANCE_STATUS_PATH,
+    MaintenanceModeMiddleware,
+)
 from app.services.knowledge_loader import initialize_knowledge_base
 from app.services.rag_service import sync_initial_documents_to_db
+from app.services.platform_settings import get_system_maintenance_setting
 
 app = FastAPI(
     title="KeepAI API - Simple & Smart Study Assistant",
     description="Helpful, friendly AI study assistant powered by Google Gemini AI",
     version="1.2.0",
-)
-
-# CORS middleware for web clients
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
-    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 app.include_router(auth.router, prefix="/api")
@@ -51,6 +46,25 @@ def deployment_health():
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(BASE_DIR, "dist")
 FRONTEND_DIR = DIST_DIR if os.path.isdir(DIST_DIR) else BASE_DIR
+
+app.add_middleware(
+    MaintenanceModeMiddleware,
+    maintenance_page=os.path.join(FRONTEND_DIR, "maintenance.html"),
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_origin_regex=ALLOWED_ORIGIN_REGEX,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+@app.get(MAINTENANCE_STATUS_PATH)
+def maintenance_status():
+    return {"maintenance": get_system_maintenance_setting()["enabled"]}
+
 
 @app.get("/assets/js/config.js", response_class=PlainTextResponse)
 def frontend_config():

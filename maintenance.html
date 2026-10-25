@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f8fafc">
+  <meta name="robots" content="noindex, nofollow">
+  <script src="assets/js/config.js"></script>
+  <title>Scheduled maintenance | KeepAI</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+      --canvas: #f4f6fa;
+      --surface: #fff;
+      --text: #182230;
+      --muted: #586579;
+      --line: #e3e8ef;
+      --brand: #7d1d1d;
+      --brand-soft: #fff3f2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      display: grid;
+      min-height: 100vh;
+      margin: 0;
+      padding: 28px 18px;
+      place-items: center;
+      background:
+        radial-gradient(ellipse at 50% 0, rgba(125, 29, 29, .08), transparent 48%),
+        var(--canvas);
+      color: var(--text);
+    }
+
+    main {
+      width: min(100%, 560px);
+      padding: clamp(28px, 7vw, 54px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: 0 24px 70px rgba(24, 34, 48, .1);
+      text-align: center;
+    }
+
+    .brand {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 36px;
+      color: var(--text);
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -.3px;
+    }
+
+    .brand img {
+      width: 38px;
+      height: 38px;
+      object-fit: contain;
+    }
+
+    .status-icon {
+      display: grid;
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 22px;
+      place-items: center;
+      border: 1px solid rgba(125, 29, 29, .14);
+      border-radius: 22px;
+      background: var(--brand-soft);
+      color: var(--brand);
+    }
+
+    .status-icon svg { width: 34px; height: 34px; }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      padding: 7px 11px;
+      border: 1px solid var(--line);
+      border-radius: 99px;
+      color: var(--muted);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .45px;
+      text-transform: uppercase;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d97706;
+      box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 6vw, 34px);
+      letter-spacing: -1px;
+      line-height: 1.2;
+    }
+
+    .description {
+      max-width: 410px;
+      margin: 14px auto 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.75;
+    }
+
+    .notice {
+      margin-top: 28px;
+      padding: 15px 17px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.65;
+      text-align: left;
+    }
+
+    .notice strong { color: var(--text); }
+
+    .admin-link {
+      display: inline-flex;
+      margin-top: 24px;
+      padding: 11px 16px;
+      border-radius: 10px;
+      background: var(--brand);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      transition: background .2s ease, transform .2s ease;
+    }
+
+    .admin-link:hover { background: #651818; transform: translateY(-1px); }
+
+    #refresh-status {
+      min-height: 18px;
+      margin: 19px 0 0;
+      color: var(--muted);
+      font-size: 11px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --canvas: #10141c;
+        --surface: #1a202b;
+        --text: #f1f4f8;
+        --muted: #a8b2c2;
+        --line: #30394a;
+        --brand-soft: #352124;
+      }
+
+      body { background: radial-gradient(ellipse at 50% 0, rgba(196, 75, 75, .12), transparent 48%), var(--canvas); }
+      main { box-shadow: 0 24px 70px rgba(0, 0, 0, .28); }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="brand">
+      <img src="assets/images/keepai-logo.png" alt="">
+      <span>KeepAI</span>
+    </div>
+    <div class="status-icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="9"></circle>
+        <path d="M12 7v5l3 2"></path>
+      </svg>
+    </div>
+    <div class="status"><span class="status-dot"></span> Scheduled maintenance</div>
+    <h1>We’ll be back shortly.</h1>
+    <p class="description">
+      KeepAI is temporarily unavailable while we carry out maintenance.
+      Your study materials and progress remain safe.
+    </p>
+    <div class="notice">
+      <strong>Thank you for your patience.</strong><br>
+      This page will refresh automatically as soon as KeepAI is available again.
+      Administrators can still access the management portal.
+    </div>
+    <a class="admin-link" href="/admin_dashboard.html">Administrator sign in</a>
+    <p id="refresh-status" role="status" aria-live="polite">We’re checking service availability automatically.</p>
+  </main>
+  <script>
+    const refreshStatus = document.getElementById('refresh-status');
+    async function checkServiceStatus() {
+      try {
+        const response = await fetch(`${window.API_BASE}/maintenance-status`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`Status check failed (${response.status}).`);
+        const status = await response.json();
+        if (!status.maintenance) {
+          refreshStatus.textContent = 'KeepAI is available again. Returning you to the app…';
+          const returnTo = new URLSearchParams(window.location.search).get('returnTo');
+          if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
+            const destination = new URL(returnTo, window.location.origin);
+            if (destination.origin === window.location.origin) {
+              window.location.replace(destination.href);
+            } else {
+              window.location.replace('/');
+            }
+          } else if (window.location.pathname === '/maintenance.html') {
+            window.location.replace('/');
+          } else {
+            window.location.reload();
+          }
+          return;
+        }
+        refreshStatus.textContent = 'Maintenance is still in progress. We’ll check again shortly.';
+      } catch (error) {
+        console.warn('Could not check maintenance status:', error);
+        refreshStatus.textContent = 'We could not check service status just now. We’ll keep trying.';
+      }
+    }
+    window.setInterval(checkServiceStatus, 20000);
+    checkServiceStatus();
+  </script>
+</body>
+</html>

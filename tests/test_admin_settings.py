@@ -14,9 +14,12 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from app.core import database
 from app.core.security import get_current_admin_user
+from app.core.maintenance import MaintenanceModeMiddleware
 from app.routers import admin, auth
 from app.services.platform_settings import (
+    get_system_maintenance_setting,
     get_student_registration_setting,
+    set_system_maintenance_setting,
     set_student_registration_setting,
 )
 from app.services.user_service import (
@@ -31,11 +34,19 @@ database.init_db()
 app = FastAPI()
 app.include_router(admin.router, prefix="/api")
 app.include_router(auth.router, prefix="/api")
+app.add_middleware(
+    MaintenanceModeMiddleware,
+    maintenance_page=Path(__file__).resolve().parents[1] / "maintenance.html",
+)
 app.dependency_overrides[get_current_admin_user] = lambda: {
     "id": "settings-test-admin",
     "username": "settings-admin",
     "role": "admin",
 }
+
+@app.get("/api/maintenance-status")
+def maintenance_status():
+    return {"maintenance": get_system_maintenance_setting()["enabled"]}
 
 
 class AdminSettingsTests(unittest.TestCase):
@@ -48,6 +59,8 @@ class AdminSettingsTests(unittest.TestCase):
         try:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM admin_settings")
+            cursor.execute("DELETE FROM announcement_reads")
+            cursor.execute("DELETE FROM announcements")
             conn.commit()
         finally:
             conn.close()
@@ -70,7 +83,49 @@ class AdminSettingsTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertTrue(response.json()["student_registration"]["enabled"])
+        self.assertFalse(response.json()["system_maintenance"]["enabled"])
         self.assertIn("ai_engine", response.json())
+
+    def test_maintenance_mode_blocks_public_access_but_keeps_admin_available(self):
+        set_system_maintenance_setting(True, "settings-test-admin")
+
+        page_response = self.client.get("/student_dashboard.html")
+        api_response = self.client.get("/api/auth/registration-status")
+        status_response = self.client.get("/api/maintenance-status")
+        admin_response = self.client.get("/api/admin/settings")
+
+        self.assertEqual(page_response.status_code, 503)
+        self.assertIn("We’ll be back shortly.", page_response.text)
+        self.assertEqual(api_response.status_code, 503)
+        self.assertTrue(api_response.json()["maintenance"])
+        self.assertEqual(status_response.status_code, 200)
+        self.assertTrue(status_response.json()["maintenance"])
+        self.assertEqual(admin_response.status_code, 200, admin_response.text)
+
+    @patch("app.routers.admin.send_announcement_push")
+    def test_turning_maintenance_off_publishes_recovery_announcement(self, send_push):
+        send_push.return_value = {"configured": True, "sent": 2, "failed": 0}
+        set_system_maintenance_setting(True, "settings-test-admin")
+
+        response = self.client.put(
+            "/api/admin/settings/maintenance",
+            json={"enabled": False},
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        payload = response.json()
+        self.assertFalse(payload["system_maintenance"]["enabled"])
+        self.assertEqual(payload["recovery_announcement"]["title"], "KeepAI is back online")
+        self.assertEqual(payload["recovery_announcement"]["kind"], "maintenance")
+        self.assertEqual(payload["recovery_announcement"]["push_delivery"]["sent"], 2)
+        send_push.assert_called_once()
+
+        repeated_response = self.client.put(
+            "/api/admin/settings/maintenance",
+            json={"enabled": False},
+        )
+        self.assertEqual(repeated_response.status_code, 200, repeated_response.text)
+        self.assertIsNone(repeated_response.json()["recovery_announcement"])
 
     def test_disabled_registration_rejects_password_signup(self):
         set_student_registration_setting(False, "settings-test-admin")

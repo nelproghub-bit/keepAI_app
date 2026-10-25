@@ -2854,6 +2854,23 @@ body.admin-theme-dark .modal-card textarea {
 
         <section class="dash-card settings-card">
           <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></span>
+            <div><h2>System maintenance</h2><p>Temporarily pause public and student access while you perform maintenance.</p></div>
+          </div>
+          <div class="settings-row">
+            <div><label for="system-maintenance-enabled">Maintenance mode</label><p>Visitors see a branded service notice; the admin portal remains available.</p></div>
+            <input id="system-maintenance-enabled" class="settings-checkbox" type="checkbox" disabled>
+          </div>
+          <div class="settings-feedback" id="system-maintenance-feedback" role="status" aria-live="polite">Loading system status…</div>
+          <div class="settings-note">Turning maintenance off automatically publishes a service-restored announcement to the in-app announcement center and sends push notifications where available.</div>
+          <div class="settings-actions">
+            <span id="system-maintenance-updated" class="settings-meta"></span>
+            <button type="button" id="save-system-maintenance" class="btn btn-primary" onclick="saveSystemMaintenanceSettings()" disabled>Save maintenance setting</button>
+          </div>
+        </section>
+
+        <section class="dash-card settings-card">
+          <div class="settings-card-heading">
             <span class="settings-icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></span>
             <div><h2>Admin notifications</h2><p>Receive KeepAI announcements on this device.</p></div>
           </div>
@@ -3671,16 +3688,25 @@ async function loadAdminSettings() {
   const registrationToggle = document.getElementById('student-registration-enabled');
   const registrationFeedback = document.getElementById('student-registration-feedback');
   const saveButton = document.getElementById('save-platform-settings');
-  if (!registrationToggle || !registrationFeedback || !saveButton) return;
+  const maintenanceToggle = document.getElementById('system-maintenance-enabled');
+  const maintenanceFeedback = document.getElementById('system-maintenance-feedback');
+  const maintenanceSaveButton = document.getElementById('save-system-maintenance');
+  if (!registrationToggle || !registrationFeedback || !saveButton
+      || !maintenanceToggle || !maintenanceFeedback || !maintenanceSaveButton) return;
 
   registrationToggle.disabled = true;
   saveButton.disabled = true;
+  maintenanceToggle.disabled = true;
+  maintenanceSaveButton.disabled = true;
   registrationFeedback.textContent = 'Loading platform settings…';
   registrationFeedback.dataset.state = 'loading';
+  maintenanceFeedback.textContent = 'Loading system status…';
+  maintenanceFeedback.dataset.state = 'loading';
 
   try {
     const settings = await adminAnnouncementRequest('/admin/settings');
     const registration = settings.student_registration;
+    const maintenance = settings.system_maintenance;
     registrationToggle.checked = registration.enabled === true;
     registrationToggle.dataset.savedValue = String(registrationToggle.checked);
     registrationToggle.disabled = false;
@@ -3690,10 +3716,25 @@ async function loadAdminSettings() {
       : 'New student accounts are paused. Existing students can still sign in.';
     registrationFeedback.dataset.state = 'success';
 
+    maintenanceToggle.checked = maintenance.enabled === true;
+    maintenanceToggle.dataset.savedValue = String(maintenanceToggle.checked);
+    maintenanceToggle.disabled = false;
+    maintenanceSaveButton.disabled = true;
+    maintenanceFeedback.textContent = maintenanceToggle.checked
+      ? 'Maintenance mode is active. Public and student access is paused; the admin portal remains available.'
+      : 'KeepAI is online and available to students.';
+    maintenanceFeedback.dataset.state = 'success';
+
     const updated = document.getElementById('student-registration-updated');
     if (updated) {
       updated.textContent = registration.updated_at
         ? `Last updated ${new Date(registration.updated_at).toLocaleString()}`
+        : 'Using the default setting';
+    }
+    const maintenanceUpdated = document.getElementById('system-maintenance-updated');
+    if (maintenanceUpdated) {
+      maintenanceUpdated.textContent = maintenance.updated_at
+        ? `Last updated ${new Date(maintenance.updated_at).toLocaleString()}`
         : 'Using the default setting';
     }
 
@@ -3708,11 +3749,70 @@ async function loadAdminSettings() {
       });
       registrationToggle.dataset.changeReady = 'true';
     }
+    if (maintenanceToggle.dataset.changeReady !== 'true') {
+      maintenanceToggle.addEventListener('change', () => {
+        maintenanceSaveButton.disabled = String(maintenanceToggle.checked) === maintenanceToggle.dataset.savedValue;
+      });
+      maintenanceToggle.dataset.changeReady = 'true';
+    }
   } catch (error) {
     console.error('Could not load administrator settings:', error);
     registrationFeedback.textContent = `Platform settings could not be loaded: ${error.message}`;
     registrationFeedback.dataset.state = 'error';
     registrationToggle.disabled = true;
+    maintenanceFeedback.textContent = `System settings could not be loaded: ${error.message}`;
+    maintenanceFeedback.dataset.state = 'error';
+    maintenanceToggle.disabled = true;
+  }
+}
+
+async function saveSystemMaintenanceSettings() {
+  const toggle = document.getElementById('system-maintenance-enabled');
+  const feedback = document.getElementById('system-maintenance-feedback');
+  const saveButton = document.getElementById('save-system-maintenance');
+  const updated = document.getElementById('system-maintenance-updated');
+  if (!toggle || !feedback || !saveButton || toggle.disabled) return;
+
+  saveButton.disabled = true;
+  toggle.disabled = true;
+  feedback.textContent = 'Saving maintenance setting…';
+  feedback.dataset.state = 'loading';
+  try {
+    const result = await adminAnnouncementRequest('/admin/settings/maintenance', {
+      method: 'PUT',
+      body: JSON.stringify({ enabled: toggle.checked }),
+    });
+    const maintenance = result.system_maintenance;
+    toggle.checked = maintenance.enabled === true;
+    toggle.dataset.savedValue = String(toggle.checked);
+    feedback.textContent = toggle.checked
+      ? 'Maintenance mode is active. Public and student access is paused; the admin portal remains available.'
+      : 'Maintenance mode is off. KeepAI is available to students.';
+    feedback.dataset.state = 'success';
+
+    const announcement = result.recovery_announcement;
+    if (announcement) {
+      const delivery = announcement.push_delivery;
+      feedback.textContent += delivery?.configured
+        ? ` Service-restored announcement published; push sent to ${delivery.sent} device(s).`
+        : ' A service-restored announcement was published for users in the app.';
+      if (delivery?.failed) {
+        feedback.textContent += ` ${delivery.failed} push notification(s) could not be delivered.`;
+      }
+    }
+
+    if (updated) {
+      updated.textContent = maintenance.updated_at
+        ? `Last updated ${new Date(maintenance.updated_at).toLocaleString()}`
+        : 'Saved just now';
+    }
+  } catch (error) {
+    console.error('Could not save system maintenance setting:', error);
+    feedback.textContent = `Maintenance setting was not saved: ${error.message}`;
+    feedback.dataset.state = 'error';
+    saveButton.disabled = false;
+  } finally {
+    toggle.disabled = false;
   }
 }
 
