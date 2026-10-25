@@ -122,9 +122,9 @@ async def startup_event():
 
 @app.get("/")
 def root():
-    student_path = os.path.join(FRONTEND_DIR, "student_login.html")
-    if os.path.exists(student_path):
-        return FileResponse(student_path)
+    landing_path = os.path.join(FRONTEND_DIR, "index.html")
+    if os.path.exists(landing_path):
+        return FileResponse(landing_path)
     return {
         "message": "KeepAI Simple & Smart Study Assistant", 
         "version": "1.2.0"
