@@ -1,8 +1,9 @@
 import json
 import re
 import random
+import hashlib
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field, model_validator
 from app.core.security import get_current_student_user
 from app.core.database import get_connection
@@ -58,7 +59,16 @@ class FlashcardRequest(BaseModel):
     topic: str = Field(default="Flashcards", max_length=500)
     document_name: Optional[str] = None
     card_count: Optional[int] = Field(default=10, ge=1, le=100)
-    card_type: Optional[str] = Field(default="term-definition")  # term-definition | question-answer | concept-example | fill-blank
+    card_type: str = Field(
+        default="term-definition",
+        pattern="^(term-definition|question-answer|concept-example|fill-blank)$",
+    )
+
+
+class FlashcardProgressRequest(BaseModel):
+    document_name: str = Field(min_length=1, max_length=255)
+    front: str = Field(min_length=1, max_length=1000)
+    mastered: bool
 
 def get_all_document_chunks(target_filename: Optional[str] = None, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
     """Retrieve chunks only from the supplied owner's isolated document store."""
@@ -581,263 +591,386 @@ def create_quiz(
 
 # ==================== FLASHCARD SYNTHESIZER & ENDPOINT ====================
 
-FLASHCARD_TYPE_PROMPTS = {
-    "term-definition": (
-        "Generate {count} high-quality flashcards in a Term & Definition format based strictly on the lesson below. "
-        "Each card should have a clear key term, principle, or concept on the 'front' and an accurate, "
-        "student-friendly explanation/definition on the 'back'. "
-        "Return valid JSON only as an array of objects with keys: 'front' and 'back'. "
-        "No markdown fences.\n\nTOPIC: {topic}\nLESSON:\n{context}"
-    ),
-    "question-answer": (
-        "Generate {count} Question & Answer flashcards based strictly on the lesson below. "
-        "Each card should have an insightful study question on the 'front' and a clear, "
-        "accurate answer on the 'back'. "
-        "Return valid JSON only as an array of objects with keys: 'front' and 'back'. "
-        "No markdown fences.\n\nTOPIC: {topic}\nLESSON:\n{context}"
-    ),
-    "concept-example": (
-        "Generate {count} Concept & Example flashcards based strictly on the lesson below. "
-        "Each card should have a core concept or rule on the 'front' and a concrete, "
-        "real-world example or application on the 'back'. "
-        "Return valid JSON only as an array of objects with keys: 'front' and 'back'. "
-        "No markdown fences.\n\nTOPIC: {topic}\nLESSON:\n{context}"
-    ),
-    "fill-blank": (
-        "Generate {count} Fill-in-the-Blank flashcards based strictly on the lesson below. "
-        "Each card should have a statement with a crucial concept replaced by '______' on the 'front' "
-        "and the correct term plus brief context on the 'back'. "
-        "Return valid JSON only as an array of objects with keys: 'front' and 'back'. "
-        "No markdown fences.\n\nTOPIC: {topic}\nLESSON:\n{context}"
-    ),
+FLASHCARD_TYPES = {
+    "term-definition",
+    "question-answer",
+    "concept-example",
+    "fill-blank",
 }
 
-def synthesize_flashcards_from_document(
+
+def _normalize_flashcard_text(value: str) -> str:
+    return re.sub(r"\s+", " ", value).strip().casefold()
+
+
+def _flashcard_key(value: str) -> str:
+    return hashlib.sha256(_normalize_flashcard_text(value).encode("utf-8")).hexdigest()
+
+
+def _flashcard_document_key(document_name: str) -> str:
+    return hashlib.sha256(document_name.strip().casefold().encode("utf-8")).hexdigest()
+
+
+def _flashcard_source_sections(document_text: str, max_chars: int = 9000) -> List[str]:
+    sections: List[str] = []
+    start = 0
+    while start < len(document_text):
+        end = min(start + max_chars, len(document_text))
+        if end < len(document_text):
+            boundary = max(
+                document_text.rfind("\n", start, end),
+                document_text.rfind(". ", start, end),
+                document_text.rfind("? ", start, end),
+            )
+            if boundary > start + max_chars // 2:
+                end = boundary + 1
+        section = document_text[start:end].strip()
+        if section:
+            sections.append(section)
+        if end >= len(document_text):
+            break
+        start = max(end - 250, start + 1)
+    return sections
+
+
+def _flashcard_page(source_excerpt: str) -> Optional[int]:
+    match = re.search(r"\[Page\s*(\d+)\]", source_excerpt, re.IGNORECASE)
+    return int(match.group(1)) if match else None
+
+
+def build_extractive_flashcards(
     document_text: str,
-    target_count: int,
     card_type: str,
-    existing_cards: List[Dict[str, str]],
-    document_name: Optional[str] = None
-) -> List[Dict[str, str]]:
-    """Synthesize up to target_count flashcards directly from the document content."""
-    cards = list(existing_cards)
-    seen = {c["front"].strip().lower() for c in cards if "front" in c}
+    existing_cards: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """Extract only explicit source definitions or examples; never pad with generic prompts."""
+    cards = list(existing_cards or [])
+    seen_fronts = {_normalize_flashcard_text(card.get("front", "")) for card in cards}
+    seen_evidence = {_normalize_flashcard_text(card.get("source_excerpt", "")) for card in cards}
+    statement_pattern = re.compile(
+        r"^(?P<term>[A-Z][A-Za-z0-9() /&+_-]{1,75}?)\s+"
+        r"(?P<link>is defined as|refers to|means|is|are|represents|consists of|includes)\s+"
+        r"(?P<answer>[^.!?;]{12,350}[.!?]?)$",
+        re.IGNORECASE,
+    )
+    example_pattern = re.compile(r"\b(for example|for instance|such as|example:)\b", re.IGNORECASE)
 
-    def add_card(front: str, back: str):
-        f = front.strip()
-        b = back.strip()
-        if f and b and f.lower() not in seen and len(f) >= 3 and len(b) >= 5:
-            seen.add(f.lower())
-            cards.append({"front": f, "back": b})
+    for section in _flashcard_source_sections(document_text):
+        page = _flashcard_page(section)
+        clean_section = re.sub(r"\[Page\s*\d+\]", "", section, flags=re.IGNORECASE)
+        statements = re.split(r"(?<=[.!?])\s+|(?<=;)\s+|\n+", clean_section)
+        for raw_statement in statements:
+            evidence = re.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s*", "", raw_statement).strip()
+            if not 30 <= len(evidence) <= 500:
+                continue
+            normalized_evidence = _normalize_flashcard_text(evidence)
+            if normalized_evidence in seen_evidence:
+                continue
+            match = statement_pattern.match(evidence)
+            label_match = re.match(
+                r"^(?P<term>[A-Z][^:]{1,75}):\s*(?P<answer>[^.!?;]{12,350}[.!?]?)$",
+                evidence,
+            )
+            definition = match or label_match
+            example_match = example_pattern.search(evidence)
+            term = ""
+            if definition:
+                term = definition.group("term").strip(" -")
+                answer = definition.group("answer").strip()
+                if card_type == "term-definition":
+                    front, back = term, answer
+                elif card_type == "question-answer":
+                    front, back = f"What does the lesson say about {term}?", answer
+                elif card_type == "fill-blank":
+                    front = re.sub(re.escape(term), "______", evidence, count=1, flags=re.IGNORECASE)
+                    back = term
+                elif card_type == "concept-example" and example_match:
+                    front, back = f"What example is given for {term}?", evidence[example_match.start():].strip()
+                else:
+                    continue
+            elif card_type == "concept-example" and example_match:
+                subject = " ".join(evidence[:example_match.start()].split()[-4:]).strip(" :,-")
+                if not subject:
+                    continue
+                front = f"What example is given for {subject}?"
+                back = evidence[example_match.start():].strip()
+            else:
+                continue
 
-    # Clean lines
-    raw_lines = [l.strip() for l in document_text.split("\n") if l.strip()]
-    lines = []
-    for l in raw_lines:
-        if l.startswith("[Page") or l.startswith("===") or l.startswith("---") or l.startswith("IT ELEC"):
+            if (
+                len(front) > 180
+                or len(back) > 450
+                or _normalize_flashcard_text(front) in seen_fronts
+                or _normalize_flashcard_text(back) not in normalized_evidence
+            ):
+                continue
+            cards.append(
+                {
+                    "front": front,
+                    "back": back,
+                    "source_excerpt": evidence,
+                    "source_page": page,
+                    "topic": term or "Example",
+                    "generation_method": "document_extract",
+                }
+            )
+            seen_fronts.add(_normalize_flashcard_text(front))
+            seen_evidence.add(normalized_evidence)
+    return cards
+
+
+def generate_flashcards_from_document(
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_type: str,
+) -> List[Dict[str, Any]]:
+    """Create concise cards whose answers are directly verifiable in source excerpts."""
+    if not document_text.strip():
+        raise HTTPException(404, "No readable text was found in the selected document.")
+
+    type_instructions = {
+        "term-definition": "Put one exact key term on front and its concise source-stated definition on back.",
+        "question-answer": "Put one focused question on front and its concise source-stated answer on back.",
+        "concept-example": "Use a concept and an example only when that example is explicitly present in the excerpt.",
+        "fill-blank": "Put one source sentence with exactly one key term replaced by ______ on front and that exact term on back.",
+    }
+    cards: List[Dict[str, Any]] = []
+    seen_fronts = set()
+    seen_evidence = set()
+    generation_failed = False
+
+    for section in _flashcard_source_sections(document_text):
+        if len(cards) >= card_count:
+            break
+        batch_count = min(5, card_count - len(cards))
+        prompt = (
+            f"Create up to {batch_count} distinct flashcards for focus topic: {topic}. "
+            "Use only the supplied excerpt. Preserve the order topics appear in the lecture. "
+            f"Format: {type_instructions[card_type]} Each card must contain one idea only. "
+            "Keep front under 180 characters and back to one or two short sentences, under 450 characters. "
+            "Return JSON array objects with front, back, source_excerpt. source_excerpt must be copied "
+            "verbatim from the supplied excerpt, and back must be an exact continuous quote contained "
+            "in source_excerpt. Do not invent, infer, add examples, combine concepts, or return duplicates. "
+            "Skip unsupported concepts rather than guessing. Return [] if the excerpt has no suitable content.\n"
+            f"FOCUS TOPIC: {topic}\nLECTURE EXCERPT:\n{section}"
+        )
+        try:
+            raw = generate(
+                prompt,
+                system=(
+                    "You are a source-grounded study-card generator. The lecture excerpt is the only source "
+                    "of truth. Return concise, single-concept cards with answers copied verbatim from their "
+                    "cited evidence. Return valid JSON only."
+                ),
+                has_sources=True,
+            )
+        except AIProviderError:
+            generation_failed = True
+            break
+
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+            if cleaned.endswith("```"):
+                cleaned = cleaned.rsplit("```", 1)[0]
+        try:
+            parsed = json.loads(cleaned.strip())
+        except json.JSONDecodeError:
             continue
-        lines.append(l)
+        if not isinstance(parsed, list):
+            continue
 
-    # 1. Numbered concepts (e.g., "1. Usability", "2. Effectiveness") with explanations
-    for i in range(len(lines) - 1):
-        if len(cards) >= target_count:
-            break
-        l = lines[i]
-        m = re.match(r"^(\d+[\.\)]\s*)([A-Z][A-Za-z0-9\s\(\)\/\-]+)$", l)
-        if m:
-            term = m.group(2).strip()
-            exp_lines = []
-            for j in range(i + 1, min(i + 8, len(lines))):
-                if re.match(r"^\d+[\.\)]\s*[A-Z]", lines[j]):
-                    break
-                exp_lines.append(lines[j])
-            exp_text = " ".join(exp_lines).strip()
-            if exp_text:
-                if card_type == "term-definition":
-                    add_card(term, exp_text)
-                elif card_type == "question-answer":
-                    add_card(f"What is {term} and why is it important?", exp_text)
-                elif card_type == "concept-example":
-                    add_card(f"Concept: {term}", f"Description & Example:\n{exp_text}")
-                elif card_type == "fill-blank":
-                    snippet = exp_text[:110] + "…" if len(exp_text) > 110 else exp_text
-                    add_card(f"In this lesson, ______ is described as: {snippet}", f"Answer: {term}\n\n{exp_text}")
+        normalized_section = _normalize_flashcard_text(section)
+        for item in parsed:
+            if not isinstance(item, dict):
+                continue
+            front = item.get("front")
+            back = item.get("back")
+            evidence = item.get("source_excerpt")
+            if (
+                not all(isinstance(value, str) and value.strip() for value in (front, back, evidence))
+                or len(front.strip()) > 180
+                or len(back.strip()) > 450
+                or len(evidence.strip()) > 500
+            ):
+                continue
+            normalized_evidence = _normalize_flashcard_text(evidence)
+            normalized_back = _normalize_flashcard_text(back)
+            normalized_front = _normalize_flashcard_text(front)
+            evidence_terms = {
+                token for token in re.findall(r"\w+", normalized_evidence)
+                if len(token) > 3
+            }
+            front_terms = {
+                token for token in re.findall(r"\w+", normalized_front)
+                if len(token) > 3 and token not in {"what", "does", "this", "that", "with", "from", "according"}
+            }
+            if (
+                normalized_evidence not in normalized_section
+                or normalized_back not in normalized_evidence
+                or normalized_front in seen_fronts
+                or normalized_evidence in seen_evidence
+                or not normalized_back
+                or not front_terms.intersection(evidence_terms)
+            ):
+                continue
+            if card_type == "fill-blank" and "______" not in front:
+                continue
+            cards.append(
+                {
+                    "front": front.strip(),
+                    "back": back.strip(),
+                    "source_excerpt": evidence.strip(),
+                    "source_page": _flashcard_page(evidence) or _flashcard_page(section),
+                    "topic": topic,
+                    "generation_method": "ai",
+                }
+            )
+            seen_fronts.add(normalized_front)
+            seen_evidence.add(normalized_evidence)
+            if len(cards) == card_count:
+                break
 
-    # 2. Key-Value pairs with colons (e.g. "Usability: The system should be easy to use")
-    for l in lines:
-        if len(cards) >= target_count:
-            break
-        if ":" in l and not l.startswith("http"):
-            parts = l.split(":", 1)
-            k, v = parts[0].strip(), parts[1].strip()
-            k_clean = re.sub(r"^[✔❌\-\*\•\d+\.\)]\s*", "", k).strip()
-            if 1 <= len(k_clean.split()) <= 6 and len(v) > 10:
-                if card_type == "term-definition":
-                    add_card(k_clean, v)
-                elif card_type == "question-answer":
-                    add_card(f"What is {k_clean}?", v)
-                elif card_type == "concept-example":
-                    add_card(f"Topic: {k_clean}", f"Details:\n{v}")
-                elif card_type == "fill-blank":
-                    snippet = v[:120] + "…" if len(v) > 120 else v
-                    add_card(f"______: {snippet}", f"Answer: {k_clean}")
+    if generation_failed or len(cards) < card_count:
+        cards = build_extractive_flashcards(
+            document_text,
+            card_type,
+            existing_cards=cards,
+        )
 
-    # 3. Sentences with definitions ("is a", "is defined as", "refers to", "focuses on")
-    for l in lines:
-        if len(cards) >= target_count:
-            break
-        cl = re.sub(r"^[✔❌\-\*\•\d+\.\)]\s*", "", l).strip()
-        for pat in [
-            r"^([A-Z][A-Za-z0-9\s\(\)\/\-]{2,45}?)\s+is\s+(?:a|an|the|defined\s+as)\s+(.+)$",
-            r"^([A-Z][A-Za-z0-9\s\(\)\/\-]{2,45}?)\s+(?:refers\s+to|focuses\s+on|aims\s+to|involves)\s+(.+)$"
-        ]:
-            m = re.match(pat, cl, re.IGNORECASE)
-            if m:
-                t, d = m.group(1).strip(), m.group(2).strip()
-                if len(t.split()) <= 6 and len(d) > 15:
-                    if card_type == "term-definition":
-                        add_card(t, f"{t} is {d}")
-                    elif card_type == "question-answer":
-                        add_card(f"How does the material define {t}?", f"{t} is {d}")
-                    elif card_type == "concept-example":
-                        add_card(f"Key Concept: {t}", f"{t} is {d}")
-                    elif card_type == "fill-blank":
-                        snippet = d[:120] + "…" if len(d) > 120 else d
-                        add_card(f"______ is {snippet}", f"Answer: {t}\n\nFull Statement: {t} is {d}")
+    if not cards:
+        raise HTTPException(
+            422,
+            "This document does not contain enough clear, verifiable material for the selected flashcard type. Try another card type or a more specific lecture document.",
+        )
 
-    # 4. Questions in the text (e.g. "What is Human-Computer Interaction?")
-    for i, l in enumerate(lines):
-        if len(cards) >= target_count:
-            break
-        if l.endswith("?") and len(l) > 10:
-            ans = " ".join(lines[i+1:min(i+5, len(lines))]).strip()
-            if ans and not ans.endswith("?"):
-                q_clean = re.sub(r"^\d+[\.\)]\s*", "", l).strip()
-                if card_type == "question-answer":
-                    add_card(q_clean, ans)
-                elif card_type == "term-definition":
-                    term_guess = re.sub(r"^(What is|Why is|How does|Explain)\s+", "", q_clean, flags=re.I).replace("?", "").strip()
-                    add_card(term_guess, ans)
-                elif card_type == "concept-example":
-                    add_card(f"Question / Scenario: {q_clean}", ans)
-                elif card_type == "fill-blank":
-                    snippet = ans[:110] + "…" if len(ans) > 110 else ans
-                    add_card(f"Regarding '{q_clean}': ______ states: {snippet}", f"Answer: {ans}")
+    cards = cards[:card_count]
+    normalized_document = _normalize_flashcard_text(document_text)
 
-    # 5. Core educational sentences and statements to fill up to target_count (up to 100)
-    fact_lines = [l for l in lines if len(l) > 25 and not l.startswith("[") and not l.startswith("=") and not l.endswith("?")]
-    
-    variation_templates = [
-        ("Review Point", "What does the text highlight regarding"),
-        ("Key Principle", "Explain the concept of"),
-        ("Core Takeaway", "Summarize the significance of"),
-        ("Design Concept", "How should we understand"),
-        ("Study Check", "According to the lesson, what is true about")
-    ]
+    def source_position(card: Dict[str, Any]) -> int:
+        position = normalized_document.find(
+            _normalize_flashcard_text(card["source_excerpt"])
+        )
+        return position if position >= 0 else len(normalized_document)
 
-    counter = 0
-    while len(cards) < target_count and fact_lines:
-        fl = fact_lines[counter % len(fact_lines)]
-        cl = re.sub(r"^[✔❌\-\*\•\d+\.\)]\s*", "", fl).strip()
-        words = cl.split()
-        if len(words) >= 6:
-            lead4 = " ".join(words[:4])
-            lead2 = " ".join(words[:2])
-            card_num = len(cards) + 1
-            v_label, v_query = variation_templates[counter % len(variation_templates)]
+    cards.sort(key=source_position)
+    for card in cards:
+        card["card_key"] = _flashcard_key(card["front"])
+    return cards
 
-            if card_type == "term-definition":
-                split_idx = min(4, max(1, len(words) // 4))
-                head = " ".join(words[:split_idx])
-                add_card(f"{v_label} {card_num}: {head}…", cl)
-            elif card_type == "question-answer":
-                add_card(f"Item {card_num}: {v_query} '{lead4}…'?", cl)
-            elif card_type == "concept-example":
-                add_card(f"Concept Application {card_num}: {lead4}…", f"Lesson Details:\n{cl}")
-            elif card_type == "fill-blank":
-                blanked = "______ " + " ".join(words[2:])
-                add_card(f"Card {card_num}: {blanked}", f"Answer: {lead2}\n\nFull Statement:\n{cl}")
-        counter += 1
-        if counter > len(fact_lines) * 5:
-            break
 
-    return cards[:target_count]
+def _get_flashcard_progress(user_id: str, document_name: str) -> List[str]:
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT card_key FROM flashcard_progress WHERE user_id = ? AND document_key = ? AND mastered = ?",
+            (user_id, _flashcard_document_key(document_name), True),
+        )
+        return [row["card_key"] for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def _save_flashcard_progress(
+    user_id: str,
+    document_name: str,
+    front: str,
+    mastered: bool,
+) -> str:
+    document_key = _flashcard_document_key(document_name)
+    card_key = _flashcard_key(front)
+    progress_id = hashlib.sha256(f"{user_id}:{document_key}:{card_key}".encode("utf-8")).hexdigest()
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM flashcard_progress WHERE id = ?",
+            (progress_id,),
+        )
+        if cursor.fetchone():
+            cursor.execute(
+                "UPDATE flashcard_progress SET card_front = ?, mastered = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+                (front.strip(), mastered, progress_id, user_id),
+            )
+        else:
+            cursor.execute(
+                "INSERT INTO flashcard_progress (id, user_id, document_key, card_key, card_front, mastered) VALUES (?, ?, ?, ?, ?, ?)",
+                (progress_id, user_id, document_key, card_key, front.strip(), mastered),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+    return card_key
+
+
+@router.get("/learning/flashcards/progress")
+def read_flashcard_progress(
+    document_name: str = Query(min_length=1, max_length=255),
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
+):
+    owned_name = get_owned_document_name(current_user["id"], document_name)
+    return {"mastered_card_keys": _get_flashcard_progress(current_user["id"], owned_name)}
+
+
+@router.put("/learning/flashcards/progress")
+def update_flashcard_progress(
+    request: FlashcardProgressRequest,
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
+):
+    owned_name = get_owned_document_name(current_user["id"], request.document_name)
+    card_key = _save_flashcard_progress(
+        current_user["id"],
+        owned_name,
+        request.front,
+        request.mastered,
+    )
+    return {"card_key": card_key, "mastered": request.mastered}
 
 
 @router.post("/learning/flashcards")
 def create_flashcards(
     request: FlashcardRequest,
-    current_user: Dict[str, Any] = Depends(get_current_student_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
 ):
-    """Generate AI-powered flashcards from an uploaded lesson document."""
+    """Generate verified flashcards from the student's selected source document."""
     uid = current_user["id"]
     document_name = get_owned_document_name(uid, request.document_name)
-    card_count = max(1, min(100, request.card_count or 10))
-    card_type = request.card_type or "term-definition"
-
+    card_count = request.card_count or 10
+    card_type = request.card_type
     context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
 
-    # Load all raw chunks of target document for comprehensive synthesis
-    all_chunks = get_all_document_chunks(document_name, uid)
-    full_doc_text = "\n\n".join(c.get("text", "") for c in all_chunks) if all_chunks else context
-
-    # Choose prompt template by card type (default to term-definition)
-    prompt_template = FLASHCARD_TYPE_PROMPTS.get(card_type, FLASHCARD_TYPE_PROMPTS["term-definition"])
-
-    # LLM request: batch up to min(25, card_count)
-    batch_size = min(25, card_count)
-    parsed_cards: List[Dict[str, str]] = []
-
-    prompt = prompt_template.format(
-        count=batch_size,
-        topic=request.topic,
-        context=context[:8000]
+    chunks = sorted(
+        get_all_document_chunks(document_name, uid),
+        key=lambda chunk: chunk.get("chunk_index", 0),
     )
-
-    try:
-        raw = generate(
-            prompt,
-            system=(
-                "You are KeepAI, a helpful study assistant. Generate clear, accurate flashcards "
-                "grounded strictly in the provided lesson material. Use simple, student-friendly language. "
-                "Return only a valid JSON array — no markdown, no extra text."
-            )
-        )
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned
-            if cleaned.endswith("```"):
-                cleaned = cleaned.rsplit("```", 1)[0]
-        cleaned = cleaned.strip()
-
-        parsed = json.loads(cleaned)
-        if isinstance(parsed, list):
-            for item in parsed:
-                if isinstance(item, dict) and "front" in item and "back" in item:
-                    parsed_cards.append({
-                        "front": str(item["front"]).strip(),
-                        "back": str(item["back"]).strip()
-                    })
-    except Exception as e:
-        print(f"Flashcard LLM generation notice: {e}")
-
-    # Synthesize additional cards directly from the document text to reach card_count (up to 100)
-    final_cards = synthesize_flashcards_from_document(
-        document_text=full_doc_text,
-        target_count=card_count,
-        card_type=card_type,
-        existing_cards=parsed_cards,
-        document_name=document_name or (sources[0] if sources else None)
+    files_meta = _load_user_files_meta(uid)
+    document_metadata = files_meta.get(document_name, {})
+    full_doc_text = document_metadata.get("full_text") or "\n\n".join(
+        chunk.get("text", "") for chunk in chunks if chunk.get("text")
+    ) or context
+    cards = generate_flashcards_from_document(
+        full_doc_text,
+        request.topic,
+        card_count,
+        card_type,
     )
-
-    # Track usage stats
-    user_service.increment_stat(current_user["id"], "flashcards_studied", len(final_cards))
+    user_service.increment_stat(uid, "flashcards_studied", len(cards))
 
     return {
         "topic": request.topic,
         "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "card_type": card_type,
-        "total_cards": len(final_cards),
-        "cards": final_cards,
-        "sources": sources
+        "total_cards": len(cards),
+        "generation_mode": (
+            "document_extract"
+            if any(card.get("generation_method") == "document_extract" for card in cards)
+            else "ai"
+        ),
+        "cards": cards,
+        "sources": sources,
     }

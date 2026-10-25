@@ -203,6 +203,17 @@ def init_db():
     global _active_engine
     conn = get_connection()
     cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS flashcard_progress (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            document_key VARCHAR(64) NOT NULL,
+            card_key VARCHAR(64) NOT NULL,
+            card_front TEXT NOT NULL,
+            mastered BOOLEAN NOT NULL DEFAULT FALSE,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     if _active_engine == "postgres":
         cursor.execute("""

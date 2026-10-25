@@ -1265,7 +1265,8 @@
 
         .flashcard {
             width: 100%;
-            height: 240px;
+            min-height: 260px;
+            height: clamp(260px, 42vh, 460px);
             border-radius: var(--radius-lg);
             position: relative;
             transform-style: preserve-3d;
@@ -1282,15 +1283,61 @@
             position: absolute;
             width: 100%;
             height: 100%;
+            min-height: 260px;
             backface-visibility: hidden;
             border-radius: var(--radius-lg);
-            padding: 30px;
+            padding: clamp(18px, 4vw, 36px);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             text-align: center;
             border: 2px solid var(--border);
+            overflow-y: auto;
+            overflow-wrap: anywhere;
+            word-break: normal;
+        }
+
+        .flashcard-copy {
+            width: min(100%, 760px);
+            max-height: 100%;
+            margin: 0;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            line-height: 1.65;
+        }
+
+        .flashcard-source {
+            width: min(100%, 760px);
+            margin: 12px 0 0;
+            color: rgba(255, 255, 255, 0.82);
+            font-size: 12px;
+            text-align: left;
+        }
+
+        .flashcard-player-controls {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        @media (max-width: 600px) {
+            .flashcard {
+                min-height: 300px;
+                height: min(54vh, 440px);
+            }
+
+            .flashcard-face {
+                min-height: 300px;
+                padding: 18px 16px;
+            }
+
+            .flashcard-player-controls > div {
+                width: 100%;
+                justify-content: space-between;
+            }
         }
 
         .flashcard-front {
@@ -2246,34 +2293,37 @@
                             <div>
                                 <h4 style="font-size: 17px; font-weight: 800; color: var(--text-main);">Study Flashcards</h4>
                                 <span style="font-size: 12px; color: var(--text-muted);" id="flashcard-counter">Card 1 of 5</span>
+                                <span style="display: block; font-size: 11px; color: var(--text-muted);" id="flashcard-progress"></span>
                             </div>
-                            <button class="btn btn-plain btn-sm" onclick="closeFlashcardPlayer()">
-                                <i class="fas fa-times"></i> Close Deck
-                            </button>
+                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                                <button class="btn btn-plain btn-sm" id="flashcard-review-filter" onclick="toggleFlashcardReviewFilter()">Review unmastered</button>
+                                <button class="btn btn-plain btn-sm" onclick="closeFlashcardPlayer()">
+                                    <i class="fas fa-times"></i> Close Deck
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="flashcard-container" onclick="flipFlashcard()">
+                        <div class="flashcard-container" onclick="flipFlashcard()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlashcard();}">
                             <div class="flashcard" id="active-flashcard">
                                 <div class="flashcard-face flashcard-front">
                                     <span class="mini-pill" style="margin-bottom: 12px; color: var(--primary);">TERM / CONCEPT</span>
-                                    <h3 id="card-term" style="font-size: 22px; font-weight: 800; color: var(--text-main); margin-bottom: 8px;">MQTT Protocol</h3>
-                                    <p style="font-size: 12px; color: var(--text-muted);"><i class="fas fa-sync-alt me-1"></i> Tap or click card to reveal explanation</p>
+                                    <h3 id="card-term" class="flashcard-copy" style="font-size: clamp(19px, 3vw, 27px); font-weight: 800; color: var(--text-main); margin-bottom: 10px;"></h3>
+                                    <p style="font-size: 12px; color: var(--text-muted); margin: 0;"><i class="fas fa-sync-alt me-1"></i> Tap or click card to reveal explanation</p>
                                 </div>
                                 <div class="flashcard-face flashcard-back">
                                     <span class="mini-pill" style="margin-bottom: 12px; background: rgba(255,255,255,0.2); color: white;">DEFINITION</span>
-                                    <p id="card-def" style="font-size: 15px; line-height: 1.7; max-width: 500px;">
-                                        MQTT is a lightweight, fast messaging protocol designed for smart devices with low battery or limited network speed.
-                                    </p>
+                                    <p id="card-def" class="flashcard-copy" style="font-size: clamp(15px, 2.2vw, 18px); color: #fff;"></p>
+                                    <p id="card-source" class="flashcard-source"></p>
                                 </div>
                             </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 18px;">
+                        <div class="flashcard-player-controls" style="margin-top: 18px;">
                             <button class="btn btn-plain btn-sm" onclick="prevFlashcard()">
                                 <i class="fas fa-arrow-left"></i> Previous
                             </button>
                             <div style="display: flex; gap: 8px;">
-                                <button class="btn btn-soft btn-sm" onclick="markCardMastered()">
+                                <button class="btn btn-soft btn-sm" id="flashcard-mastered-button" onclick="markCardMastered()">
                                     <i class="fas fa-check"></i> Mastered
                                 </button>
                                 <button class="btn btn-primary btn-sm" onclick="nextFlashcard()">
@@ -2612,6 +2662,7 @@
             </div>
 
             <!-- Action Buttons -->
+            <div id="fc-generation-status" role="status" aria-live="polite" style="display: none; margin: 0 0 12px; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--primary-light); color: var(--text-body); font-size: 12px; line-height: 1.5;"></div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-plain" style="flex: 1;" onclick="closeModal('flashcard-launch-modal')">
                     Cancel
@@ -2872,15 +2923,12 @@
         let studentDashboardInitialized = false;
 
         // Flashcards state
-        const sampleFlashcards = [
-            { term: 'IoT Architecture (4 Layers)', def: '1. Sensing Layer (Sensors measuring real-world conditions)\n2. Network Layer (Wi-Fi, Bluetooth, Routers)\n3. Processing Layer (Organizing and storing data)\n4. Application Layer (User apps, screens, and controls).' },
-            { term: 'MQTT Protocol', def: 'A lightweight messaging system made for smart devices on slow or battery-powered networks.' },
-            { term: 'Edge Computing', def: 'Processing data directly on or near the sensor device instead of sending all raw information to remote cloud servers.' },
-            { term: 'Actuator', def: 'A part that turns electrical signals into physical movement or action, such as a motor, switch, or water pump.' },
-            { term: 'Sensor Drift', def: 'When a sensor slowly loses its accuracy over time because of heat, aging, or weather conditions.' }
-        ];
         let currentFlashcardIndex = 0;
-        let activeFlashcardDeck = [];        // Holds AI or client-generated flashcard deck
+        let activeFlashcardDeck = [];
+        let activeFlashcardDocumentName = '';
+        let masteredFlashcardKeys = new Set();
+        let visibleFlashcardIndexes = [];
+        let showUnmasteredFlashcards = false;
         let selectedFlashcardType = 'term-definition'; // Currently selected card type in modal
 
         // ==================== INITIALIZATION ====================
@@ -4607,19 +4655,14 @@
 
         // ==================== LEARNING TOOLS LOGIC ====================
         function openFlashcardPlayer() {
-            // Populate lesson dropdown from actual uploaded documents
             const select = document.getElementById('fc-lesson-select');
             if (documents && documents.length > 0) {
                 select.innerHTML = documents.map(d =>
                     `<option value="${escapeHTML(d.filename)}">${escapeHTML(d.filename)}</option>`
                 ).join('');
             } else {
-                select.innerHTML = `
-                    <option value="Machine Learning - IoT Notes 1.pdf">Machine Learning - IoT Notes 1.pdf</option>
-                    <option value="application-development-emerging-technologies.pdf">application-development-emerging-technologies.pdf</option>
-                `;
+                select.innerHTML = '<option value="">Upload a document to create flashcards</option>';
             }
-            // Reset form state
             document.getElementById('fc-count-slider').value = 10;
             updateFCCountDisplay(10);
             document.querySelectorAll('.fc-type-card').forEach(c => c.classList.remove('selected'));
@@ -4627,7 +4670,13 @@
             if (defaultCard) defaultCard.classList.add('selected');
             selectedFlashcardType = 'term-definition';
             document.getElementById('fc-topic-input').value = '';
-            // Show modal
+            const generateButton = document.getElementById('fc-generate-btn');
+            if (generateButton) generateButton.disabled = !documents?.length;
+            const status = document.getElementById('fc-generation-status');
+            if (status) {
+                status.style.display = 'none';
+                status.setAttribute('role', 'status');
+            }
             document.getElementById('flashcard-launch-modal').classList.add('show');
         }
 
@@ -4666,8 +4715,14 @@
             }
 
             const genBtn = document.getElementById('fc-generate-btn');
+            const status = document.getElementById('fc-generation-status');
             genBtn.disabled = true;
             genBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating…';
+            genBtn.setAttribute('aria-busy', 'true');
+            if (status) {
+                status.style.display = 'block';
+                status.textContent = `Reading "${selectDoc}", identifying focused concepts, and checking answers against their source passages…`;
+            }
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -4688,7 +4743,10 @@
                 if (res.ok) {
                     const data = await res.json();
                     closeModal('flashcard-launch-modal');
-                    loadFlashcardDeck(data.cards || [], selectDoc, cardType);
+                    await loadFlashcardDeck(data.cards || [], selectDoc, cardType, data.generation_mode);
+                    if (data.total_cards < cardCount) {
+                        showToast(`Created ${data.total_cards} source-supported cards. The document did not contain enough distinct material for ${cardCount}.`, 'info');
+                    }
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     const errMsg = errData.detail || `Server responded with status ${res.status}`;
@@ -4697,113 +4755,65 @@
             } catch (err) {
                 console.error('Flashcard generation error:', err);
                 showToast(`Flashcard error: ${err.message || 'Could not reach server'}`, 'error');
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = err.message || 'Flashcards could not be generated. Check your connection and try again.';
+                    status.setAttribute('role', 'alert');
+                }
             } finally {
                 genBtn.disabled = false;
+                genBtn.removeAttribute('aria-busy');
                 genBtn.innerHTML = '<i class="fas fa-magic me-1"></i> Generate Flashcards';
             }
         }
 
-        function generateClientFlashcards(docName, topic, count, type) {
-            const typeLabels = {
-                'term-definition': ['TERM / CONCEPT', 'DEFINITION'],
-                'question-answer': ['QUESTION', 'ANSWER'],
-                'concept-example': ['CONCEPT', 'EXAMPLE'],
-                'fill-blank': ['COMPLETE THE SENTENCE', 'ANSWER']
-            };
-
-            const bankByType = {
-                'term-definition': [
-                    { front: 'IoT Architecture (4 Layers)', back: '1. Sensing Layer (Sensors)\n2. Network Layer (Wi-Fi, Bluetooth, Routers)\n3. Processing Layer (Organizing data)\n4. Application Layer (User apps & controls)' },
-                    { front: 'MQTT Protocol', back: 'A lightweight messaging system for smart devices. Uses publish/subscribe model with only a 2-byte header — ideal for low-power, slow-network environments.' },
-                    { front: 'Edge Computing', back: 'Processing data directly on or near the sensor device instead of sending all raw data to remote cloud servers, reducing latency and bandwidth.' },
-                    { front: 'Actuator', back: 'A component that converts electrical signals into physical action or movement, such as a motor, relay switch, or water pump.' },
-                    { front: 'Sensor Drift', back: 'When a sensor gradually loses accuracy over time due to heat, aging, or environmental conditions, requiring periodic recalibration.' },
-                    { front: 'LoRaWAN', back: 'Long Range Wide Area Network — a wireless protocol designed for long-range (kilometers), low-power IoT communications.' },
-                    { front: 'ADC (Analog-to-Digital Converter)', back: 'Converts continuous analog voltages from physical sensors into discrete digital numbers that microcontrollers can process.' },
-                    { front: 'Overfitting (Machine Learning)', back: 'When an ML model memorizes training data too closely — including noise — so it fails to generalize to new, unseen data.' },
-                    { front: 'Raspberry Pi vs. Arduino', back: 'Raspberry Pi is a full single-board computer (can run an OS, Python, etc.), while Arduino is a simpler microcontroller for dedicated firmware tasks.' },
-                    { front: 'QoS in MQTT', back: 'Quality of Service levels: QoS 0 (fire and forget), QoS 1 (at least once with acknowledgment), QoS 2 (exactly once, highest reliability).' },
-                    { front: 'CoAP Protocol', back: 'Constrained Application Protocol — a lightweight web transfer protocol designed for low-power IoT devices, operating over UDP.' },
-                    { front: 'BLE (Bluetooth Low Energy)', back: 'A short-range, power-efficient wireless standard for IoT devices in personal area networks (wearables, beacons).' },
-                    { front: 'GPIO Pins', back: 'General Purpose Input/Output pins on microcontrollers that can be configured as digital inputs, digital outputs, or analog inputs.' },
-                    { front: 'Sensor Sampling Rate', back: 'How frequently a sensor captures a data reading. Higher rates increase data fidelity but drain battery and bandwidth faster.' },
-                    { front: 'Deep Sleep Mode', back: 'A low-power state where a microcontroller disables non-essential peripherals to extend battery life from days to months.' }
-                ],
-                'question-answer': [
-                    { front: 'What is the primary purpose of MQTT in IoT systems?', back: 'MQTT provides lightweight, efficient messaging between IoT devices using a publish/subscribe model, minimizing data overhead for low-power and bandwidth-constrained environments.' },
-                    { front: 'Why is Edge Computing important in IoT?', back: 'It processes data near the source (sensor), reducing latency for real-time decisions and decreasing the volume of data sent to the cloud, saving bandwidth and energy.' },
-                    { front: 'What are the 4 layers of IoT Architecture?', back: '1. Sensing Layer (collects physical data)\n2. Network Layer (transmits data)\n3. Processing Layer (analyzes and stores data)\n4. Application Layer (user-facing apps and dashboards).' },
-                    { front: 'How does overfitting affect an ML model?', back: 'The model performs very well on training data but poorly on new data, because it has memorized noise and patterns specific to the training set rather than learning general rules.' },
-                    { front: 'What is the role of an Actuator in IoT?', back: 'An actuator receives a control signal and performs a physical action — e.g., opening a valve, turning on a pump, or rotating a motor — completing the IoT feedback loop.' },
-                    { front: 'When should LoRaWAN be used over Bluetooth?', back: 'LoRaWAN should be chosen for long-range (kilometer-scale) deployments like agricultural monitoring, where devices are far apart. Bluetooth is better for short-range personal area networks.' },
-                    { front: 'What does QoS 1 guarantee in MQTT?', back: 'QoS 1 guarantees that a message is delivered at least once, using a PUBACK acknowledgment. Duplicates may occur but no messages are lost.' },
-                    { front: 'How does a Raspberry Pi differ from an Arduino?', back: 'Raspberry Pi is a full computer that can run an OS and complex software. Arduino is a simpler microcontroller optimized for real-time, low-level hardware control tasks.' },
-                    { front: 'What problem does an ADC solve in sensor circuits?', back: 'Physical sensors produce analog voltages. Microcontrollers only understand digital numbers. An ADC bridges this gap by converting continuous analog signals to discrete digital values.' },
-                    { front: 'Why is MQTT preferred over HTTP for IoT sensors?', back: 'MQTT has a 2-byte fixed header (vs. HTTP\'s kilobytes of headers), uses binary payloads, and operates asynchronously — making it far more efficient for constrained devices.' }
-                ],
-                'concept-example': [
-                    { front: 'IoT Closed-Loop System', back: 'EXAMPLE: A smart plant system that uses a soil moisture sensor to detect dry conditions and automatically activates a water pump — sense → process → actuate → repeat.' },
-                    { front: 'Edge Computing', back: 'EXAMPLE: A smart camera that detects motion and identifies people locally on the device, only sending an alert to the cloud — instead of streaming all video footage.' },
-                    { front: 'MQTT Publish/Subscribe', back: 'EXAMPLE: A temperature sensor "publishes" readings to the topic /greenhouse/temp. Any device subscribed to that topic (dashboard, alert system) instantly receives the update.' },
-                    { front: 'Sensor Drift Correction', back: 'EXAMPLE: A factory\'s gas sensor is recalibrated every 6 months because readings drift 5% per year — ensuring safety alarms remain accurate.' },
-                    { front: 'Machine Learning in IoT', back: 'EXAMPLE: A predictive maintenance system trained on vibration data from industrial motors learns to detect anomalies 48 hours before a failure occurs.' },
-                    { front: 'Deep Sleep Power Mode', back: 'EXAMPLE: A forest wildfire sensor wakes up every 15 minutes, takes a temperature reading, transmits it, and goes back to deep sleep — extending battery life from days to 6 months.' },
-                    { front: 'LoRaWAN Long-Range Communication', back: 'EXAMPLE: Cattle GPS trackers on a large ranch transmit location data over LoRaWAN to a base station 8km away, without cellular coverage.' },
-                    { front: 'Actuator Control via GPIO', back: 'EXAMPLE: A Raspberry Pi sends a HIGH signal to a GPIO pin connected to a relay, which closes a circuit and turns on a greenhouse grow light at 6 AM.' },
-                    { front: 'Overfitting Prevention', back: 'EXAMPLE: An IoT anomaly model trained only on summer data fails during winter. Using cross-validation and diverse seasonal data prevents overfitting.' },
-                    { front: 'ADC in Environmental Monitoring', back: 'EXAMPLE: A soil moisture sensor outputs 0–3.3V. The microcontroller\'s ADC converts this to a 0–4095 digital value, which maps to a 0–100% moisture percentage.' }
-                ],
-                'fill-blank': [
-                    { front: 'MQTT uses a ______-byte fixed header, making it extremely lightweight for IoT devices.', back: 'Answer: 2\n\nMQTT\'s 2-byte minimum fixed header is what makes it ideal for bandwidth-constrained and battery-powered IoT devices.' },
-                    { front: 'The ______ layer of IoT architecture is responsible for detecting physical conditions like temperature and humidity.', back: 'Answer: Sensing Layer\n\nThe Sensing Layer consists of sensors and transducers that measure real-world physical properties.' },
-                    { front: 'Processing data near the sensor device rather than in the cloud is called ______ Computing.', back: 'Answer: Edge\n\nEdge Computing reduces latency and bandwidth usage by processing data at or near the source.' },
-                    { front: 'When an ML model memorizes training data too closely and fails on new data, it is called ______.', back: 'Answer: Overfitting\n\nOverfitting causes poor generalization — the model learns noise instead of patterns.' },
-                    { front: 'A component that converts electrical control signals into physical movement, like a motor or relay, is called an ______.', back: 'Answer: Actuator\n\nActuators complete the IoT loop by translating digital decisions into real-world physical actions.' },
-                    { front: 'LoRaWAN stands for Long Range ______ Area Network.', back: 'Answer: Wide\n\nLoRaWAN (Long Range Wide Area Network) is designed for long-distance, low-power IoT communications.' },
-                    { front: 'An ADC converts ______ voltages from sensors into ______ numbers for microcontrollers.', back: 'Answer: Analog → Digital\n\nWithout an ADC, microcontrollers cannot read the continuous voltage outputs of physical sensors.' },
-                    { front: 'MQTT QoS Level ______ guarantees a message is delivered at least once using a PUBACK acknowledgment.', back: 'Answer: 1\n\nQoS 1 prevents message loss but may deliver duplicates. QoS 0 = no guarantee; QoS 2 = exactly once.' },
-                    { front: 'Unlike Arduino, a Raspberry Pi can run a full ______, making it suitable for complex applications.', back: 'Answer: Operating System (OS)\n\nRaspberry Pi can run Linux and execute high-level languages like Python, unlike a bare-metal microcontroller.' },
-                    { front: 'The CoAP protocol operates over ______ instead of TCP, making it suitable for constrained IoT nodes.', back: 'Answer: UDP\n\nCoAP uses UDP to minimize overhead, making it efficient for resource-constrained devices with unreliable connections.' }
-                ]
-            };
-
-            const bank = bankByType[type] || bankByType['term-definition'];
-            const cards = [];
-            for (let i = 0; i < Math.min(count, 100); i++) {
-                cards.push(bank[i % bank.length]);
-            }
-            return cards;
-        }
-
-        function loadFlashcardDeck(cards, docName, cardType) {
+        async function loadFlashcardDeck(cards, docName, cardType, generationMode) {
             if (!cards || cards.length === 0) {
-                showToast('No flashcards were generated. Please try again.', 'warning');
+                showToast('No source-supported flashcards could be created from this document.', 'warning');
                 return;
             }
 
-            // Map card type to labels
             const typeLabels = {
                 'term-definition': ['TERM / CONCEPT', 'DEFINITION'],
                 'question-answer': ['QUESTION', 'ANSWER'],
-                'concept-example': ['CONCEPT', 'EXAMPLE'],
+                'concept-example': ['CONCEPT / EXAMPLE', 'SOURCE DETAIL'],
                 'fill-blank': ['COMPLETE THE SENTENCE', 'ANSWER']
             };
             const [frontLabel, backLabel] = typeLabels[cardType] || ['FRONT', 'BACK'];
-
-            // Store deck globally
-            activeFlashcardDeck = cards.map(c => ({
-                term: c.front || c.term || '—',
-                def: c.back || c.def || '—',
+            activeFlashcardDocumentName = docName;
+            activeFlashcardDeck = cards.map(card => ({
+                term: card.front,
+                def: card.back,
+                sourceExcerpt: card.source_excerpt || '',
+                sourcePage: card.source_page,
+                cardKey: card.card_key,
                 frontLabel,
                 backLabel
             }));
             currentFlashcardIndex = 0;
+            showUnmasteredFlashcards = false;
+            masteredFlashcardKeys = new Set();
 
-            // Update the header in the player area
+            const token = localStorage.getItem('access_token');
+            try {
+                const progressResponse = await fetch(
+                    `${API_BASE}/learning/flashcards/progress?document_name=${encodeURIComponent(docName)}`,
+                    { headers: { 'Authorization': token ? `Bearer ${token}` : '' } }
+                );
+                if (!progressResponse.ok) {
+                    throw new Error(`Saved progress could not be loaded (${progressResponse.status}).`);
+                }
+                const progress = await progressResponse.json();
+                masteredFlashcardKeys = new Set(progress.mastered_card_keys || []);
+            } catch (error) {
+                console.error('Flashcard progress loading failed:', error);
+                showToast('Deck created, but saved mastery progress could not be loaded.', 'warning');
+            }
+
             const playerArea = document.getElementById('flashcard-player-area');
             const headerEl = playerArea.querySelector('h4');
-            if (headerEl) headerEl.textContent = `Study Flashcards — ${docName}`;
-
+            if (headerEl) headerEl.textContent = `Study Flashcards ? ${docName}`;
+            visibleFlashcardIndexes = activeFlashcardDeck.map((_, index) => index);
             playerArea.style.display = 'block';
             updateFlashcardDisplay();
             playerArea.scrollIntoView({ behavior: 'smooth' });
@@ -4814,33 +4824,83 @@
                 'concept-example': 'Concept & Example',
                 'fill-blank': 'Fill in the Blank'
             };
-            showToast(`✅ ${cards.length} ${typeNames[cardType] || ''} flashcards ready!`, 'success');
+            const sourceMode = generationMode === 'document_extract'
+                ? ' AI was unavailable, so these cards were extracted from explicit source definitions.'
+                : '';
+            showToast(`${cards.length} ${typeNames[cardType] || ''} source-verified flashcards ready.${sourceMode}`, 'success');
         }
 
         function closeFlashcardPlayer() {
             document.getElementById('flashcard-player-area').style.display = 'none';
         }
 
+        function applyFlashcardFilter(resetIndex = true) {
+            visibleFlashcardIndexes = activeFlashcardDeck
+                .map((card, index) => ({ card, index }))
+                .filter(({ card }) => !showUnmasteredFlashcards || !masteredFlashcardKeys.has(card.cardKey))
+                .map(({ index }) => index);
+            if (resetIndex) currentFlashcardIndex = 0;
+            else currentFlashcardIndex = Math.min(currentFlashcardIndex, Math.max(visibleFlashcardIndexes.length - 1, 0));
+            updateFlashcardDisplay();
+        }
+
+        function toggleFlashcardReviewFilter() {
+            if (!showUnmasteredFlashcards && activeFlashcardDeck.every(card => masteredFlashcardKeys.has(card.cardKey))) {
+                showToast('All cards in this deck are already mastered.', 'info');
+                return;
+            }
+            showUnmasteredFlashcards = !showUnmasteredFlashcards;
+            const filterButton = document.getElementById('flashcard-review-filter');
+            if (filterButton) filterButton.textContent = showUnmasteredFlashcards ? 'Show all cards' : 'Review unmastered';
+            applyFlashcardFilter();
+        }
+
         function updateFlashcardDisplay() {
-            const deck = activeFlashcardDeck.length > 0 ? activeFlashcardDeck : sampleFlashcards;
-            const card = deck[currentFlashcardIndex];
+            const cardEl = document.getElementById('active-flashcard');
             const termEl = document.getElementById('card-term');
             const defEl = document.getElementById('card-def');
+            const sourceEl = document.getElementById('card-source');
             const counterEl = document.getElementById('flashcard-counter');
-            const cardEl = document.getElementById('active-flashcard');
+            const progressEl = document.getElementById('flashcard-progress');
+            const masteredButton = document.getElementById('flashcard-mastered-button');
+            const cardIndex = visibleFlashcardIndexes[currentFlashcardIndex];
+            const card = activeFlashcardDeck[cardIndex];
+            const masteredCount = activeFlashcardDeck.filter(item => masteredFlashcardKeys.has(item.cardKey)).length;
+            const previousButton = document.querySelector('#flashcard-player-area .flashcard-player-controls > button:first-child');
+            const nextButton = document.querySelector('#flashcard-player-area .flashcard-player-controls > div button:last-child');
 
-            // Update front/back labels if custom deck
-            if (activeFlashcardDeck.length > 0) {
-                const frontLabelEl = cardEl.querySelector('.flashcard-front .mini-pill');
-                const backLabelEl = cardEl.querySelector('.flashcard-back .mini-pill');
-                if (frontLabelEl && card.frontLabel) frontLabelEl.textContent = card.frontLabel;
-                if (backLabelEl && card.backLabel) backLabelEl.textContent = card.backLabel;
+            if (!card) {
+                cardEl.style.display = 'none';
+                counterEl.textContent = `All ${activeFlashcardDeck.length} cards mastered`;
+                progressEl.textContent = 'You have completed this deck. Switch to all cards to review again.';
+                masteredButton.disabled = true;
+                if (previousButton) previousButton.disabled = true;
+                if (nextButton) nextButton.disabled = true;
+                return;
             }
 
+            cardEl.style.display = '';
+            if (previousButton) previousButton.disabled = visibleFlashcardIndexes.length <= 1;
+            if (nextButton) nextButton.disabled = visibleFlashcardIndexes.length <= 1;
+            const frontLabelEl = cardEl.querySelector('.flashcard-front .mini-pill');
+            const backLabelEl = cardEl.querySelector('.flashcard-back .mini-pill');
+            if (frontLabelEl) frontLabelEl.textContent = card.frontLabel;
+            if (backLabelEl) backLabelEl.textContent = card.backLabel;
             cardEl.classList.remove('flipped');
             termEl.textContent = card.term;
-            defEl.innerHTML = card.def.replace(/\n/g, '<br>');
-            counterEl.textContent = `Card ${currentFlashcardIndex + 1} of ${deck.length}`;
+            defEl.textContent = card.def;
+            sourceEl.textContent = card.sourceExcerpt
+                ? `${card.sourcePage ? `Source ? Page ${card.sourcePage}: ` : 'Source excerpt: '}${card.sourceExcerpt}`
+                : '';
+            counterEl.textContent = `Card ${currentFlashcardIndex + 1} of ${visibleFlashcardIndexes.length}`;
+            progressEl.textContent = `${masteredCount} of ${activeFlashcardDeck.length} mastered`;
+            const isMastered = masteredFlashcardKeys.has(card.cardKey);
+            masteredButton.disabled = false;
+            masteredButton.innerHTML = isMastered
+                ? '<i class="fas fa-undo"></i> Unmark mastered'
+                : '<i class="fas fa-check"></i> Mark mastered';
+            masteredButton.classList.toggle('btn-soft', !isMastered);
+            masteredButton.classList.toggle('btn-plain', isMastered);
         }
 
         function flipFlashcard() {
@@ -4848,26 +4908,69 @@
         }
 
         function nextFlashcard() {
-            const deck = activeFlashcardDeck.length > 0 ? activeFlashcardDeck : sampleFlashcards;
-            currentFlashcardIndex = (currentFlashcardIndex + 1) % deck.length;
+            if (!visibleFlashcardIndexes.length) return;
+            currentFlashcardIndex = (currentFlashcardIndex + 1) % visibleFlashcardIndexes.length;
             updateFlashcardDisplay();
         }
 
         function prevFlashcard() {
-            const deck = activeFlashcardDeck.length > 0 ? activeFlashcardDeck : sampleFlashcards;
-            currentFlashcardIndex = (currentFlashcardIndex - 1 + deck.length) % deck.length;
+            if (!visibleFlashcardIndexes.length) return;
+            currentFlashcardIndex = (currentFlashcardIndex - 1 + visibleFlashcardIndexes.length) % visibleFlashcardIndexes.length;
             updateFlashcardDisplay();
         }
 
-        function markCardMastered() {
-            const deck = activeFlashcardDeck.length > 0 ? activeFlashcardDeck : sampleFlashcards;
-            showToast(`Card "${deck[currentFlashcardIndex].term}" marked as mastered!`, 'success');
-            recordProgressActivity({
-                event_type: 'flashcard_mastered',
-                description: 'Marked a flashcard as mastered',
-                subject: document.getElementById('fc-lesson-select')?.value || 'Flashcards'
-            });
-            nextFlashcard();
+        async function markCardMastered() {
+            const cardIndex = visibleFlashcardIndexes[currentFlashcardIndex];
+            const card = activeFlashcardDeck[cardIndex];
+            if (!card) return;
+            const mastered = !masteredFlashcardKeys.has(card.cardKey);
+            const token = localStorage.getItem('access_token');
+            const button = document.getElementById('flashcard-mastered-button');
+            if (button) button.disabled = true;
+            try {
+                const response = await fetch(`${API_BASE}/learning/flashcards/progress`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': token ? `Bearer ${token}` : ''
+                    },
+                    body: JSON.stringify({
+                        document_name: activeFlashcardDocumentName,
+                        front: card.term,
+                        mastered
+                    })
+                });
+                if (!response.ok) {
+                    const error = await response.json().catch(() => ({}));
+                    throw new Error(error.detail || `Could not save progress (${response.status}).`);
+                }
+                if (mastered) masteredFlashcardKeys.add(card.cardKey);
+                else masteredFlashcardKeys.delete(card.cardKey);
+                if (showUnmasteredFlashcards && mastered) {
+                    const remaining = visibleFlashcardIndexes.length - 1;
+                    if (remaining === 0) {
+                        showUnmasteredFlashcards = false;
+                        const filterButton = document.getElementById('flashcard-review-filter');
+                        if (filterButton) filterButton.textContent = 'Review unmastered';
+                        applyFlashcardFilter();
+                    } else {
+                        visibleFlashcardIndexes = activeFlashcardDeck
+                            .map((item, index) => ({ item, index }))
+                            .filter(({ item }) => !masteredFlashcardKeys.has(item.cardKey))
+                            .map(({ index }) => index);
+                        currentFlashcardIndex %= visibleFlashcardIndexes.length;
+                        updateFlashcardDisplay();
+                    }
+                } else {
+                    updateFlashcardDisplay();
+                }
+                showToast(mastered ? 'Card marked as mastered and saved to your account.' : 'Card returned to your review list.', 'success');
+            } catch (error) {
+                console.error('Flashcard mastery update failed:', error);
+                showToast(error.message || 'Your flashcard progress could not be saved.', 'error');
+            } finally {
+                if (button) button.disabled = false;
+            }
         }
 
         let activeQuizData = null;

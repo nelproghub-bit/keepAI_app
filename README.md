@@ -175,8 +175,12 @@ The backend provides these REST endpoints:
 - `POST /api/tutor/ask` - Ask questions with RAG
 - `POST /api/learning/summary` - Generate summaries
 - `POST /api/learning/quiz` - Generate practice quizzes
+- `POST /api/learning/flashcards` - Generate source-verified study cards
+- `GET/PUT /api/learning/flashcards/progress` - Read and save account-specific card mastery
 
 Quiz questions are generated from the selected document and expose a source excerpt for verification. If the AI provider is unavailable, KeepAI builds extractive questions from the selected document when there is enough source material; it reports a clear error rather than filling the quiz with unrelated questions.
+
+Flashcards include a source excerpt and page when available. Answers must be copied from their cited source passage; if the AI is unavailable, the application extracts only explicit definitions or examples and never pads the deck with generic cards. Mastered-card progress is stored per student and document.
 
 ## 🔧 Configuration
 
