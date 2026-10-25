@@ -1956,6 +1956,7 @@ table.data-table tr:hover {
 .settings-ai-card { grid-column: 1 / -1; }
 .settings-ai-status { border: 0; }
 
+body.admin-theme-dark,
 #dashboard-app.admin-theme-dark {
   --bg-app: #11151d;
   --bg-surface: #1b2230;
@@ -1968,6 +1969,10 @@ table.data-table tr:hover {
   color-scheme: dark;
   color: var(--text-body);
   background: var(--bg-app);
+}
+
+body.admin-theme-dark {
+  color-scheme: dark;
 }
 
 #dashboard-app.admin-theme-dark .dash-main,
@@ -2040,6 +2045,90 @@ table.data-table tr:hover {
 
 #dashboard-app.admin-theme-dark .settings-note {
   border-color: #a65353;
+}
+
+#dashboard-app.admin-theme-dark .dash-main .dash-card,
+#dashboard-app.admin-theme-dark .dash-main .stat-card,
+#dashboard-app.admin-theme-dark .dash-main .data-table-wrapper,
+#dashboard-app.admin-theme-dark .dash-main .info-item,
+#dashboard-app.admin-theme-dark .dash-main .settings-card,
+#dashboard-app.admin-theme-dark .dash-main .settings-ai-card {
+  background-color: var(--bg-surface);
+  border-color: var(--border);
+  color: var(--text-body);
+}
+
+#dashboard-app.admin-theme-dark .dash-main h1,
+#dashboard-app.admin-theme-dark .dash-main h2,
+#dashboard-app.admin-theme-dark .dash-main h3,
+#dashboard-app.admin-theme-dark .dash-main h4,
+#dashboard-app.admin-theme-dark .dash-main h5,
+#dashboard-app.admin-theme-dark .dash-main h6,
+#dashboard-app.admin-theme-dark .dash-main .dash-card-title,
+#dashboard-app.admin-theme-dark .dash-main .stat-card-val,
+#dashboard-app.admin-theme-dark .dash-main .info-val,
+#dashboard-app.admin-theme-dark .dash-main [style*="color: #0f172a"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color:#0f172a"] {
+  color: var(--text-main) !important;
+}
+
+#dashboard-app.admin-theme-dark .dash-main p,
+#dashboard-app.admin-theme-dark .dash-main label,
+#dashboard-app.admin-theme-dark .dash-main .dash-card-subtitle,
+#dashboard-app.admin-theme-dark .dash-main .stat-label,
+#dashboard-app.admin-theme-dark .dash-main .info-label,
+#dashboard-app.admin-theme-dark .dash-main [style*="color: #334155"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color:#334155"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color: #475569"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color:#475569"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color: #64748b"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color:#64748b"] {
+  color: var(--text-body) !important;
+}
+
+#dashboard-app.admin-theme-dark .dash-main [style*="background: #ffffff"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:#ffffff"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background: #fff"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:#fff"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background: white"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:white"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background: #f8fafc"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:#f8fafc"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background: #f1f5f9"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:#f1f5f9"] {
+  background-color: var(--bg-subtle) !important;
+  border-color: var(--border) !important;
+}
+
+#dashboard-app.admin-theme-dark .dash-main .data-table td {
+  color: var(--text-body);
+}
+
+#dashboard-app.admin-theme-dark .dash-main .data-table tr:hover td {
+  background-color: #293446;
+}
+
+body.admin-theme-dark .modal-card {
+  background-color: var(--bg-surface);
+  border-color: var(--border);
+  color: var(--text-body);
+}
+
+body.admin-theme-dark .modal-title,
+body.admin-theme-dark .modal-card label {
+  color: var(--text-main);
+}
+
+body.admin-theme-dark .modal-desc {
+  color: var(--text-muted);
+}
+
+body.admin-theme-dark .modal-card input,
+body.admin-theme-dark .modal-card select,
+body.admin-theme-dark .modal-card textarea {
+  border-color: var(--border);
+  background-color: var(--bg-subtle);
+  color: var(--text-main);
 }
 
 @media (max-width: 900px) {
@@ -3369,6 +3458,7 @@ function applyAdminTheme(theme) {
     || (adminThemePreference === 'system'
       && window.matchMedia('(prefers-color-scheme: dark)').matches);
   dashboard.classList.toggle('admin-theme-dark', useDarkTheme);
+  document.body.classList.toggle('admin-theme-dark', useDarkTheme);
 }
 
 function initializeAdminAppearance() {

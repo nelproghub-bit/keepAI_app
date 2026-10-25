@@ -114,6 +114,7 @@
             --text-muted: #94a3b8;
             --primary-light: rgba(125, 29, 29, 0.25);
             --primary-border: #7D1D1D;
+            color-scheme: dark;
         }
 
         * {
@@ -125,6 +126,7 @@
 
         body {
             margin: 0;
+            color-scheme: light;
             background: var(--bg-app);
             color: var(--text-body);
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -1379,7 +1381,7 @@
 
         .fc-type-card:hover {
             border-color: var(--primary-border, #e8c0c0);
-            background: white;
+            background: var(--bg-surface);
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(125, 29, 29, 0.1);
         }
@@ -1388,7 +1390,7 @@
 
         .fc-type-card.selected {
             border-color: var(--primary);
-            background: white;
+            background: var(--bg-surface);
             box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12), 0 4px 12px rgba(125, 29, 29, 0.12);
         }
 
@@ -1683,7 +1685,7 @@
         }
 
         .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
-            background: white;
+            background: var(--bg-surface);
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
         }
@@ -2727,7 +2729,7 @@
 
             <div style="padding: 22px;">
                 <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 18px;" class="pwa-options-grid">
-                    <div style="background: #fafafa; border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; max-width: 360px; width: 100%; margin: 0 auto;">
+                    <div style="background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; max-width: 360px; width: 100%; margin: 0 auto;">
                         <div>
                             <span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;">
                                 <i class="fas fa-bolt"></i> Instant Web App
@@ -2744,7 +2746,7 @@
                     </div>
                 </div>
 
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
+                <div style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
                     <strong style="color: var(--text-main);"><i class="fas fa-info-circle" style="color: var(--primary);"></i> Install Tips:</strong>
                     <ul style="padding-left: 18px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px;">
                         <li><strong>Android Chrome / Edge:</strong> Use the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home screen"</strong>.</li>
@@ -2820,7 +2822,7 @@
             status.setAttribute('role', 'status');
             status.setAttribute('aria-live', 'polite');
             status.textContent = 'Verifying your session...';
-            status.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-content:center;background:#f8fafc;color:#172033;font:600 15px system-ui,sans-serif;';
+            status.style.cssText = 'position:fixed;inset:0;z-index:9999;display:grid;place-content:center;background:var(--bg-app);color:var(--text-main);font:600 15px system-ui,sans-serif;';
             document.body.appendChild(status);
         }
 
@@ -2869,7 +2871,7 @@
                 notice = document.createElement('div');
                 notice.id = 'session-verification-error';
                 notice.setAttribute('role', 'alert');
-                notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172033;text-align:center;font:500 15px system-ui,sans-serif;';
+                notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:var(--bg-app);color:var(--text-main);text-align:center;font:500 15px system-ui,sans-serif;';
                 notice.innerHTML = '<strong>We could not verify your session.</strong><span>Check your connection and try again.</span><button type="button" style="justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#7c3aed;color:#fff;font-weight:700;cursor:pointer;">Retry</button>';
                 notice.querySelector('button').addEventListener('click', async event => {
                     const button = event.currentTarget;
