@@ -961,16 +961,20 @@ def create_flashcards(
     )
     user_service.increment_stat(uid, "flashcards_studied", len(cards))
 
+    generation_methods = {card.get("generation_method") for card in cards}
+    if generation_methods == {"document_extract"}:
+        generation_mode = "document_extract"
+    elif len(generation_methods) > 1:
+        generation_mode = "mixed"
+    else:
+        generation_mode = "ai"
+
     return {
         "topic": request.topic,
         "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "card_type": card_type,
         "total_cards": len(cards),
-        "generation_mode": (
-            "document_extract"
-            if any(card.get("generation_method") == "document_extract" for card in cards)
-            else "ai"
-        ),
+        "generation_mode": generation_mode,
         "cards": cards,
         "sources": sources,
     }

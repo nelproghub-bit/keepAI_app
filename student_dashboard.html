@@ -4825,8 +4825,10 @@
                 'fill-blank': 'Fill in the Blank'
             };
             const sourceMode = generationMode === 'document_extract'
-                ? ' AI was unavailable, so these cards were extracted from explicit source definitions.'
-                : '';
+                ? ' AI could not provide enough verified cards, so these were extracted from explicit source statements or examples.'
+                : generationMode === 'mixed'
+                    ? ' Additional cards were extracted from explicit source statements or examples.'
+                    : '';
             showToast(`${cards.length} ${typeNames[cardType] || ''} source-verified flashcards ready.${sourceMode}`, 'success');
         }
 
