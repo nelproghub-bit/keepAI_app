@@ -4,12 +4,14 @@ from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from app.core.security import get_current_student_user
+from app.services.gemini_service import AIProviderError
 from app.routers import learning_tools
 from app.routers.learning_tools import (
     LessonRequest,
+    build_extractive_quiz_fallback,
     build_typed_quiz_questions,
     generate_grounded_quiz_questions,
 )
@@ -132,7 +134,50 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
-    def test_unrelated_or_unverifiable_questions_never_return(self, generate):
+    def test_provider_outage_uses_extracts_from_selected_document(self, generate):
+        lesson = (
+            "Human-computer interaction is the study of how people interact with computers. "
+            "Usability is the ease with which users can complete tasks. "
+            "User experience is a person's overall perception of a product. "
+            "A heuristic evaluation is an inspection using established usability principles. "
+            "Cognitive load is the mental effort required to process information."
+        )
+        generate.side_effect = AIProviderError("provider unavailable")
+
+        questions = generate_grounded_quiz_questions(
+            context=lesson,
+            target_count=4,
+            topic="Human-computer interaction",
+        )
+
+        self.assertEqual(len(questions), 4)
+        for question in questions:
+            self.assertIn(question["source_excerpt"], lesson)
+            self.assertIn(
+                question["correct_answer"].casefold(),
+                question["source_excerpt"].casefold(),
+            )
+            self.assertIn(question["correct_answer"], question["choices"])
+        self.assertEqual(generate.call_count, 1)
+
+    def test_extractive_fallback_returns_clear_shortage_instead_of_fabrication(self):
+        questions = build_extractive_quiz_fallback(
+            "Usability is the ease with which users can complete tasks.",
+            target_count=4,
+        )
+
+        self.assertLess(len(questions), 4)
+        self.assertTrue(
+            all(
+                question["source_excerpt"]
+                in "Usability is the ease with which users can complete tasks."
+                for question in questions
+            )
+        )
+        self.assertTrue(all(question["generation_method"] == "extractive" for question in questions))
+
+    @patch.object(learning_tools, "generate")
+    def test_unrelated_questions_are_rejected_and_replaced_with_source_extracts(self, generate):
         generate.return_value = json.dumps(
             [
                 {
@@ -145,15 +190,16 @@ class QuizQuestionTypeTests(unittest.TestCase):
             ]
         )
 
-        with self.assertRaises(HTTPException) as error:
-            generate_grounded_quiz_questions(
-                context="The lesson discusses human-computer interaction and usability.",
-                target_count=1,
-                topic="Human-computer interaction",
-            )
+        source_context = "The lesson discusses human-computer interaction and usability."
+        questions = generate_grounded_quiz_questions(
+            context=source_context,
+            target_count=1,
+            topic="Human-computer interaction",
+        )
 
-        self.assertEqual(error.exception.status_code, 502)
-        self.assertIn("verifiable evidence", error.exception.detail)
+        self.assertEqual(len(questions), 1)
+        self.assertIn(questions[0]["source_excerpt"], source_context)
+        self.assertNotIn("IoT", questions[0]["question"])
         self.assertEqual(generate.call_count, 3)
 
     @patch.object(learning_tools, "record_activity")
@@ -193,6 +239,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["total_questions"], sum(counts.values()))
         self.assertEqual(payload["question_counts"], counts)
+        self.assertEqual(payload["generation_mode"], "ai")
         self.assertEqual(
             [question["question_type"] for question in payload["questions"]],
             list(counts.keys()),

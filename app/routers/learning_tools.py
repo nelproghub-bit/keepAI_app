@@ -134,6 +134,137 @@ def extract_document_facts(context: str, target_filename: Optional[str] = None, 
             
     return facts
 
+
+def build_extractive_quiz_fallback(
+    context: str,
+    target_count: int,
+    existing_questions: Optional[List[Dict[str, Any]]] = None,
+) -> List[Dict[str, Any]]:
+    """Build simple, verifiable quiz items from statements copied from the lesson."""
+    questions = list(existing_questions or [])
+    seen_questions = {
+        re.sub(r"\s+", " ", item.get("question", "")).strip().casefold()
+        for item in questions
+    }
+    statements = []
+    for part in re.split(r"(?<=[.!?])\s+|(?<=;)\s+|\n+", context):
+        statement = re.sub(r"^\s*(?:[-*•]\s*|\d+[.)]\s*|\[Page\s*\d+\]\s*)+", "", part).strip()
+        if (
+            len(statement) >= 30
+            and len(statement) <= 500
+            and not statement.startswith("===")
+            and not statement.startswith("[Page")
+        ):
+            statements.append(statement)
+
+    definition_pattern = re.compile(
+        r"^(?P<term>[^.!?:;]{2,90}?)\s+"
+        r"(?P<link>is defined as|is|are|means|refers to|represents|consists of|includes|involves)\s+"
+        r"(?P<definition>[^.!?;]{12,300}[.!?]?)$",
+        re.IGNORECASE,
+    )
+    definitions = []
+    for statement in statements:
+        match = definition_pattern.match(statement)
+        if not match:
+            continue
+        term = match.group("term").strip(" \t-–—")
+        answer = match.group("definition").strip()
+        if len(term) >= 2 and len(answer) >= 12:
+            definitions.append((statement, term, answer))
+
+    for evidence, term, answer in definitions:
+        question_text = f"According to the selected lesson, what is {term}?"
+        normalized_question = re.sub(r"\s+", " ", question_text).strip().casefold()
+        if normalized_question in seen_questions:
+            continue
+        distractors = []
+        for _, other_term, other_answer in definitions:
+            if other_term.casefold() != term.casefold() and other_answer.casefold() != answer.casefold():
+                if other_answer not in distractors:
+                    distractors.append(other_answer)
+            if len(distractors) == 3:
+                break
+        if len(distractors) < 3:
+            continue
+        choices = [answer, *distractors]
+        random.shuffle(choices)
+        questions.append(
+            {
+                "question": question_text,
+                "choices": choices,
+                "correct_answer": answer,
+                "explanation": f"The selected document states: {evidence}",
+                "source_excerpt": evidence,
+                "generation_method": "extractive",
+            }
+        )
+        seen_questions.add(normalized_question)
+        if len(questions) == target_count:
+            return questions
+
+    stop_words = {
+        "about", "after", "also", "among", "because", "been", "being", "between",
+        "could", "does", "during", "each", "from", "have", "into", "more", "most",
+        "other", "over", "same", "should", "some", "such", "than", "that", "their",
+        "them", "then", "there", "these", "they", "this", "those", "through", "under",
+        "using", "very", "what", "when", "where", "which", "while", "with", "would",
+        "your", "have", "will", "were", "also", "user", "users", "system", "systems",
+    }
+    term_pool = []
+    for candidate in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", context):
+        if candidate.casefold() not in stop_words and candidate.casefold() not in {
+            term.casefold() for term in term_pool
+        }:
+            term_pool.append(candidate)
+
+    for statement in statements:
+        terms = []
+        for candidate in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", statement):
+            if (
+                candidate.casefold() not in stop_words
+                and candidate.casefold() not in {term.casefold() for term in terms}
+            ):
+                terms.append(candidate)
+        terms.sort(key=lambda value: (-len(value), value.casefold()))
+        for term in terms[:2]:
+            question_text = (
+                "Complete the statement from the selected lesson: "
+                f'"{re.sub(re.escape(term), "____", statement, count=1, flags=re.IGNORECASE)}"'
+            )
+            normalized_question = re.sub(r"\s+", " ", question_text).strip().casefold()
+            if normalized_question in seen_questions:
+                continue
+            distractors = []
+            for offset in range(len(term_pool)):
+                candidate = term_pool[(offset + len(questions)) % len(term_pool)]
+                if candidate.casefold() != term.casefold() and candidate.casefold() not in {
+                    choice.casefold() for choice in distractors
+                }:
+                    distractors.append(candidate)
+                if len(distractors) == 3:
+                    break
+            if len(distractors) < 3:
+                continue
+            choices = [term, *distractors]
+            random.shuffle(choices)
+            questions.append(
+                {
+                    "question": question_text,
+                    "choices": choices,
+                    "correct_answer": term,
+                    "explanation": f"The selected document states: {statement}",
+                    "source_excerpt": statement,
+                    "generation_method": "extractive",
+                }
+            )
+            seen_questions.add(normalized_question)
+            if len(questions) == target_count:
+                return questions
+
+    return questions[:target_count]
+
+
 def generate_grounded_quiz_questions(
     context: str,
     target_count: int,
@@ -149,10 +280,10 @@ def generate_grounded_quiz_questions(
     questions: List[Dict[str, Any]] = []
     seen_questions = set()
     attempts = 0
-    max_attempts = ((target_count + 9) // 10) * 3
+    max_attempts = ((target_count + 2) // 3) + 2
 
     while len(questions) < target_count and attempts < max_attempts:
-        batch_count = min(10, target_count - len(questions))
+        batch_count = min(3, target_count - len(questions))
         attempts += 1
         prompt = (
             f"Create exactly {batch_count} multiple-choice questions for the focus topic: {topic}. "
@@ -175,9 +306,16 @@ def generate_grounded_quiz_questions(
                 has_sources=True,
             )
         except AIProviderError as exc:
+            questions = build_extractive_quiz_fallback(
+                context,
+                target_count,
+                existing_questions=questions,
+            )
+            if len(questions) == target_count:
+                return questions
             raise HTTPException(
                 502,
-                "The quiz AI is temporarily unavailable. No quiz was generated.",
+                "The quiz AI is unavailable, and the selected document does not contain enough clear statements to build this many questions. Try fewer questions or try again later.",
             ) from exc
 
         if not isinstance(raw, str):
@@ -236,11 +374,18 @@ def generate_grounded_quiz_questions(
                     "correct_answer": answer,
                     "explanation": explanation.strip(),
                     "source_excerpt": evidence.strip(),
+                    "generation_method": "ai",
                 }
             )
             if len(questions) == target_count:
                 break
 
+    if len(questions) != target_count:
+        questions = build_extractive_quiz_fallback(
+            context,
+            target_count,
+            existing_questions=questions,
+        )
     if len(questions) != target_count:
         raise HTTPException(
             502,
@@ -410,6 +555,11 @@ def create_quiz(
     )
     typed_questions = build_typed_quiz_questions(source_questions, question_counts)
     user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
+    generation_mode = (
+        "document_extract"
+        if any(question.get("generation_method") == "extractive" for question in source_questions)
+        else "ai"
+    )
 
     if current_user:
         record_activity(
@@ -423,6 +573,7 @@ def create_quiz(
         "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "total_questions": len(typed_questions),
         "question_counts": question_counts,
+        "generation_mode": generation_mode,
         "questions": typed_questions,
         "sources": sources
     }

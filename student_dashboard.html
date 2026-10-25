@@ -5097,6 +5097,13 @@
                     </div>
                 </div>
             `;
+            if (data.generation_mode === 'document_extract') {
+                html += `
+                    <div role="status" style="padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg-subtle); color: var(--text-body); font-size: 12px; line-height: 1.5;">
+                        AI generation is temporarily unavailable. These questions were built directly from the selected document, and each includes source evidence for review.
+                    </div>
+                `;
+            }
 
             questions.forEach((q, idx) => {
                 const qNum = idx + 1;
