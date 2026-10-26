@@ -4,14 +4,13 @@ from unittest.mock import patch
 
 from pydantic import ValidationError
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from app.core.security import get_current_student_user
 from app.services.gemini_service import AIProviderError
 from app.routers import learning_tools
 from app.routers.learning_tools import (
     LessonRequest,
-    build_extractive_quiz_fallback,
     build_typed_quiz_questions,
     generate_grounded_quiz_questions,
 )
@@ -66,6 +65,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertIn("Correct concept 1", questions[0]["source_excerpt"])
         self.assertIn(questions[2]["correct_answer"], {"True", "False"})
         self.assertIn("____", questions[3]["question"])
+        self.assertNotIn("Correct concept 4", questions[3]["question"])
 
     @patch.object(learning_tools, "get_tutor_context")
     @patch.object(learning_tools, "get_all_document_chunks")
@@ -74,8 +74,9 @@ class QuizQuestionTypeTests(unittest.TestCase):
         get_chunks,
         get_tutor_context,
     ):
+        full_document_text = "Evidence from the selected document. " * 500
         get_chunks.return_value = [
-            {"filename": "selected.pdf", "text": "Evidence from the selected document."},
+            {"filename": "selected.pdf", "text": full_document_text},
         ]
 
         context, sources = learning_tools.get_lesson_context(
@@ -84,13 +85,16 @@ class QuizQuestionTypeTests(unittest.TestCase):
             target_filename="selected.pdf",
         )
 
-        self.assertEqual(context, "Evidence from the selected document.")
+        self.assertEqual(context, full_document_text)
         self.assertEqual(sources, ["selected.pdf"])
         get_tutor_context.assert_not_called()
 
     def test_question_counts_require_supported_formats_and_maximum_100(self):
         with self.assertRaises(ValidationError):
             LessonRequest(question_counts={"essay": 1})
+
+        with self.assertRaises(ValidationError):
+            LessonRequest(difficulty="very hard")
 
         with self.assertRaises(ValidationError):
             LessonRequest(question_counts={"multiple_choice": 101})
@@ -104,19 +108,33 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(request.question_count, 10)
         self.assertIsNone(request.question_counts)
 
+    def test_quiz_endpoint_requires_a_selected_source_document(self):
+        response = self.client.post(
+            "/api/learning/quiz",
+            json={"question_counts": {"multiple_choice": 1}},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("Select a source document", response.json()["detail"])
+
     @patch.object(learning_tools, "generate")
     def test_grounded_generator_requires_verbatim_source_evidence(self, generate):
-        lesson = "Human-computer interaction studies how people use and experience technology."
+        lesson = (
+            "Human-computer interaction studies how people use and experience technology. "
+            "Usability is the ease with which users can complete tasks. "
+            "Interface design organizes visible controls and interactions. "
+            "User research observes people using products."
+        )
         generated_question = {
-            "question": "What does human-computer interaction study?",
+            "question": "Which field studies how people use and experience technology?",
             "choices": [
-                "Internet of Things networking",
-                "Human-computer interaction studies how people use and experience technology",
-                "Database normalization",
-                "Climate modeling",
+                "Human-computer interaction",
+                "Usability",
+                "Interface design",
+                "User research",
             ],
-            "correct_answer": "Human-computer interaction studies how people use and experience technology",
-            "explanation": "The lesson states this definition.",
+            "correct_answer": "Human-computer interaction",
+            "explanation": "Human-computer interaction studies how people use and experience technology.",
             "evidence": "Human-computer interaction studies how people use and experience technology.",
         }
         generate.return_value = json.dumps([generated_question])
@@ -124,83 +142,90 @@ class QuizQuestionTypeTests(unittest.TestCase):
         questions = generate_grounded_quiz_questions(
             context=lesson,
             target_count=1,
-            topic="Human-computer interaction",
+            difficulty="easy",
         )
 
         self.assertEqual(questions[0]["source_excerpt"], generated_question["evidence"])
         self.assertEqual(questions[0]["correct_answer"], generated_question["correct_answer"])
-        self.assertIn("SELECTED LESSON", generate.call_args.args[0])
-        self.assertIn(lesson, generate.call_args.args[0])
+        self.assertIn("EASY", generate.call_args.args[0])
+        self.assertIn("basic concepts, definitions, terminology", generate.call_args.args[0])
+        self.assertIn("User research observes people using products.", generate.call_args.args[0])
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
-    def test_provider_outage_uses_extracts_from_selected_document(self, generate):
-        lesson = (
-            "Human-computer interaction is the study of how people interact with computers. "
+    def test_generator_processes_later_document_sections_after_reaching_count(self, generate):
+        first_section = (
+            "Human-computer interaction studies how people use and experience technology. "
             "Usability is the ease with which users can complete tasks. "
-            "User experience is a person's overall perception of a product. "
-            "A heuristic evaluation is an inspection using established usability principles. "
-            "Cognitive load is the mental effort required to process information."
+            "Interface design organizes visible controls and interactions. "
+            "User research observes people using products."
         )
-        generate.side_effect = AIProviderError("provider unavailable")
+        second_section = "A later section describes the evaluation of those interactions."
+        filler = "This lesson section records additional context. " * 220
+        item = {
+            "question": "Which field studies how people use and experience technology?",
+            "choices": [
+                "Human-computer interaction",
+                "Usability",
+                "Interface design",
+                "User research",
+            ],
+            "correct_answer": "Human-computer interaction",
+            "explanation": "Human-computer interaction studies how people use and experience technology.",
+            "evidence": "Human-computer interaction studies how people use and experience technology.",
+        }
+        generate.side_effect = [json.dumps([item]), "[]"]
 
         questions = generate_grounded_quiz_questions(
-            context=lesson,
-            target_count=4,
-            topic="Human-computer interaction",
+            context=f"{first_section}\n\n{filler}\n\n{second_section}",
+            target_count=1,
+            difficulty="medium",
         )
 
-        self.assertEqual(len(questions), 4)
-        for question in questions:
-            self.assertIn(question["source_excerpt"], lesson)
-            self.assertIn(
-                question["correct_answer"].casefold(),
-                question["source_excerpt"].casefold(),
-            )
-            self.assertIn(question["correct_answer"], question["choices"])
-        self.assertEqual(generate.call_count, 1)
-
-    def test_extractive_fallback_returns_clear_shortage_instead_of_fabrication(self):
-        questions = build_extractive_quiz_fallback(
-            "Usability is the ease with which users can complete tasks.",
-            target_count=4,
-        )
-
-        self.assertLess(len(questions), 4)
-        self.assertTrue(
-            all(
-                question["source_excerpt"]
-                in "Usability is the ease with which users can complete tasks."
-                for question in questions
-            )
-        )
-        self.assertTrue(all(question["generation_method"] == "extractive" for question in questions))
+        self.assertEqual(len(questions), 1)
+        self.assertEqual(generate.call_count, 2)
+        self.assertIn(second_section, generate.call_args.args[0])
 
     @patch.object(learning_tools, "generate")
-    def test_unrelated_questions_are_rejected_and_replaced_with_source_extracts(self, generate):
+    def test_provider_outage_reports_ai_error_without_extracting_questions(self, generate):
+        generate.side_effect = AIProviderError("provider unavailable")
+
+        with self.assertRaises(HTTPException) as error:
+            generate_grounded_quiz_questions(
+                context="A selected lesson contains some text.",
+                target_count=1,
+                difficulty="medium",
+            )
+
+        self.assertEqual(error.exception.status_code, 502)
+        self.assertIn("quiz AI is unavailable", error.exception.detail)
+        self.assertEqual(generate.call_count, 1)
+
+    @patch.object(learning_tools, "generate")
+    def test_unsupported_choices_are_rejected_instead_of_replaced(self, generate):
         generate.return_value = json.dumps(
             [
                 {
-                    "question": "What is the primary definition of IoT?",
+                    "question": "Which field connects devices?",
                     "choices": ["IoT", "HCI", "SQL", "CSS"],
                     "correct_answer": "IoT",
-                    "explanation": "A general answer.",
-                    "evidence": "IoT connects physical devices to exchange data.",
+                    "explanation": "The lesson discusses human-computer interaction and usability.",
+                    "evidence": "The lesson discusses human-computer interaction and usability.",
                 }
             ]
         )
 
         source_context = "The lesson discusses human-computer interaction and usability."
-        questions = generate_grounded_quiz_questions(
-            context=source_context,
-            target_count=1,
-            topic="Human-computer interaction",
-        )
+        with self.assertRaises(HTTPException) as error:
+            generate_grounded_quiz_questions(
+                context=source_context,
+                target_count=1,
+                difficulty="hard",
+            )
 
-        self.assertEqual(len(questions), 1)
-        self.assertIn(questions[0]["source_excerpt"], source_context)
-        self.assertNotIn("IoT", questions[0]["question"])
-        self.assertEqual(generate.call_count, 3)
+        self.assertEqual(error.exception.status_code, 502)
+        self.assertIn("does not contain enough", error.exception.detail)
+        self.assertEqual(generate.call_count, 2)
 
     @patch.object(learning_tools, "record_activity")
     @patch.object(learning_tools.user_service, "increment_stat")
@@ -231,6 +256,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
             json={
                 "topic": "Lesson review",
                 "document_name": "lesson.pdf",
+                "difficulty": "hard",
                 "question_counts": counts,
             },
         )
@@ -239,6 +265,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["total_questions"], sum(counts.values()))
         self.assertEqual(payload["question_counts"], counts)
+        self.assertEqual(payload["difficulty"], "hard")
         self.assertEqual(payload["generation_mode"], "ai")
         self.assertEqual(
             [question["question_type"] for question in payload["questions"]],
@@ -248,7 +275,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
         generate_questions.assert_called_once_with(
             context="Lesson text",
             target_count=7,
-            topic="Lesson review",
+            difficulty="hard",
         )
 
 

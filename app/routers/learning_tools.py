@@ -17,6 +17,7 @@ router = APIRouter(tags=["Learning Tools"])
 class LessonRequest(BaseModel):
     topic: str = Field(default="Quiz", max_length=500)
     document_name: Optional[str] = None
+    difficulty: str = Field(default="medium", pattern="^(easy|medium|hard)$")
     question_count: Optional[int] = Field(default=5, ge=1, le=100)
     question_counts: Optional[Dict[str, int]] = None
 
@@ -106,12 +107,17 @@ def get_owned_document_name(user_id: str, document_name: Optional[str]) -> Optio
     return row["filename"]
 
 def get_lesson_context(user_id: str, topic: str, target_filename: Optional[str] = None) -> tuple[str, list[str]]:
-    # If a specific document is requested, prioritize loading that exact document!
+    # Quiz requests use only the selected document and all of its stored content.
     if target_filename:
         chunks = get_all_document_chunks(target_filename, user_id)
         if chunks:
             combined_text = "\n\n".join(c.get("text", "") for c in chunks)
-            return combined_text[:12000], [target_filename]
+            return combined_text, [target_filename]
+        metadata = _load_user_files_meta(user_id).get(target_filename) or {}
+        full_text = metadata.get("full_text", "")
+        if full_text.strip():
+            return full_text, [target_filename]
+        raise HTTPException(404, "No readable content was found in the selected document.")
 
     ctx = get_tutor_context(user_id, topic, target_filename=target_filename)
     if ctx and ctx.get("has_materials"):
@@ -121,164 +127,10 @@ def get_lesson_context(user_id: str, topic: str, target_filename: Optional[str] 
         raise HTTPException(404, "No lesson content found. Please upload a PDF or document in the Library first.")
     return ctx["context"], ctx["sources"]
 
-def extract_document_facts(context: str, target_filename: Optional[str] = None, user_id: Optional[str] = None) -> List[Dict[str, Any]]:
-    """Extract factual statements, definitions, and concepts directly from the document text."""
-    chunks = get_all_document_chunks(target_filename, user_id)
-    raw_texts = [c.get("text", "") for c in chunks if c.get("text")]
-    full_text = "\n\n".join(raw_texts) if raw_texts else context
-    
-    facts = []
-    lines = [l.strip() for l in full_text.split("\n") if len(l.strip()) > 15]
-    
-    for line in lines:
-        if line.startswith("===") or line.startswith("[Page") or line.startswith("IT ELEC"):
-            continue
-        # Match any educational definition, explanation, or outcome pattern
-        lower_line = line.lower()
-        if any(marker in lower_line for marker in [
-            " is a ", " is an ", " is the ", " are ", " are the ", " defined as ", 
-            " refers to ", " means ", " involves ", " focuses on ", " goal ", " objective ",
-            " principle", " example:", " component", " purpose", " usability", " interface"
-        ]):
-            facts.append(line)
-            
-    return facts
-
-
-def build_extractive_quiz_fallback(
-    context: str,
-    target_count: int,
-    existing_questions: Optional[List[Dict[str, Any]]] = None,
-) -> List[Dict[str, Any]]:
-    """Build simple, verifiable quiz items from statements copied from the lesson."""
-    questions = list(existing_questions or [])
-    seen_questions = {
-        re.sub(r"\s+", " ", item.get("question", "")).strip().casefold()
-        for item in questions
-    }
-    statements = []
-    for part in re.split(r"(?<=[.!?])\s+|(?<=;)\s+|\n+", context):
-        statement = re.sub(r"^\s*(?:[-*•]\s*|\d+[.)]\s*|\[Page\s*\d+\]\s*)+", "", part).strip()
-        if (
-            len(statement) >= 30
-            and len(statement) <= 500
-            and not statement.startswith("===")
-            and not statement.startswith("[Page")
-        ):
-            statements.append(statement)
-
-    definition_pattern = re.compile(
-        r"^(?P<term>[^.!?:;]{2,90}?)\s+"
-        r"(?P<link>is defined as|is|are|means|refers to|represents|consists of|includes|involves)\s+"
-        r"(?P<definition>[^.!?;]{12,300}[.!?]?)$",
-        re.IGNORECASE,
-    )
-    definitions = []
-    for statement in statements:
-        match = definition_pattern.match(statement)
-        if not match:
-            continue
-        term = match.group("term").strip(" \t-–—")
-        answer = match.group("definition").strip()
-        if len(term) >= 2 and len(answer) >= 12:
-            definitions.append((statement, term, answer))
-
-    for evidence, term, answer in definitions:
-        question_text = f"According to the selected lesson, what is {term}?"
-        normalized_question = re.sub(r"\s+", " ", question_text).strip().casefold()
-        if normalized_question in seen_questions:
-            continue
-        distractors = []
-        for _, other_term, other_answer in definitions:
-            if other_term.casefold() != term.casefold() and other_answer.casefold() != answer.casefold():
-                if other_answer not in distractors:
-                    distractors.append(other_answer)
-            if len(distractors) == 3:
-                break
-        if len(distractors) < 3:
-            continue
-        choices = [answer, *distractors]
-        random.shuffle(choices)
-        questions.append(
-            {
-                "question": question_text,
-                "choices": choices,
-                "correct_answer": answer,
-                "explanation": f"The selected document states: {evidence}",
-                "source_excerpt": evidence,
-                "generation_method": "extractive",
-            }
-        )
-        seen_questions.add(normalized_question)
-        if len(questions) == target_count:
-            return questions
-
-    stop_words = {
-        "about", "after", "also", "among", "because", "been", "being", "between",
-        "could", "does", "during", "each", "from", "have", "into", "more", "most",
-        "other", "over", "same", "should", "some", "such", "than", "that", "their",
-        "them", "then", "there", "these", "they", "this", "those", "through", "under",
-        "using", "very", "what", "when", "where", "which", "while", "with", "would",
-        "your", "have", "will", "were", "also", "user", "users", "system", "systems",
-    }
-    term_pool = []
-    for candidate in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", context):
-        if candidate.casefold() not in stop_words and candidate.casefold() not in {
-            term.casefold() for term in term_pool
-        }:
-            term_pool.append(candidate)
-
-    for statement in statements:
-        terms = []
-        for candidate in re.findall(r"\b[A-Za-z][A-Za-z0-9-]{3,}\b", statement):
-            if (
-                candidate.casefold() not in stop_words
-                and candidate.casefold() not in {term.casefold() for term in terms}
-            ):
-                terms.append(candidate)
-        terms.sort(key=lambda value: (-len(value), value.casefold()))
-        for term in terms[:2]:
-            question_text = (
-                "Complete the statement from the selected lesson: "
-                f'"{re.sub(re.escape(term), "____", statement, count=1, flags=re.IGNORECASE)}"'
-            )
-            normalized_question = re.sub(r"\s+", " ", question_text).strip().casefold()
-            if normalized_question in seen_questions:
-                continue
-            distractors = []
-            for offset in range(len(term_pool)):
-                candidate = term_pool[(offset + len(questions)) % len(term_pool)]
-                if candidate.casefold() != term.casefold() and candidate.casefold() not in {
-                    choice.casefold() for choice in distractors
-                }:
-                    distractors.append(candidate)
-                if len(distractors) == 3:
-                    break
-            if len(distractors) < 3:
-                continue
-            choices = [term, *distractors]
-            random.shuffle(choices)
-            questions.append(
-                {
-                    "question": question_text,
-                    "choices": choices,
-                    "correct_answer": term,
-                    "explanation": f"The selected document states: {statement}",
-                    "source_excerpt": statement,
-                    "generation_method": "extractive",
-                }
-            )
-            seen_questions.add(normalized_question)
-            if len(questions) == target_count:
-                return questions
-
-    return questions[:target_count]
-
-
 def generate_grounded_quiz_questions(
     context: str,
     target_count: int,
-    topic: str,
+    difficulty: str = "medium",
 ) -> List[Dict[str, Any]]:
     """Generate quiz questions only when their answer is supported by source evidence."""
     if not context.strip():
@@ -287,119 +139,210 @@ def generate_grounded_quiz_questions(
     def normalize(value: str) -> str:
         return re.sub(r"\s+", " ", value).strip().casefold()
 
+    question_stop_words = {
+        "according", "after", "also", "based", "being", "can", "could", "describe",
+        "does", "each", "explain", "following", "given", "have", "how", "identify",
+        "into", "lesson", "most", "other", "selected", "should", "that", "the",
+        "their", "these", "this", "those", "through", "using", "what", "when",
+        "where", "which", "while", "who", "whom", "why", "with", "would",
+    }
+
+    def split_source(text: str, max_chars: int = 10000) -> List[str]:
+        parts = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
+        chunks: List[str] = []
+        current = ""
+        for part in parts:
+            part = part.strip()
+            if not part:
+                continue
+            if len(current) + len(part) + 1 > max_chars and current:
+                chunks.append(current)
+                current = ""
+            if len(part) > max_chars:
+                for start in range(0, len(part), max_chars):
+                    segment = part[start:start + max_chars]
+                    if current:
+                        chunks.append(current)
+                        current = ""
+                    chunks.append(segment)
+            else:
+                current = f"{current}\n{part}".strip()
+        if current:
+            chunks.append(current)
+        return chunks or [text]
+
+    difficulty_guidance = {
+        "easy": (
+            "Ask straightforward recall questions about basic concepts, definitions, terminology, "
+            "and information directly stated in the lesson."
+        ),
+        "medium": (
+            "Ask moderately challenging comprehension questions that test understanding and connect "
+            "related concepts that are explicitly discussed in the lesson."
+        ),
+        "hard": (
+            "Ask challenging critical-thinking, analysis, or application questions that require deeper "
+            "understanding. Any conclusion required to answer must be fully inferable from the lesson."
+        ),
+    }[difficulty]
+
     questions: List[Dict[str, Any]] = []
+    chunks = split_source(context)
     seen_questions = set()
-    attempts = 0
-    max_attempts = ((target_count + 2) // 3) + 2
-
-    while len(questions) < target_count and attempts < max_attempts:
-        batch_count = min(3, target_count - len(questions))
-        attempts += 1
-        prompt = (
-            f"Create exactly {batch_count} multiple-choice questions for the focus topic: {topic}. "
-            "Use only facts explicitly stated in the selected lesson. Do not use prior knowledge, "
-            "other documents, or invented facts. Each question must have four distinct choices, "
-            "one correct_answer copied exactly from its evidence, and a concise explanation. "
-            "The evidence field must be an exact excerpt copied from the lesson and must contain "
-            "the correct_answer verbatim. If the lesson does not support a requested question, "
-            "do not invent one. Return a JSON array only, with each object containing: question, "
-            "choices, correct_answer, explanation, evidence.\n"
-            f"FOCUS TOPIC: {topic}\nSELECTED LESSON:\n{context}"
-        )
-        try:
-            raw = generate(
-                prompt,
-                system=(
-                    "You create document-grounded assessments. Treat the selected lesson as the only "
-                    "source of truth. Never fill gaps with general knowledge. Return valid JSON only."
-                ),
-                has_sources=True,
-            )
-        except AIProviderError as exc:
-            questions = build_extractive_quiz_fallback(
-                context,
-                target_count,
-                existing_questions=questions,
-            )
-            if len(questions) == target_count:
-                return questions
-            raise HTTPException(
-                502,
-                "The quiz AI is unavailable, and the selected document does not contain enough clear statements to build this many questions. Try fewer questions or try again later.",
-            ) from exc
-
-        if not isinstance(raw, str):
-            continue
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
-            if cleaned.endswith("```"):
-                cleaned = cleaned.rsplit("```", 1)[0]
-        try:
-            parsed = json.loads(cleaned.strip())
-        except json.JSONDecodeError:
-            continue
-        if not isinstance(parsed, list):
-            continue
-
-        normalized_context = normalize(context)
-        for item in parsed:
-            if not isinstance(item, dict):
-                continue
-            question = item.get("question")
-            choices = item.get("choices")
-            answer = item.get("correct_answer")
-            explanation = item.get("explanation")
-            evidence = item.get("evidence")
-            if (
-                not isinstance(question, str)
-                or not question.strip()
-                or not isinstance(choices, list)
-                or len(choices) != 4
-                or any(not isinstance(choice, str) or not choice.strip() for choice in choices)
-                or len({normalize(choice) for choice in choices}) != 4
-                or not isinstance(answer, str)
-                or not isinstance(explanation, str)
-                or not isinstance(evidence, str)
-                or not evidence.strip()
-                or len(evidence) > 500
-            ):
-                continue
-            normalized_evidence = normalize(evidence)
-            if (
-                normalized_evidence not in normalized_context
-                or normalize(answer) not in normalized_evidence
-                or normalize(answer) not in {normalize(choice) for choice in choices}
-            ):
-                continue
-            normalized_question = normalize(question)
-            if normalized_question in seen_questions:
-                continue
-
-            seen_questions.add(normalized_question)
-            questions.append(
-                {
-                    "question": question.strip(),
-                    "choices": choices,
-                    "correct_answer": answer,
-                    "explanation": explanation.strip(),
-                    "source_excerpt": evidence.strip(),
-                    "generation_method": "ai",
-                }
-            )
-            if len(questions) == target_count:
+    seen_evidence = set()
+    try:
+        for round_index in range(2):
+            if round_index and len(questions) >= target_count:
                 break
+            for index, source_chunk in enumerate(chunks):
+                remaining = target_count - len(questions)
+                if round_index and not remaining:
+                    break
+                normalized_chunk = normalize(source_chunk)
+                chunk_target = min(
+                    remaining,
+                    max(
+                        1,
+                        (remaining * len(source_chunk) + len(context) - 1)
+                        // max(len(context), 1),
+                    ),
+                ) if remaining else 0
+                exclusions = ""
+                if seen_questions:
+                    exclusions = (
+                        "Do not repeat or closely paraphrase these already accepted questions: "
+                        + json.dumps(sorted(seen_questions), ensure_ascii=False)
+                        + "\n"
+                    )
+                prompt = (
+                    f"Analyze this selected lecture excerpt and create up to {chunk_target} unique "
+                    "multiple-choice assessment questions. "
+                    f"Difficulty: {difficulty.upper()}. {difficulty_guidance} "
+                    "Use only this excerpt; do not use prior knowledge, other documents, external sources, "
+                    "or unsupported assumptions. Identify important concepts and learning objectives in "
+                    "the excerpt. Questions must be clear, specific, unambiguous, and have exactly one "
+                    "correct choice. Each question must have four distinct choices, and every choice must be "
+                    "a phrase copied verbatim from this excerpt. The correct_answer must be copied verbatim "
+                    "from the evidence excerpt. The evidence must be an exact excerpt from this text and "
+                    "contain the correct answer. The explanation must be a sentence copied verbatim from "
+                    "this excerpt and support the answer. Do not create a question if the excerpt cannot "
+                    "support it. Return a JSON array only; each object must contain question, choices, "
+                    "correct_answer, explanation, evidence.\n"
+                    f"{exclusions}"
+                    f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n{source_chunk}"
+                )
+                raw = generate(
+                    prompt,
+                    system=(
+                        "You create accurate document-grounded assessments. Treat the supplied selected "
+                        "lecture excerpt as the only source of truth. Never add information from memory or "
+                        "outside sources. Return valid JSON only."
+                    ),
+                    has_sources=True,
+                )
+                if not isinstance(raw, str):
+                    continue
+                cleaned = raw.strip()
+                if cleaned.startswith("```"):
+                    cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+                    if cleaned.endswith("```"):
+                        cleaned = cleaned.rsplit("```", 1)[0]
+                try:
+                    parsed = json.loads(cleaned.strip())
+                except json.JSONDecodeError:
+                    continue
+                if not isinstance(parsed, list):
+                    continue
 
-    if len(questions) != target_count:
-        questions = build_extractive_quiz_fallback(
-            context,
-            target_count,
-            existing_questions=questions,
-        )
+                for item in parsed:
+                    if len(questions) >= target_count:
+                        break
+                    if not isinstance(item, dict):
+                        continue
+                    question = item.get("question")
+                    choices = item.get("choices")
+                    answer = item.get("correct_answer")
+                    explanation = item.get("explanation")
+                    evidence = item.get("evidence")
+                    if (
+                        not isinstance(question, str)
+                        or not question.strip()
+                        or len(question.strip()) > 500
+                        or not isinstance(choices, list)
+                        or len(choices) != 4
+                        or any(
+                            not isinstance(choice, str)
+                            or not choice.strip()
+                            or len(choice.strip()) > 200
+                            for choice in choices
+                        )
+                        or len({normalize(choice) for choice in choices}) != 4
+                        or not isinstance(answer, str)
+                        or not answer.strip()
+                        or len(answer.strip()) > 200
+                        or not isinstance(explanation, str)
+                        or not explanation.strip()
+                        or len(explanation.strip()) > 500
+                        or not isinstance(evidence, str)
+                        or not evidence.strip()
+                        or len(evidence) > 500
+                    ):
+                        continue
+                    normalized_evidence = normalize(evidence)
+                    normalized_choices = {normalize(choice) for choice in choices}
+                    question_terms = {
+                        token for token in re.findall(r"\w{4,}", normalize(question))
+                        if token not in question_stop_words
+                    }
+                    source_terms = set(re.findall(r"\w{4,}", normalized_chunk))
+                    if (
+                        normalized_evidence not in normalized_chunk
+                        or normalize(answer) not in normalized_evidence
+                        or normalize(answer) not in normalized_choices
+                        or any(normalize(choice) not in normalized_chunk for choice in choices)
+                        or normalize(explanation) not in normalized_chunk
+                        or not question_terms
+                        or len(question_terms & source_terms) / len(question_terms) < 0.7
+                    ):
+                        continue
+
+                    normalized_question = normalize(question)
+                    question_tokens = set(re.findall(r"\w{4,}", normalized_question))
+                    if (
+                        normalized_question in seen_questions
+                        or normalized_evidence in seen_evidence
+                        or any(
+                            len(question_tokens & prior_tokens) / max(len(question_tokens | prior_tokens), 1) >= 0.85
+                            for prior_tokens in (
+                                set(re.findall(r"\w{4,}", prior_question))
+                                for prior_question in seen_questions
+                            )
+                        )
+                    ):
+                        continue
+
+                    seen_questions.add(normalized_question)
+                    seen_evidence.add(normalized_evidence)
+                    questions.append(
+                        {
+                            "question": question.strip(),
+                            "choices": choices,
+                            "correct_answer": answer,
+                            "explanation": explanation.strip(),
+                            "source_excerpt": evidence.strip(),
+                            "generation_method": "ai",
+                        }
+                    )
+    except AIProviderError as exc:
+        raise HTTPException(
+            502,
+            "The quiz AI is unavailable. Please try again when the AI service is available.",
+        ) from exc
+
     if len(questions) != target_count:
         raise HTTPException(
             502,
-            "The quiz AI could not create enough questions with verifiable evidence from the selected document. Try fewer questions or a narrower focus topic.",
+            "The selected document does not contain enough accurate, unique questions at this difficulty level. Try fewer questions or choose another difficulty.",
         )
     return questions
 
@@ -493,14 +436,22 @@ def build_typed_quiz_questions(
                     }
                 )
             elif question_type == "fill_blank":
+                evidence = source.get("source_excerpt", "")
+                blanked_statement = re.sub(
+                    re.escape(correct_answer),
+                    "____",
+                    evidence,
+                    count=1,
+                    flags=re.IGNORECASE,
+                )
                 result.append(
                     {
                         "question_type": question_type,
-                        "question": f'The answer to "{question}" is ____.',
+                        "question": f"Complete the statement from the lesson: {blanked_statement}",
                         "correct_answer": correct_answer,
                         "accepted_answers": [correct_answer],
                         "explanation": explanation,
-                        "source_excerpt": source.get("source_excerpt", ""),
+                        "source_excerpt": evidence,
                     }
                 )
 
@@ -538,6 +489,8 @@ def create_quiz(
     current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     uid = current_user["id"]
+    if not request.document_name:
+        raise HTTPException(400, "Select a source document before generating a quiz.")
     document_name = get_owned_document_name(uid, request.document_name)
     
     if request.question_counts:
@@ -561,7 +514,7 @@ def create_quiz(
     source_questions = generate_grounded_quiz_questions(
         context=context,
         target_count=source_count,
-        topic=request.topic,
+        difficulty=request.difficulty,
     )
     typed_questions = build_typed_quiz_questions(source_questions, question_counts)
     user_service.increment_stat(current_user["id"], "quizzes_attempted", 1)
@@ -580,6 +533,7 @@ def create_quiz(
         )
     return {
         "topic": request.topic,
+        "difficulty": request.difficulty,
         "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
         "total_questions": len(typed_questions),
         "question_counts": question_counts,

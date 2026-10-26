@@ -182,6 +182,42 @@
             position: relative;
         }
 
+        .learning-tool-modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: calc(100vh - 32px);
+            max-height: calc(100dvh - 32px);
+            overflow: hidden;
+            padding: 0;
+        }
+
+        .learning-tool-modal-content .modal-header {
+            flex: 0 0 auto;
+            margin: 0;
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .learning-tool-modal-body {
+            min-height: 0;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding: 18px 24px;
+            scrollbar-gutter: stable;
+        }
+
+        .learning-tool-modal-footer {
+            flex: 0 0 auto;
+            display: flex;
+            gap: 10px;
+            padding: 14px 24px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-surface);
+        }
+
+        .learning-tool-modal-footer .btn { min-height: 42px; }
+
         .app.sidebar-collapsed {
             grid-template-columns: var(--sidebar-collapsed-width) minmax(0, 1fr);
         }
@@ -1591,6 +1627,17 @@
 
         @media (max-width: 520px) {
             .quiz-type-grid { grid-template-columns: 1fr; }
+            .learning-tool-modal-content {
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: calc(100vh - 16px);
+                max-height: calc(100dvh - 16px);
+                margin: 0 auto;
+                border-radius: var(--radius-lg);
+            }
+            .learning-tool-modal-content .modal-header { padding: 16px 18px 13px; }
+            .learning-tool-modal-body { padding: 16px 18px; }
+            .learning-tool-modal-footer { padding: 12px 18px; }
         }
 
         /* Progress & Stat Cards */
@@ -2676,60 +2723,74 @@
 
     <!-- Learning Tool Modal (Quiz & Summary generator) -->
     <div class="modal-overlay" id="learning-tool-modal">
-        <div class="modal-content">
+        <div class="modal-content learning-tool-modal-content" role="dialog" aria-modal="true" aria-labelledby="tool-modal-title">
             <div class="modal-header">
                 <h3 id="tool-modal-title">Generate Study Resource</h3>
-                <button class="modal-close" onclick="closeModal('learning-tool-modal')">
+                <button class="modal-close" type="button" aria-label="Close dialog" onclick="closeModal('learning-tool-modal')">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
-            <div class="form-field">
-                <label for="lesson-select">Source Document <span style="color: var(--primary);">*</span></label>
-                <select id="lesson-select">
-                    <!-- Populated dynamically with actual uploaded PDFs -->
-                </select>
-            </div>
-            <div class="form-field">
-                <label for="lesson-topic">Focus Topic or Query</label>
-                <input type="text" id="lesson-topic" placeholder="e.g., IoT Core Concepts, Protocols, or Leave blank for full doc">
-            </div>
-            <div class="form-field" id="quiz-count-group">
-                <label>Question formats and counts</label>
-                <p style="margin: -2px 0 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5;">Choose one or more formats and set how many of each to include. Matching activities include three pairs each. Maximum total: 100.</p>
-                <div class="quiz-type-grid" id="quiz-type-grid">
-                    <label class="quiz-type-option">
-                        <input type="checkbox" data-quiz-type="identification" onchange="updateQuizTypeSelection()">
-                        <span class="quiz-type-copy"><strong>Identification</strong><span>Type the correct term or answer.</span></span>
-                        <input class="quiz-type-count" type="number" data-quiz-count="identification" min="1" max="100" value="5" aria-label="Number of identification questions" disabled oninput="updateQuizTypeSelection()">
-                    </label>
-                    <label class="quiz-type-option">
-                        <input type="checkbox" data-quiz-type="multiple_choice" checked onchange="updateQuizTypeSelection()">
-                        <span class="quiz-type-copy"><strong>Multiple choice</strong><span>Select one of four answers.</span></span>
-                        <input class="quiz-type-count" type="number" data-quiz-count="multiple_choice" min="1" max="100" value="10" aria-label="Number of multiple choice questions" oninput="updateQuizTypeSelection()">
-                    </label>
-                    <label class="quiz-type-option">
-                        <input type="checkbox" data-quiz-type="true_false" onchange="updateQuizTypeSelection()">
-                        <span class="quiz-type-copy"><strong>True or false</strong><span>Decide whether each statement is correct.</span></span>
-                        <input class="quiz-type-count" type="number" data-quiz-count="true_false" min="1" max="100" value="5" aria-label="Number of true or false questions" disabled oninput="updateQuizTypeSelection()">
-                    </label>
-                    <label class="quiz-type-option">
-                        <input type="checkbox" data-quiz-type="fill_blank" onchange="updateQuizTypeSelection()">
-                        <span class="quiz-type-copy"><strong>Fill in the blanks</strong><span>Complete the missing answer.</span></span>
-                        <input class="quiz-type-count" type="number" data-quiz-count="fill_blank" min="1" max="100" value="5" aria-label="Number of fill in the blanks questions" disabled oninput="updateQuizTypeSelection()">
-                    </label>
-                    <label class="quiz-type-option">
-                        <input type="checkbox" data-quiz-type="matching" onchange="updateQuizTypeSelection()">
-                        <span class="quiz-type-copy"><strong>Matching type</strong><span>Match three lesson questions with their answers.</span></span>
-                        <input class="quiz-type-count" type="number" data-quiz-count="matching" min="1" max="100" value="5" aria-label="Number of matching activities" disabled oninput="updateQuizTypeSelection()">
-                    </label>
+            <div class="learning-tool-modal-body">
+                <div class="form-field">
+                    <label for="lesson-select">Source Document <span style="color: var(--primary);">*</span></label>
+                    <select id="lesson-select" onchange="updateQuizTypeSelection()">
+                        <option value="">Select a document</option>
+                    </select>
                 </div>
-                <div class="quiz-type-total" id="quiz-type-total" role="status" aria-live="polite">
-                    <span>Assessment total</span><strong id="quiz-type-total-value">10 questions</strong>
+                <div class="form-field" id="quiz-difficulty-group">
+                    <label for="quiz-difficulty">Question Difficulty</label>
+                    <select id="quiz-difficulty" aria-describedby="quiz-difficulty-help">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                    <p id="quiz-difficulty-help" style="margin: 5px 0 0; color: var(--text-muted); font-size: 11px; line-height: 1.5;">Questions are generated from the entire selected document and checked against its source content.</p>
+                </div>
+                <div class="form-field" id="summary-topic-group" style="display: none;">
+                    <label for="lesson-topic">Summary Topic or Query <span style="color: var(--text-muted); font-weight: 400;">(Optional)</span></label>
+                    <input type="text" id="lesson-topic" placeholder="Leave blank to summarize the full document">
+                </div>
+                <div class="form-field" id="quiz-count-group">
+                    <label>Question formats and counts</label>
+                    <p style="margin: -2px 0 10px; color: var(--text-muted); font-size: 11px; line-height: 1.5;">Choose one or more formats and set how many of each to include. Matching activities include three pairs each. Maximum total: 100.</p>
+                    <div class="quiz-type-grid" id="quiz-type-grid">
+                        <label class="quiz-type-option">
+                            <input type="checkbox" data-quiz-type="identification" onchange="updateQuizTypeSelection()">
+                            <span class="quiz-type-copy"><strong>Identification</strong><span>Type the correct term or answer.</span></span>
+                            <input class="quiz-type-count" type="number" data-quiz-count="identification" min="1" max="100" value="5" aria-label="Number of identification questions" disabled oninput="updateQuizTypeSelection()">
+                        </label>
+                        <label class="quiz-type-option">
+                            <input type="checkbox" data-quiz-type="multiple_choice" checked onchange="updateQuizTypeSelection()">
+                            <span class="quiz-type-copy"><strong>Multiple choice</strong><span>Select one of four answers.</span></span>
+                            <input class="quiz-type-count" type="number" data-quiz-count="multiple_choice" min="1" max="100" value="10" aria-label="Number of multiple choice questions" oninput="updateQuizTypeSelection()">
+                        </label>
+                        <label class="quiz-type-option">
+                            <input type="checkbox" data-quiz-type="true_false" onchange="updateQuizTypeSelection()">
+                            <span class="quiz-type-copy"><strong>True or false</strong><span>Decide whether each statement is correct.</span></span>
+                            <input class="quiz-type-count" type="number" data-quiz-count="true_false" min="1" max="100" value="5" aria-label="Number of true or false questions" disabled oninput="updateQuizTypeSelection()">
+                        </label>
+                        <label class="quiz-type-option">
+                            <input type="checkbox" data-quiz-type="fill_blank" onchange="updateQuizTypeSelection()">
+                            <span class="quiz-type-copy"><strong>Fill in the blanks</strong><span>Complete the missing answer.</span></span>
+                            <input class="quiz-type-count" type="number" data-quiz-count="fill_blank" min="1" max="100" value="5" aria-label="Number of fill in the blanks questions" disabled oninput="updateQuizTypeSelection()">
+                        </label>
+                        <label class="quiz-type-option">
+                            <input type="checkbox" data-quiz-type="matching" onchange="updateQuizTypeSelection()">
+                            <span class="quiz-type-copy"><strong>Matching type</strong><span>Match three lesson questions with their answers.</span></span>
+                            <input class="quiz-type-count" type="number" data-quiz-count="matching" min="1" max="100" value="5" aria-label="Number of matching activities" disabled oninput="updateQuizTypeSelection()">
+                        </label>
+                    </div>
+                    <div class="quiz-type-total" id="quiz-type-total" role="status" aria-live="polite">
+                        <span>Assessment total</span><strong id="quiz-type-total-value">10 questions</strong>
+                    </div>
                 </div>
             </div>
-            <button class="btn btn-primary" onclick="processLearningToolAction()" id="process-tool-btn" style="width: 100%;">
-                <i class="fas fa-magic me-1"></i> Generate with AI
-            </button>
+            <div class="learning-tool-modal-footer">
+                <button class="btn btn-plain" type="button" onclick="closeModal('learning-tool-modal')" style="flex: 1;">Cancel</button>
+                <button class="btn btn-primary" type="button" onclick="processLearningToolAction()" id="process-tool-btn" style="flex: 2;">
+                    <i class="fas fa-magic me-1"></i> Generate Quiz
+                </button>
+            </div>
         </div>
     </div>
 
@@ -5014,9 +5075,14 @@
 
             const counts = getSelectedQuizQuestionCounts();
             const questionTotal = Object.values(counts).reduce((sum, count) => sum + count, 0);
-            const isValid = questionTotal > 0 && questionTotal <= 100 && !invalidSelection;
+            const hasDocument = Boolean(document.getElementById('lesson-select')?.value);
+            const isValid = currentToolType === 'summary'
+                ? hasDocument
+                : hasDocument && questionTotal > 0 && questionTotal <= 100 && !invalidSelection;
             total.classList.toggle('invalid', !isValid);
-            totalValue.textContent = invalidSelection
+            totalValue.textContent = currentToolType === 'summary'
+                ? `${questionTotal} ${questionTotal === 1 ? 'question' : 'questions'}`
+                : invalidSelection
                 ? 'Enter a count from 1 to 100'
                 : `${questionTotal} ${questionTotal === 1 ? 'question' : 'questions'}${questionTotal > 100 ? ' — maximum is 100' : ''}`;
             generateButton.disabled = !isValid;
@@ -5035,24 +5101,27 @@
             if (countGroup) {
                 countGroup.style.display = (type === 'quiz') ? 'block' : 'none';
             }
-            if (type === 'quiz') {
-                updateQuizTypeSelection();
-            } else {
-                const generateButton = document.getElementById('process-tool-btn');
-                if (generateButton) generateButton.disabled = false;
+            const difficultyGroup = document.getElementById('quiz-difficulty-group');
+            if (difficultyGroup) difficultyGroup.style.display = type === 'quiz' ? 'block' : 'none';
+            const summaryTopicGroup = document.getElementById('summary-topic-group');
+            if (summaryTopicGroup) summaryTopicGroup.style.display = type === 'summary' ? 'block' : 'none';
+            const generateButton = document.getElementById('process-tool-btn');
+            if (generateButton) {
+                generateButton.innerHTML = type === 'quiz'
+                    ? '<i class="fas fa-magic me-1"></i> Generate Quiz'
+                    : '<i class="fas fa-magic me-1"></i> Generate Summary';
             }
 
             // Populate document select with actual uploaded library documents
             const select = document.getElementById('lesson-select');
             if (documents && documents.length > 0) {
-                select.innerHTML = documents.map(d => `<option value="${escapeHTML(d.filename)}">${escapeHTML(d.filename)}</option>`).join('');
+                select.innerHTML = '<option value="">Select a document</option>' + documents.map(d => `<option value="${escapeHTML(d.filename)}">${escapeHTML(d.filename)}</option>`).join('');
+                select.selectedIndex = 1;
             } else {
-                select.innerHTML = `
-                    <option value="Machine Learning - IoT Notes 1.pdf">Machine Learning - IoT Notes 1.pdf</option>
-                    <option value="application-development-emerging-technologies.pdf">application-development-emerging-technologies.pdf</option>
-                `;
+                select.innerHTML = '<option value="">No uploaded documents available</option>';
             }
 
+            updateQuizTypeSelection();
             document.getElementById('learning-tool-modal').classList.add('show');
         }
 
@@ -5061,12 +5130,18 @@
             const topicInput = document.getElementById('lesson-topic').value.trim();
             const questionCounts = currentToolType === 'quiz' ? getSelectedQuizQuestionCounts() : {};
             const qCount = Object.values(questionCounts).reduce((sum, count) => sum + count, 0);
+            if (!selectDoc) {
+                showToast('Select an uploaded source document first.', 'warning');
+                return;
+            }
             if (currentToolType === 'quiz' && (!qCount || qCount > 100)) {
                 showToast('Choose question formats and enter a total between 1 and 100.', 'warning');
                 return;
             }
 
-            const topic = topicInput || `Comprehensive ${selectDoc ? selectDoc.replace('.pdf', '') : 'IoT'} Assessment`;
+            const topic = currentToolType === 'quiz'
+                ? 'Quiz'
+                : (topicInput || 'the complete selected document');
 
             if (currentToolType === 'summary') {
                 closeModal('learning-tool-modal');
@@ -5093,17 +5168,19 @@
             const formatSummary = Object.entries(questionCounts)
                 .map(([type, count]) => `${count} ${typeLabels[type]}`)
                 .join(' · ');
-            if (docSubtitle) docSubtitle.textContent = `Document: ${selectDoc} • ${qCount} questions`;
+            const difficulty = document.getElementById('quiz-difficulty').value;
+            const difficultyLabel = difficulty.charAt(0).toUpperCase() + difficulty.slice(1);
+            if (docSubtitle) docSubtitle.textContent = `Document: ${selectDoc} • ${difficultyLabel} • ${qCount} questions`;
             if (statsBanner) statsBanner.style.display = 'none';
 
             quizContent.innerHTML = `
-                <div style="text-align: center; padding: 60px 20px;">
+                <div role="status" aria-live="polite" style="text-align: center; padding: 60px 20px;">
                     <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 16px; font-size: 24px;">
                         <i class="fas fa-spinner fa-spin"></i>
                     </div>
-                    <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Building your ${qCount}-question assessment</h4>
+                    <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Building your ${qCount}-question ${difficultyLabel.toLowerCase()} assessment</h4>
                     <p style="color: var(--text-muted); font-size: 13.5px; max-width: 480px; margin: 0 auto;">
-                        AI is analyzing <strong>${escapeHTML(selectDoc)}</strong> and preparing ${escapeHTML(formatSummary)} with answers and explanations...
+                        AI is analyzing the entire selected document, <strong>${escapeHTML(selectDoc)}</strong>, and preparing ${escapeHTML(formatSummary)} with source-checked answers and explanations...
                     </p>
                 </div>
             `;
@@ -5120,6 +5197,7 @@
                     body: JSON.stringify({
                         topic: topic,
                         document_name: selectDoc,
+                        difficulty: difficulty,
                         question_count: qCount,
                         question_counts: questionCounts
                     })
