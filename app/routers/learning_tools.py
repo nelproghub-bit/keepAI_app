@@ -139,14 +139,6 @@ def generate_grounded_quiz_questions(
     def normalize(value: str) -> str:
         return re.sub(r"\s+", " ", value).strip().casefold()
 
-    question_stop_words = {
-        "according", "after", "also", "based", "being", "can", "could", "describe",
-        "does", "each", "explain", "following", "given", "have", "how", "identify",
-        "into", "lesson", "most", "other", "selected", "should", "that", "the",
-        "their", "these", "this", "those", "through", "using", "what", "when",
-        "where", "which", "while", "who", "whom", "why", "with", "would",
-    }
-
     def split_source(text: str, max_chars: int = 10000) -> List[str]:
         parts = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
         chunks: List[str] = []
@@ -188,30 +180,29 @@ def generate_grounded_quiz_questions(
 
     questions: List[Dict[str, Any]] = []
     chunks = split_source(context)
+    normalized_context = normalize(context)
     seen_questions = set()
-    seen_evidence = set()
+    max_rounds = (target_count + 4) // 5 + 2
+    no_progress_rounds = 0
     try:
-        for round_index in range(2):
-            if round_index and len(questions) >= target_count:
-                break
+        for round_index in range(max_rounds):
+            round_question_count = len(questions)
             for index, source_chunk in enumerate(chunks):
                 remaining = target_count - len(questions)
                 if round_index and not remaining:
                     break
                 normalized_chunk = normalize(source_chunk)
-                chunk_target = min(
-                    remaining,
-                    max(
-                        1,
-                        (remaining * len(source_chunk) + len(context) - 1)
-                        // max(len(context), 1),
-                    ),
-                ) if remaining else 0
+                proportional_target = max(
+                    1,
+                    (target_count * len(source_chunk) + len(context) - 1)
+                    // max(len(context), 1),
+                )
+                chunk_target = min(5, proportional_target, remaining) if remaining else 1
                 exclusions = ""
                 if seen_questions:
                     exclusions = (
                         "Do not repeat or closely paraphrase these already accepted questions: "
-                        + json.dumps(sorted(seen_questions), ensure_ascii=False)
+                        + json.dumps(sorted(seen_questions)[-30:], ensure_ascii=False)
                         + "\n"
                     )
                 prompt = (
@@ -239,6 +230,7 @@ def generate_grounded_quiz_questions(
                         "outside sources. Return valid JSON only."
                     ),
                     has_sources=True,
+                    max_output_tokens=max(1200, chunk_target * 450),
                 )
                 if not isinstance(raw, str):
                     continue
@@ -289,20 +281,12 @@ def generate_grounded_quiz_questions(
                     ):
                         continue
                     normalized_evidence = normalize(evidence)
-                    normalized_choices = {normalize(choice) for choice in choices}
-                    question_terms = {
-                        token for token in re.findall(r"\w{4,}", normalize(question))
-                        if token not in question_stop_words
-                    }
-                    source_terms = set(re.findall(r"\w{4,}", normalized_chunk))
                     if (
                         normalized_evidence not in normalized_chunk
                         or normalize(answer) not in normalized_evidence
-                        or normalize(answer) not in normalized_choices
-                        or any(normalize(choice) not in normalized_chunk for choice in choices)
+                        or normalize(answer) not in {normalize(choice) for choice in choices}
+                        or any(normalize(choice) not in normalized_context for choice in choices)
                         or normalize(explanation) not in normalized_chunk
-                        or not question_terms
-                        or len(question_terms & source_terms) / len(question_terms) < 0.7
                     ):
                         continue
 
@@ -310,7 +294,6 @@ def generate_grounded_quiz_questions(
                     question_tokens = set(re.findall(r"\w{4,}", normalized_question))
                     if (
                         normalized_question in seen_questions
-                        or normalized_evidence in seen_evidence
                         or any(
                             len(question_tokens & prior_tokens) / max(len(question_tokens | prior_tokens), 1) >= 0.85
                             for prior_tokens in (
@@ -322,7 +305,6 @@ def generate_grounded_quiz_questions(
                         continue
 
                     seen_questions.add(normalized_question)
-                    seen_evidence.add(normalized_evidence)
                     questions.append(
                         {
                             "question": question.strip(),
@@ -333,6 +315,15 @@ def generate_grounded_quiz_questions(
                             "generation_method": "ai",
                         }
                     )
+
+            if len(questions) == target_count:
+                break
+            if len(questions) == round_question_count:
+                no_progress_rounds += 1
+                if no_progress_rounds >= 2:
+                    break
+            else:
+                no_progress_rounds = 0
     except AIProviderError as exc:
         raise HTTPException(
             502,

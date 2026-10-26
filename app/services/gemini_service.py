@@ -29,7 +29,7 @@ class AIService:
     
     def generate(self, prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 
                  user_id: str = "default", teaching_style: str = "simple", 
-                 has_sources: bool = False) -> str:
+                 has_sources: bool = False, max_output_tokens: int = 1000) -> str:
         """Generate text using the configured AI provider."""
         training_info = training_service.generate_enhanced_response(
             prompt, teaching_style, "", has_sources
@@ -40,11 +40,11 @@ class AIService:
 
         try:
             if self.provider == "openai" and OPENAI_API_KEY:
-                response = self._generate_openai(prompt, system)
+                response = self._generate_openai(prompt, system, max_output_tokens)
             elif self.provider == "anthropic" and ANTHROPIC_API_KEY:
-                response = self._generate_anthropic(prompt, system)
+                response = self._generate_anthropic(prompt, system, max_output_tokens)
             elif self.provider == "gemini" and GEMINI_API_KEY:
-                response = self._generate_gemini(prompt, system)
+                response = self._generate_gemini(prompt, system, max_output_tokens)
             else:
                 raise AIProviderError(
                     f"The configured AI provider '{self.provider}' is not available."
@@ -630,7 +630,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
         hash_val = int(hashlib.md5(prompt.encode()).hexdigest(), 16) % len(response_templates)
         return response_templates[hash_val]
     
-    def _generate_openai(self, prompt: str, system: str) -> str:
+    def _generate_openai(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using OpenAI API"""
         if not OPENAI_API_KEY:
             raise ValueError("OpenAI API key not configured")
@@ -644,7 +644,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
                     {"role": "system", "content": system},
                     {"role": "user", "content": prompt}
                 ],
-                "max_tokens": 1000,
+                "max_tokens": max_output_tokens,
                 "temperature": 0.7
             },
             timeout=60
@@ -652,7 +652,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
         response.raise_for_status()
         return response.json()["choices"][0]["message"]["content"]
     
-    def _generate_anthropic(self, prompt: str, system: str) -> str:
+    def _generate_anthropic(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using Anthropic Claude API"""
         if not ANTHROPIC_API_KEY:
             raise ValueError("Anthropic API key not configured")
@@ -665,7 +665,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
             },
             json={
                 "model": ANTHROPIC_MODEL,
-                "max_tokens": 1000,
+                "max_tokens": max_output_tokens,
                 "system": system,
                 "messages": [{"role": "user", "content": prompt}]
             },
@@ -674,7 +674,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
         response.raise_for_status()
         return response.json()["content"][0]["text"]
     
-    def _generate_gemini(self, prompt: str, system: str) -> str:
+    def _generate_gemini(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using Google Gemini API"""
         if not GEMINI_API_KEY:
             raise ValueError("Gemini API key not configured")
@@ -684,7 +684,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
                 "parts": [{"text": prompt}]
             }],
             "generationConfig": {
-                "maxOutputTokens": 1000,
+                "maxOutputTokens": max_output_tokens,
                 "temperature": 0.7
             }
         }
@@ -855,10 +855,18 @@ ai_service = AIService()
 # Legacy functions for backward compatibility
 def generate(prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 
              user_id: str = "default", teaching_style: str = "simple", 
-             has_sources: bool = False, system_instruction: Optional[str] = None) -> str:
+             has_sources: bool = False, system_instruction: Optional[str] = None,
+             max_output_tokens: int = 1000) -> str:
     if system_instruction is not None:
         system = system_instruction
-    return ai_service.generate(prompt, system, user_id, teaching_style, has_sources)
+    return ai_service.generate(
+        prompt,
+        system,
+        user_id,
+        teaching_style,
+        has_sources,
+        max_output_tokens,
+    )
 
 def generate_stream(prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.", 
                     user_id: str = "default", teaching_style: str = "simple", 

@@ -7,7 +7,7 @@ from pydantic import ValidationError
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 from app.core.security import get_current_student_user
-from app.services.gemini_service import AIProviderError
+from app.services.gemini_service import AIProviderError, AIService
 from app.routers import learning_tools
 from app.routers.learning_tools import (
     LessonRequest,
@@ -108,6 +108,25 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(request.question_count, 10)
         self.assertIsNone(request.question_counts)
 
+    @patch("app.services.gemini_service.GEMINI_API_KEY", "test-key")
+    @patch("app.services.gemini_service.requests.post")
+    def test_gemini_generation_applies_quiz_output_token_budget(self, post):
+        post.return_value.json.return_value = {
+            "candidates": [{"content": {"parts": [{"text": "[]"}]}}],
+        }
+
+        response = AIService()._generate_gemini(
+            "Generate quiz items",
+            "Use only the source.",
+            max_output_tokens=2250,
+        )
+
+        self.assertEqual(response, "[]")
+        self.assertEqual(
+            post.call_args.kwargs["json"]["generationConfig"]["maxOutputTokens"],
+            2250,
+        )
+
     def test_quiz_endpoint_requires_a_selected_source_document(self):
         response = self.client.post(
             "/api/learning/quiz",
@@ -185,6 +204,49 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(len(questions), 1)
         self.assertEqual(generate.call_count, 2)
         self.assertIn(second_section, generate.call_args.args[0])
+
+    @patch.object(learning_tools, "generate")
+    def test_generator_batches_thirty_questions_without_truncating_output(self, generate):
+        definitions = [
+            f"TopicTerm{number} refers to the distinct concept described in section {number}."
+            for number in range(30)
+        ]
+        lesson = " ".join(definitions)
+        question_batches = []
+        for batch_start in range(0, 30, 5):
+            batch = []
+            for number in range(batch_start, batch_start + 5):
+                term = f"TopicTerm{number}"
+                evidence = definitions[number]
+                choices = [
+                    term,
+                    f"TopicTerm{(number + 1) % 30}",
+                    f"TopicTerm{(number + 2) % 30}",
+                    f"TopicTerm{(number + 3) % 30}",
+                ]
+                batch.append(
+                    {
+                        "question": f"Which term is described here: {term}?",
+                        "choices": choices,
+                        "correct_answer": term,
+                        "explanation": evidence,
+                        "evidence": evidence,
+                    }
+                )
+            question_batches.append(json.dumps(batch))
+        generate.side_effect = question_batches
+
+        questions = generate_grounded_quiz_questions(
+            context=lesson,
+            target_count=30,
+            difficulty="easy",
+        )
+
+        self.assertEqual(len(questions), 30)
+        self.assertEqual(generate.call_count, 6)
+        self.assertTrue(
+            all(call.kwargs["max_output_tokens"] >= 2000 for call in generate.call_args_list)
+        )
 
     @patch.object(learning_tools, "generate")
     def test_provider_outage_reports_ai_error_without_extracting_questions(self, generate):
