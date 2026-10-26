@@ -172,6 +172,31 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
+    def test_generator_retries_once_after_an_unusable_ai_response(self, generate):
+        evidence = "Usability is the ease with which users can complete tasks."
+        item = {
+            "question": "What is usability?",
+            "choices": ["Usability", "User experience", "Interface design", "User research"],
+            "correct_answer": "Usability",
+            "explanation": evidence,
+            "evidence": evidence,
+        }
+        generate.side_effect = ["not valid JSON", json.dumps([item])]
+
+        questions = generate_grounded_quiz_questions(
+            context=(
+                f"{evidence} User experience describes a person's overall perception of a product. "
+                "Interface design organizes visible controls and interactions. "
+                "User research observes people using products."
+            ),
+            target_count=1,
+            difficulty="easy",
+        )
+
+        self.assertEqual(len(questions), 1)
+        self.assertEqual(generate.call_count, 2)
+
+    @patch.object(learning_tools, "generate")
     def test_generator_processes_later_document_sections_after_reaching_count(self, generate):
         first_section = (
             "Human-computer interaction studies how people use and experience technology. "
