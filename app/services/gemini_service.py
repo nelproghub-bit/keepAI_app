@@ -53,6 +53,25 @@ class AIService:
                 raise AIProviderError("The AI service returned an empty response.")
         except AIProviderError:
             raise
+        except requests.HTTPError as exc:
+            response = exc.response
+            status_code = response.status_code if response is not None else None
+            logger.error(
+                "AI provider %s rejected generation request (model=%s, HTTP %s)",
+                self.provider,
+                self._configured_model(),
+                status_code or "unknown",
+            )
+            raise AIProviderError(self._http_error_message(status_code)) from exc
+        except requests.RequestException as exc:
+            logger.error(
+                "AI provider %s could not be reached (%s)",
+                self.provider,
+                type(exc).__name__,
+            )
+            raise AIProviderError(
+                "The AI service could not be reached. Please retry in a moment."
+            ) from exc
         except Exception as exc:
             status_code = getattr(getattr(exc, "response", None), "status_code", None)
             logger.error(
@@ -73,6 +92,68 @@ class AIService:
         })
         _conversation_memory[user_id] = _conversation_memory[user_id][-5:]
         return response
+
+    def _configured_model(self) -> str:
+        if self.provider == "gemini":
+            return GEMINI_MODEL
+        if self.provider == "openai":
+            return OPENAI_MODEL
+        if self.provider == "anthropic":
+            return ANTHROPIC_MODEL
+        return "configured model"
+
+    @staticmethod
+    def _http_error_message(status_code: Optional[int]) -> str:
+        if status_code in (401, 403):
+            return (
+                "The AI provider rejected its credentials or access permissions. "
+                "Please contact an administrator."
+            )
+        if status_code == 404:
+            return (
+                "The configured AI model is unavailable. Please contact an administrator "
+                "to verify the model configuration."
+            )
+        if status_code == 429:
+            return (
+                "The AI provider is rate-limiting requests or its quota is exhausted. "
+                "Please wait and try again, or contact an administrator."
+            )
+        if status_code is not None and status_code >= 500:
+            return "The AI provider is temporarily unavailable. Please retry in a moment."
+        if status_code == 400:
+            return (
+                "The AI provider rejected the generation request. Please contact an "
+                "administrator to verify the model settings."
+            )
+        return "The AI service could not complete the request. Please try again."
+
+    @staticmethod
+    def _post_with_retries(url: str, *, json: dict, timeout: int):
+        retryable_statuses = {429, 500, 502, 503, 504}
+        for attempt in range(2):
+            try:
+                response = requests.post(url, json=json, timeout=timeout)
+            except requests.RequestException:
+                if attempt == 1:
+                    raise
+                time.sleep(0.5 * (attempt + 1))
+                continue
+
+            if response.status_code in retryable_statuses and attempt < 1:
+                retry_after = response.headers.get("Retry-After")
+                try:
+                    delay = min(max(float(retry_after), 0), 3) if retry_after else 0.5 * (attempt + 1)
+                except (TypeError, ValueError):
+                    delay = 0.5 * (attempt + 1)
+                if delay:
+                    time.sleep(delay)
+                continue
+
+            response.raise_for_status()
+            return response
+
+        raise requests.RequestException("The AI provider did not return a response.")
 
     def generate_stream(self, prompt: str, system: str = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words.",
                         user_id: str = "default", teaching_style: str = "simple",
@@ -693,12 +774,11 @@ I can explain this simply. For answers based directly on your class lessons, upl
                 "parts": [{"text": system}]
             }
 
-        response = requests.post(
+        response = self._post_with_retries(
             f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}",
             json=payload,
-            timeout=60
+            timeout=60,
         )
-        response.raise_for_status()
         data = response.json()
         candidates = data.get("candidates", [])
         if not candidates:

@@ -1,6 +1,6 @@
 import unittest
 import json
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
 
@@ -126,6 +126,31 @@ class QuizQuestionTypeTests(unittest.TestCase):
             post.call_args.kwargs["json"]["generationConfig"]["maxOutputTokens"],
             2250,
         )
+
+    @patch("app.services.gemini_service.time.sleep")
+    @patch("app.services.gemini_service.requests.post")
+    def test_gemini_retries_transient_provider_failures(self, post, sleep):
+        temporary_failure = Mock(status_code=503, headers={})
+        temporary_failure.raise_for_status.return_value = None
+        success = Mock(status_code=200, headers={})
+        success.raise_for_status.return_value = None
+        post.side_effect = [temporary_failure, success]
+
+        response = AIService._post_with_retries(
+            "https://provider.example/generate",
+            json={"prompt": "test"},
+            timeout=60,
+        )
+
+        self.assertIs(response, success)
+        self.assertEqual(post.call_count, 2)
+        sleep.assert_called_once_with(0.5)
+
+    def test_provider_errors_explain_auth_quota_model_and_outage_causes(self):
+        self.assertIn("credentials", AIService._http_error_message(403))
+        self.assertIn("quota", AIService._http_error_message(429))
+        self.assertIn("model", AIService._http_error_message(404))
+        self.assertIn("temporarily unavailable", AIService._http_error_message(503))
 
     def test_quiz_endpoint_requires_a_selected_source_document(self):
         response = self.client.post(
@@ -285,7 +310,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
             )
 
         self.assertEqual(error.exception.status_code, 502)
-        self.assertIn("quiz AI is unavailable", error.exception.detail)
+        self.assertIn("AI provider", error.exception.detail)
         self.assertEqual(generate.call_count, 1)
 
     @patch.object(learning_tools, "generate")

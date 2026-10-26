@@ -327,7 +327,7 @@ def generate_grounded_quiz_questions(
     except AIProviderError as exc:
         raise HTTPException(
             502,
-            "The quiz AI is unavailable. Please try again when the AI service is available.",
+            f"Quiz generation could not reach the AI provider: {exc}",
         ) from exc
 
     if len(questions) != target_count:
