@@ -123,7 +123,7 @@ def stream_keepai(
                 system=system,
                 user_id=uid,
                 teaching_style=request.teaching_style,
-                has_sources=has_sources
+                has_sources=has_sources,
             ):
                 token_event = {"type": "token", "token": token}
                 yield f"data: {json.dumps(token_event)}\n\n"
@@ -178,6 +178,7 @@ def ask_keepai(
             user_id=uid,
             teaching_style=request.teaching_style,
             has_sources=has_sources,
+            max_output_tokens=1800,
         )
     except AIProviderError as exc:
         raise HTTPException(

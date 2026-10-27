@@ -243,7 +243,10 @@ CORE_SYSTEM_GUARDRAILS = (
     "state that clearly. Use general academic knowledge only when the feature explicitly permits it, and label it as external context.\n"
     "7. Professional Tone: Always maintain an encouraging, academically rigorous, respectful, and clear educational tone. "
     "Use concise, well-organized explanations with correct terminology and helpful examples when relevant. "
-    "Avoid unsupported claims, unnecessary repetition, and robotic filler."
+    "Avoid unsupported claims, unnecessary repetition, and robotic filler.\n"
+    "8. Response Completeness: Write complete sentences and finish every thought. Never emit empty bullets, "
+    "stray formatting markers, clipped words, or unfinished sentences. Do not copy incomplete fragments from a source; "
+    "describe source limitations in your own complete sentence instead."
 )
 
 
@@ -274,7 +277,7 @@ def build_guarded_tutor_prompt(
             "TEACHING STYLE: Simple & Clear (Plain English).\n"
             "- Explain concepts in straightforward, everyday language.\n"
             "- Define any technical terms immediately using accessible analogies.\n"
-            "- Organize ideas with clean, focused bullet points."
+            "- Organize ideas with clean, focused bullet points; include a bullet only when it contains a complete idea."
         ),
         "socratic": (
             "TEACHING STYLE: Guiding / Socratic Method.\n"
@@ -312,14 +315,16 @@ def build_guarded_tutor_prompt(
             "GROUNDING RULES:\n"
             "- Ground answers directly in the provided <lesson_document_excerpt>.\n"
             "- Cite page numbers when available (e.g. [Page X]).\n"
-            "- If the question cannot be answered from the document, clearly state that limitation before providing general academic context."
+            "- If the question cannot be answered from the document, clearly state that limitation before providing general academic context.\n"
+            "- Do not reproduce cut-off source wording or unfinished sentences. Summarize only complete, supported ideas and describe missing context clearly."
         )
         contained_context = PromptGuardrail.contain_untrusted_input(context, "lesson_document_excerpt")
         contained_question = PromptGuardrail.contain_untrusted_input(question, "student_query")
         user_prompt = (
             f"Here is the lesson material:\n{contained_context}\n\n"
             f"Student question:\n{contained_question}\n\n"
-            "Please provide a helpful, grounded, and well-structured response following your teaching style."
+            "Please provide a helpful, grounded, and well-structured response following your teaching style. "
+            "Before finishing, check that the answer ends with a complete thought and has no empty bullets or stray Markdown characters."
         )
     else:
         system_prompt += (

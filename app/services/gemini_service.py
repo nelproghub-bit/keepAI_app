@@ -732,7 +732,12 @@ I can explain this simply. For answers based directly on your class lessons, upl
             timeout=60
         )
         response.raise_for_status()
-        return response.json()["choices"][0]["message"]["content"]
+        choice = response.json()["choices"][0]
+        if choice.get("finish_reason") == "length":
+            raise AIProviderError(
+                "The tutor response reached its length limit. Please ask a more focused question."
+            )
+        return choice["message"]["content"]
     
     def _generate_anthropic(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using Anthropic Claude API"""
@@ -754,7 +759,12 @@ I can explain this simply. For answers based directly on your class lessons, upl
             timeout=60
         )
         response.raise_for_status()
-        return response.json()["content"][0]["text"]
+        data = response.json()
+        if data.get("stop_reason") == "max_tokens":
+            raise AIProviderError(
+                "The tutor response reached its length limit. Please ask a more focused question."
+            )
+        return data["content"][0]["text"]
     
     def _generate_gemini(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using Google Gemini API"""
@@ -784,6 +794,10 @@ I can explain this simply. For answers based directly on your class lessons, upl
         candidates = data.get("candidates", [])
         if not candidates:
             raise ValueError("Gemini returned no response candidates")
+        if candidates[0].get("finishReason") == "MAX_TOKENS":
+            raise AIProviderError(
+                "The tutor response reached its length limit. Please ask a more focused question."
+            )
         parts = candidates[0].get("content", {}).get("parts", [])
         text = "".join(part.get("text", "") for part in parts)
         if not text.strip():
@@ -800,7 +814,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
                 "parts": [{"text": prompt}]
             }],
             "generationConfig": {
-                "maxOutputTokens": 1000,
+                "maxOutputTokens": 1800,
                 "temperature": 0.7
             }
         }
@@ -826,6 +840,10 @@ I can explain this simply. For answers based directly on your class lessons, upl
                         chunk = json.loads(decoded[6:])
                         candidates = chunk.get("candidates", [])
                         if candidates:
+                            if candidates[0].get("finishReason") == "MAX_TOKENS":
+                                raise AIProviderError(
+                                    "The tutor response reached its length limit. Please ask a more focused question."
+                                )
                             parts = candidates[0].get("content", {}).get("parts", [])
                             for part in parts:
                                 text = part.get("text", "")

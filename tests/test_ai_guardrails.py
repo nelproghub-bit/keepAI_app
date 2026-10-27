@@ -1,5 +1,5 @@
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from app.core.ai_guardrails import (
     CORE_SYSTEM_GUARDRAILS,
@@ -9,7 +9,7 @@ from app.core.ai_guardrails import (
     compose_ai_system_prompt,
 )
 from app.services import gemini_service
-from app.services.gemini_service import AIService
+from app.services.gemini_service import AIProviderError, AIService
 
 
 class AIGuardrailTests(unittest.TestCase):
@@ -30,6 +30,9 @@ class AIGuardrailTests(unittest.TestCase):
         self.assertIn(CORE_SYSTEM_GUARDRAILS, system)
         self.assertIn("[escaped-tag-lesson_document_excerpt]", prompt)
         self.assertIn("[escaped-tag-student_query]", prompt)
+        self.assertIn("complete sentences and finish every thought", system)
+        self.assertIn("Do not reproduce cut-off source wording", system)
+        self.assertIn("no empty bullets or stray Markdown characters", prompt)
 
     def test_untrusted_input_cannot_inject_case_variant_or_attributed_boundary_tags(self):
         contained = PromptGuardrail.contain_untrusted_input(
@@ -45,6 +48,70 @@ class AIGuardrailTests(unittest.TestCase):
         api_key = "AIza" + ("A" * 35)
 
         self.assertNotIn(api_key, OutputGuardrail.validate_and_sanitize(api_key))
+
+    @patch("app.services.gemini_service.GEMINI_API_KEY", "configured-test-key")
+    @patch("app.services.gemini_service.requests.post")
+    def test_truncated_gemini_response_is_rejected(self, post):
+        response = Mock(status_code=200, headers={})
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "candidates": [
+                {
+                    "finishReason": "MAX_TOKENS",
+                    "content": {"parts": [{"text": "An incomplete answer"}]},
+                }
+            ]
+        }
+        post.return_value = response
+
+        with self.assertRaisesRegex(AIProviderError, "length limit"):
+            AIService()._generate_gemini("question", "system")
+
+    @patch("app.services.gemini_service.GEMINI_API_KEY", "configured-test-key")
+    @patch("app.services.gemini_service.requests.post")
+    def test_truncated_gemini_stream_is_rejected_before_yield(self, post):
+        response = Mock(status_code=200, headers={})
+        response.raise_for_status.return_value = None
+        response.iter_lines.return_value = [
+            b'data: {"candidates":[{"content":{"parts":[{"text":"Incomplete answer"}]}}]}',
+            b'data: {"candidates":[{"finishReason":"MAX_TOKENS","content":{"parts":[]}}]}',
+        ]
+        post.return_value = response
+
+        with self.assertRaisesRegex(AIProviderError, "length limit"):
+            list(AIService()._generate_gemini_stream("question", "system"))
+
+    @patch("app.services.gemini_service.OPENAI_API_KEY", "configured-test-key")
+    @patch("app.services.gemini_service.requests.post")
+    def test_truncated_openai_response_is_rejected(self, post):
+        response = Mock(status_code=200)
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "choices": [
+                {
+                    "finish_reason": "length",
+                    "message": {"content": "Incomplete answer"},
+                }
+            ]
+        }
+        post.return_value = response
+
+        with self.assertRaisesRegex(AIProviderError, "length limit"):
+            AIService()._generate_openai("question", "system")
+
+    @patch("app.services.gemini_service.ANTHROPIC_API_KEY", "configured-test-key")
+    @patch("app.services.gemini_service.requests.post")
+    def test_truncated_anthropic_response_is_rejected(self, post):
+        response = Mock(status_code=200)
+        response.raise_for_status.return_value = None
+        response.json.return_value = {
+            "stop_reason": "max_tokens",
+            "content": [{"text": "Incomplete answer"}],
+        }
+        post.return_value = response
+
+        with self.assertRaisesRegex(AIProviderError, "length limit"):
+            AIService()._generate_anthropic("question", "system")
 
     @patch("app.services.gemini_service.training_service.generate_enhanced_response")
     @patch("app.services.gemini_service.OPENAI_API_KEY", "configured-test-key")
