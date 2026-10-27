@@ -13,6 +13,12 @@ body:not(.dark-mode) #tutor-section .chat-history {
     background: #ffffff;
 }
 
+body:not(.dark-mode) #tutor-section .message.ai .bubble {
+    border-color: #dce4ec !important;
+    background: #f1f5f9 !important;
+    color: #172b45 !important;
+}
+
 body:not(.dark-mode) #tutor-section .tutor-empty-state {
     max-width: 410px;
     padding: 28px 24px !important;
