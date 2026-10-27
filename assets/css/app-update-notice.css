@@ -94,6 +94,37 @@ dialog#keepai-release-notice .keepai-update-error {
 }
 body.dark-mode dialog#keepai-release-notice .keepai-update-error,
 body.admin-theme-dark dialog#keepai-release-notice .keepai-update-error { color: #fca5a5; }
+body.dark-mode dialog#keepai-release-notice,
+body.admin-theme-dark dialog#keepai-release-notice {
+  border-color: #3A3A3A;
+  background: linear-gradient(180deg, #151515 0%, #0B0B0B 100%);
+  color: #E2E8F0;
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.72), 0 10px 30px rgba(0, 0, 0, 0.42);
+}
+body.dark-mode dialog#keepai-release-notice h2,
+body.admin-theme-dark dialog#keepai-release-notice h2,
+body.dark-mode dialog#keepai-release-notice button,
+body.admin-theme-dark dialog#keepai-release-notice button {
+  color: #F8FAFC;
+}
+body.dark-mode dialog#keepai-release-notice p,
+body.admin-theme-dark dialog#keepai-release-notice p {
+  color: #D1D5DB;
+}
+body.dark-mode dialog#keepai-release-notice button,
+body.admin-theme-dark dialog#keepai-release-notice button {
+  border-color: #3A3A3A;
+  background: #1B1B1B;
+}
+body.dark-mode dialog#keepai-release-notice button:hover,
+body.admin-theme-dark dialog#keepai-release-notice button:hover {
+  background: #252525;
+}
+body.dark-mode dialog#keepai-release-notice .keepai-update-badge,
+body.admin-theme-dark dialog#keepai-release-notice .keepai-update-badge {
+  background: #123B36;
+  color: #5EEAD4;
+}
 @media (max-width: 480px) {
   dialog#keepai-release-notice {
     padding: 24px 20px 18px;

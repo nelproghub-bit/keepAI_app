@@ -1958,14 +1958,20 @@ table.data-table tr:hover {
 
 body.admin-theme-dark,
 #dashboard-app.admin-theme-dark {
-  --bg-app: #11151d;
-  --bg-surface: #1b2230;
-  --bg-subtle: #222b3a;
-  --border: #354052;
-  --border-strong: #48566b;
-  --text-main: #f2f4f8;
-  --text-body: #d5dbe5;
-  --text-muted: #a6b0c0;
+  --bg-app: #000000;
+  --bg-surface: #111111;
+  --bg-subtle: #1B1B1B;
+  --bg-hover: #252525;
+  --border: #3A3A3A;
+  --border-light: #303030;
+  --border-strong: #555555;
+  --text-main: #F8FAFC;
+  --text-body: #E2E8F0;
+  --text-muted: #B8C0CC;
+  --text-placeholder: #A0A8B4;
+  --primary-text: #5EEAD4;
+  --primary-light: #123B36;
+  --primary-border: #2C776C;
   color-scheme: dark;
   color: var(--text-body);
   background: var(--bg-app);
@@ -2023,12 +2029,12 @@ body.admin-theme-dark {
 }
 
 #dashboard-app.admin-theme-dark .data-table tr:hover td {
-  background: #293446;
+  background: var(--bg-hover);
 }
 
 #dashboard-app.admin-theme-dark .settings-icon {
-  background: #41252b;
-  color: #f2a6a6;
+  background: #3A2020;
+  color: #FFB4AB;
 }
 
 #dashboard-app.admin-theme-dark .settings-feedback[data-state="success"] {
@@ -2038,13 +2044,13 @@ body.admin-theme-dark {
 }
 
 #dashboard-app.admin-theme-dark .settings-feedback[data-state="error"] {
-  border-color: #783a43;
-  background: #3b2228;
-  color: #B8CAE0;
+  border-color: #8B3A3A;
+  background: #351919;
+  color: #FFB4AB;
 }
 
 #dashboard-app.admin-theme-dark .settings-note {
-  border-color: #a65353;
+  border-color: #5EEAD4;
 }
 
 #dashboard-app.admin-theme-dark .dash-main .dash-card,
@@ -2105,7 +2111,7 @@ body.admin-theme-dark {
 }
 
 #dashboard-app.admin-theme-dark .dash-main .data-table tr:hover td {
-  background-color: #293446;
+  background-color: var(--bg-hover);
 }
 
 body.admin-theme-dark .modal-card {
@@ -2128,6 +2134,31 @@ body.admin-theme-dark .modal-card select,
 body.admin-theme-dark .modal-card textarea {
   border-color: var(--border);
   background-color: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+#dashboard-app.admin-theme-dark .dash-sidebar {
+  background: #050505;
+  border-color: var(--border);
+}
+
+#dashboard-app.admin-theme-dark .dash-sidebar .nav-link {
+  color: #C4CBD4;
+}
+
+#dashboard-app.admin-theme-dark .dash-sidebar .nav-link.active,
+#dashboard-app.admin-theme-dark .dash-sidebar .nav-link:hover {
+  background: #12443E;
+  color: #FFFFFF;
+}
+
+#dashboard-app.admin-theme-dark :is(input, textarea)::placeholder {
+  color: var(--text-placeholder);
+  opacity: 1;
+}
+
+#dashboard-app.admin-theme-dark select option {
+  background: var(--bg-surface);
   color: var(--text-main);
 }
 
@@ -3471,6 +3502,7 @@ function isValidAdminTab(tabId) {
 }
 
 const ADMIN_THEME_STORAGE_KEY = 'keepai_admin_theme';
+const ADMIN_THEME_PENDING_KEY = 'keepai_admin_theme_pending';
 let adminThemePreference = 'system';
 
 function applyAdminTheme(theme) {
@@ -3488,8 +3520,15 @@ function initializeAdminAppearance() {
   const themeSelect = document.getElementById('admin-theme-select');
   const compactSidebar = document.getElementById('admin-compact-sidebar');
   const status = document.getElementById('admin-appearance-status');
+  let accountTheme;
+  let browserTheme;
+  let hasPendingTheme = false;
   try {
-    const storedTheme = localStorage.getItem(ADMIN_THEME_STORAGE_KEY) || 'system';
+    accountTheme = currentAdminUser?.theme_preference;
+    browserTheme = localStorage.getItem(ADMIN_THEME_STORAGE_KEY);
+    const pendingTheme = localStorage.getItem(ADMIN_THEME_PENDING_KEY);
+    hasPendingTheme = Boolean(pendingTheme);
+    const storedTheme = pendingTheme || accountTheme || browserTheme || 'system';
     adminThemePreference = ['system', 'light', 'dark'].includes(storedTheme) ? storedTheme : 'system';
     if (themeSelect) themeSelect.value = adminThemePreference;
     if (compactSidebar) compactSidebar.checked = localStorage.getItem('keepai_admin_sidebar_collapsed') === 'true';
@@ -3498,13 +3537,23 @@ function initializeAdminAppearance() {
     if (status) status.textContent = 'Browser storage is unavailable; appearance changes may not persist.';
   }
   applyAdminTheme(adminThemePreference);
+  if (!accountTheme && ['system', 'light', 'dark'].includes(browserTheme)) {
+    localStorage.setItem(ADMIN_THEME_PENDING_KEY, browserTheme);
+    hasPendingTheme = true;
+  }
 
   if (themeSelect && themeSelect.dataset.preferenceReady !== 'true') {
     themeSelect.addEventListener('change', () => {
       applyAdminTheme(themeSelect.value);
       try {
         localStorage.setItem(ADMIN_THEME_STORAGE_KEY, themeSelect.value);
-        if (status) status.textContent = 'Theme preference saved in this browser.';
+        localStorage.setItem(ADMIN_THEME_PENDING_KEY, themeSelect.value);
+        saveAdminThemePreference(themeSelect.value).then(() => {
+          if (status) status.textContent = 'Theme preference saved to your account.';
+        }).catch(error => {
+          console.error('Could not sync the admin theme preference:', error);
+          if (status) status.textContent = error.message || 'Theme updated here, but could not be synced to your account.';
+        });
       } catch (error) {
         console.error('Could not save the admin theme preference:', error);
         if (status) status.textContent = 'Theme updated for this session, but could not be saved in browser storage.';
@@ -3525,6 +3574,47 @@ function initializeAdminAppearance() {
       if (adminThemePreference === 'system') applyAdminTheme('system');
     });
     window.adminThemeListenerReady = true;
+  }
+  if (!window.adminThemeOnlineListenerReady) {
+    window.addEventListener('online', syncPendingAdminThemePreference);
+    window.adminThemeOnlineListenerReady = true;
+  }
+  if (navigator.onLine && hasPendingTheme) {
+    syncPendingAdminThemePreference();
+  }
+}
+
+async function saveAdminThemePreference(theme) {
+  const token = localStorage.getItem('admin_access_token');
+  if (!token) throw new Error('Sign in again before syncing your theme preference.');
+  const response = await fetch(`${API_BASE}/auth/profile`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ theme_preference: theme })
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(result.detail || `Theme preference could not be saved (${response.status}).`);
+  }
+  if (currentAdminUser) {
+    currentAdminUser.theme_preference = result.user.theme_preference;
+    localStorage.setItem('admin_user', JSON.stringify(currentAdminUser));
+  }
+  localStorage.removeItem(ADMIN_THEME_PENDING_KEY);
+}
+
+async function syncPendingAdminThemePreference() {
+  const pendingTheme = localStorage.getItem(ADMIN_THEME_PENDING_KEY);
+  if (!pendingTheme || !['system', 'light', 'dark'].includes(pendingTheme)) return;
+  try {
+    await saveAdminThemePreference(pendingTheme);
+  } catch (error) {
+    console.error('Could not sync the pending admin theme preference:', error);
+    const status = document.getElementById('admin-appearance-status');
+    if (status) status.textContent = error.message || 'Theme preference could not be synced.';
   }
 }
 

@@ -122,15 +122,34 @@ class StudentLoginIdentifierTests(unittest.TestCase):
         response = self.client.put(
             "/api/auth/profile",
             headers=headers,
-            json={"teaching_style": "detailed", "course_level": "advanced"},
+            json={
+                "teaching_style": "detailed",
+                "course_level": "advanced",
+                "theme_preference": "dark",
+            },
         )
 
         self.assertEqual(response.status_code, 200, response.text)
         user = response.json()["user"]
         self.assertEqual(user["teaching_style"], "detailed")
         self.assertEqual(user["course_level"], "advanced")
+        self.assertEqual(user["theme_preference"], "dark")
         self.assertEqual(user["full_name"], "Test Learner")
         self.assertEqual(user["student_id"], "VERIFIED-1")
+
+        profile = self.client.get("/api/auth/me", headers=headers)
+        self.assertEqual(profile.status_code, 200, profile.text)
+        self.assertEqual(profile.json()["user"]["theme_preference"], "dark")
+
+    def test_theme_preference_rejects_unsupported_values(self):
+        registration = self.register_student()
+        response = self.client.put(
+            "/api/auth/profile",
+            headers={"Authorization": f"Bearer {registration['access_token']}"},
+            json={"theme_preference": "midnight"},
+        )
+
+        self.assertEqual(response.status_code, 422, response.text)
 
     def test_student_cannot_list_other_users_through_auth_users_endpoint(self):
         registration = self.register_student()

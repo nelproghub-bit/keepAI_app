@@ -129,7 +129,8 @@ class UserService:
             cur.execute(
                 """
                 SELECT id, username, email, full_name, student_id, role,
-                       google_id, password_login_enabled, teaching_style, course_level
+                       google_id, password_login_enabled, teaching_style, course_level,
+                       theme_preference
                 FROM users
                 WHERE LOWER(email) = ?
                 """,
@@ -162,7 +163,8 @@ class UserService:
                     cur.execute(
                         """
                         SELECT id, username, email, full_name, student_id, role,
-                               google_id, password_login_enabled, teaching_style, course_level
+                               google_id, password_login_enabled, teaching_style, course_level,
+                               theme_preference
                         FROM users
                         WHERE id = ?
                         """,
@@ -284,7 +286,8 @@ class UserService:
             cur.execute(
                 """
                 SELECT id, username, email, full_name, student_id, password_hash,
-                       role, password_login_enabled, teaching_style, course_level
+                       role, password_login_enabled, teaching_style, course_level,
+                       theme_preference
                 FROM users
                 WHERE username = ? OR email = ? OR LOWER(student_id) = ?
                 """,
@@ -313,7 +316,8 @@ class UserService:
                 "student_id": user_dict["student_id"],
                 "role": user_dict.get("role", "student"),
                 "teaching_style": user_dict.get("teaching_style") or "simple",
-                "course_level": user_dict.get("course_level") or "intermediate"
+                "course_level": user_dict.get("course_level") or "intermediate",
+                "theme_preference": user_dict.get("theme_preference")
             }
         finally:
             conn.close()
@@ -410,7 +414,8 @@ class UserService:
         self, 
         user_id: str, 
         teaching_style: Optional[str] = None,
-        course_level: Optional[str] = None
+        course_level: Optional[str] = None,
+        theme_preference: Optional[str] = None
     ) -> Dict[str, Any]:
         """Update student profile and academic study preferences"""
         conn = get_connection()
@@ -424,15 +429,21 @@ class UserService:
             if course_level:
                 fields.append("course_level = ?")
                 values.append(course_level.strip())
+            if theme_preference is not None:
+                fields.append("theme_preference = ?")
+                values.append(theme_preference)
 
             if fields:
                 values.append(user_id)
                 cur.execute(f"UPDATE users SET {', '.join(fields)} WHERE id = ?", tuple(values))
                 conn.commit()
             
-            cur.execute("SELECT id, username, email, full_name, student_id, teaching_style, course_level FROM users WHERE id = ?", (user_id,))
+            cur.execute("SELECT id, username, email, full_name, student_id, teaching_style, course_level, theme_preference FROM users WHERE id = ?", (user_id,))
             row = cur.fetchone()
-            return dict(row) if row else {}
+            if not row:
+                return {}
+            user = dict(row)
+            return user
         finally:
             conn.close()
 

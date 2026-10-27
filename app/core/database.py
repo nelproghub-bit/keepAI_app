@@ -229,6 +229,7 @@ def init_db():
             password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
             course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+            theme_preference VARCHAR(16),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         )
@@ -246,6 +247,7 @@ def init_db():
         cursor.execute(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate'"
         )
+        cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS theme_preference VARCHAR(16)")
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (
             user_id VARCHAR(64) PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -438,6 +440,7 @@ def init_db():
             password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
             teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
             course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+            theme_preference VARCHAR(16) NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -465,6 +468,9 @@ def init_db():
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate'"
             )
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'theme_preference'")
+        if not cursor.fetchone():
+            cursor.execute("ALTER TABLE users ADD COLUMN theme_preference VARCHAR(16) NULL")
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (
@@ -646,6 +652,7 @@ def init_db():
             password_login_enabled INTEGER NOT NULL DEFAULT 1,
             teaching_style TEXT NOT NULL DEFAULT 'simple',
             course_level TEXT NOT NULL DEFAULT 'intermediate',
+            theme_preference TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )
@@ -669,6 +676,8 @@ def init_db():
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN course_level TEXT NOT NULL DEFAULT 'intermediate'"
             )
+        if "theme_preference" not in user_columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN theme_preference TEXT")
 
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (

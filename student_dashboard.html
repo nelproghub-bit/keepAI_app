@@ -3489,13 +3489,36 @@
                 } catch (e) {}
             }
 
-            // Load Dark Mode
-            const isDark = localStorage.getItem('keepai_dark_mode') === 'true';
-            if (isDark) {
-                document.body.classList.add('dark-mode');
-                const darkCheck = document.getElementById('dark-mode');
-                if (darkCheck) darkCheck.checked = true;
+            // Use the account preference when available; migrate the prior browser-only value.
+            const themeKey = darkModeStorageKey();
+            const savedTheme = localStorage.getItem(themeKey);
+            const legacyTheme = currentUser.id
+                && localStorage.getItem('keepai_dark_mode_migrated') !== 'true'
+                ? localStorage.getItem('keepai_dark_mode')
+                : null;
+            const localTheme = savedTheme ?? legacyTheme;
+            const pendingThemeKey = `keepai_dark_mode_pending_${encodeURIComponent(currentUser.id || '')}`;
+            const pendingTheme = currentUser.id ? localStorage.getItem(pendingThemeKey) : null;
+            const isDark = pendingTheme !== null
+                ? pendingTheme === 'true'
+                : currentUser.theme_preference === 'dark'
+                    ? true
+                    : currentUser.theme_preference === 'light'
+                        ? false
+                        : localTheme === 'true';
+            applyDarkMode(isDark, false);
+            localStorage.setItem(themeKey, String(isDark));
+            if (currentUser.id && legacyTheme !== null) {
+                localStorage.setItem('keepai_dark_mode_migrated', 'true');
             }
+            if (currentUser.theme_preference == null && localTheme !== null
+                && pendingTheme === null && navigator.onLine) {
+                saveThemePreference(isDark).catch(error => {
+                    console.error('Could not sync the saved theme preference:', error);
+                });
+            }
+            window.addEventListener('online', syncPendingThemePreference);
+            if (navigator.onLine) syncPendingThemePreference();
 
             // Load Teaching Style & Course Level Preferences
             const savedStyle = localStorage.getItem('keepai_teaching_style') || currentUser.teaching_style || 'simple';
@@ -3606,6 +3629,11 @@
         function documentStorageKey() {
             const userId = currentUser?.id;
             return userId ? `keepai_documents_${encodeURIComponent(userId)}` : 'keepai_documents_guest';
+        }
+
+        function darkModeStorageKey() {
+            const userId = currentUser?.id;
+            return userId ? `keepai_dark_mode_${encodeURIComponent(userId)}` : 'keepai_dark_mode';
         }
 
         function updateUIProfile() {
@@ -5725,16 +5753,64 @@
             }
         }
 
-        function toggleDarkMode(force) {
-            const isDark = (typeof force === 'boolean') ? force : !document.body.classList.contains('dark-mode');
+        function applyDarkMode(isDark, saveLocally = true) {
             if (isDark) {
                 document.body.classList.add('dark-mode');
             } else {
                 document.body.classList.remove('dark-mode');
             }
-            localStorage.setItem('keepai_dark_mode', isDark);
+            if (saveLocally) {
+                localStorage.setItem(darkModeStorageKey(), String(isDark));
+            }
             const darkCheck = document.getElementById('dark-mode');
             if (darkCheck) darkCheck.checked = isDark;
+        }
+
+        async function saveThemePreference(isDark) {
+            const token = localStorage.getItem('access_token');
+            if (!token) throw new Error('Sign in again before syncing your theme preference.');
+            const response = await fetch(`${API_BASE}/auth/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ theme_preference: isDark ? 'dark' : 'light' })
+            });
+            if (!response.ok) {
+                const result = await response.json().catch(() => ({}));
+                throw new Error(result.detail || `Theme preference could not be saved (${response.status}).`);
+            }
+            const result = await response.json();
+            currentUser.theme_preference = result.user.theme_preference;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            localStorage.removeItem(`keepai_dark_mode_pending_${encodeURIComponent(currentUser.id)}`);
+        }
+
+        async function syncPendingThemePreference() {
+            const pendingKey = `keepai_dark_mode_pending_${encodeURIComponent(currentUser.id || '')}`;
+            const pendingTheme = localStorage.getItem(pendingKey);
+            if (pendingTheme === null) return;
+            try {
+                await saveThemePreference(pendingTheme === 'true');
+            } catch (error) {
+                console.error('Could not sync the saved theme preference:', error);
+                showToast(error.message || 'Theme preference could not be synced.', 'error');
+            }
+        }
+
+        function toggleDarkMode(force) {
+            const isDark = (typeof force === 'boolean') ? force : !document.body.classList.contains('dark-mode');
+            applyDarkMode(isDark);
+            if (!currentUser.id) return;
+            const pendingKey = `keepai_dark_mode_pending_${encodeURIComponent(currentUser.id)}`;
+            localStorage.setItem(pendingKey, String(isDark));
+            if (navigator.onLine) {
+                saveThemePreference(isDark).catch(error => {
+                    console.error('Could not save the theme preference:', error);
+                    showToast(error.message || 'Theme preference could not be saved to your account.', 'error');
+                });
+            }
         }
 
         // Professional Confirmation Modal Handler (Replaces browser confirm)

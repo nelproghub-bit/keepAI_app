@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 import time
 
 import requests
@@ -25,6 +25,7 @@ class LoginRequest(BaseModel):
 class ProfileUpdateRequest(BaseModel):
     teaching_style: Optional[str] = None
     course_level: Optional[str] = None
+    theme_preference: Optional[Literal["light", "dark", "system"]] = None
 
     model_config = ConfigDict(extra="forbid")
 
@@ -236,7 +237,8 @@ def update_student_profile(
     updated_user = user_service.update_profile(
         user_id=current_user["id"],
         teaching_style=request.teaching_style,
-        course_level=request.course_level
+        course_level=request.course_level,
+        theme_preference=request.theme_preference
     )
     return {"user": updated_user}
 

@@ -88,29 +88,29 @@
    2. Dark Mode Overrides
    ============================================================ */
 body.dark-mode {
-  --bg-app:        #0f172a;
-  --bg-surface:    #1e293b;
-  --bg-subtle:     #1a2638;
-  --border:        #334155;
-  --border-strong: #475569;
-  --text-main:     #f1f5f9;
-  --text-body:     #cbd5e1;
-  --text-muted:    #94a3b8;
-  --text-placeholder: #52647A;
-  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow:        0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg:     0 10px 25px rgba(0, 0, 0, 0.4);
+  --bg-app:        #000000;
+  --bg-surface:    #111111;
+  --bg-subtle:     #1B1B1B;
+  --border:        #3A3A3A;
+  --border-strong: #555555;
+  --text-main:     #F8FAFC;
+  --text-body:     #E2E8F0;
+  --text-muted:    #B8C0CC;
+  --text-placeholder: #A0A8B4;
+  --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.45);
+  --shadow:        0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-lg:     0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 body.dark-mode .btn-secondary {
-  background: #1e293b;
+  background: #1B1B1B;
   color: var(--text-body);
   border-color: var(--border);
 }
 
 body.dark-mode .btn-soft {
-  background: rgba(15, 118, 110, 0.25);
-  color: #74D9CD;
+  background: #123B36;
+  color: #5EEAD4;
 }
 
 body.dark-mode .btn-plain {

@@ -21,6 +21,7 @@ CREATE TABLE IF NOT EXISTS `users` (
     `role` VARCHAR(32) NOT NULL DEFAULT 'student',
     `teaching_style` VARCHAR(32) NOT NULL DEFAULT 'simple',
     `course_level` VARCHAR(32) NOT NULL DEFAULT 'intermediate',
+    `theme_preference` VARCHAR(16) NULL DEFAULT NULL,
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `last_login` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
