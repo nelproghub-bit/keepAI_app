@@ -1,0 +1,57 @@
+body:not(.dark-mode) #tutor-section .chat-panel {
+    border-color: #dce4ec;
+    background: #ffffff;
+    box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07);
+}
+
+body:not(.dark-mode) #tutor-section .chat-top-header {
+    border-bottom-color: #e2e8f0;
+    background: #f8fafc;
+}
+
+body:not(.dark-mode) #tutor-section .chat-history {
+    background: #ffffff;
+}
+
+body:not(.dark-mode) #tutor-section .tutor-empty-state {
+    max-width: 410px;
+    padding: 28px 24px !important;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fbfc 100%);
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+    color: #52647a !important;
+}
+
+body:not(.dark-mode) #tutor-section .tutor-empty-state > div:first-child {
+    background: #e5f5f2 !important;
+    color: #0f766e !important;
+}
+
+body:not(.dark-mode) #tutor-section .tutor-empty-state h4 {
+    color: #172b45 !important;
+}
+
+body:not(.dark-mode) #tutor-section .tutor-empty-state p {
+    color: #52647a;
+}
+
+body:not(.dark-mode) #tutor-section .chat-input {
+    border-top-color: #e2e8f0;
+    background: #f8fafc;
+}
+
+body:not(.dark-mode) #tutor-section .chat-input input {
+    border-color: #dce4ec;
+    background: #ffffff;
+    color: #172b45;
+}
+
+body:not(.dark-mode) #tutor-section .chat-input input:focus {
+    border-color: #0f766e;
+    background: #ffffff;
+}
+
+body:not(.dark-mode) #tutor-section .chat-input input::placeholder {
+    color: #64748b;
+}
