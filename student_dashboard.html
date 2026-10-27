@@ -1194,6 +1194,12 @@
             gap: 16px;
         }
 
+        .tutor-empty-state {
+            width: 100%;
+            margin: auto;
+            text-align: center;
+        }
+
         .message {
             display: flex;
             gap: 12px;
@@ -2837,7 +2843,7 @@
                         </div>
 
                         <div class="chat-history" id="chat-messages">
-                            <div class="text-center py-5" style="color: var(--text-muted); margin: auto;">
+                            <div class="tutor-empty-state text-center py-5" style="color: var(--text-muted); margin: auto;">
                                 <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                                     <i class="fas fa-graduation-cap"></i>
                                 </div>
@@ -5061,7 +5067,7 @@
         function renderEmptyTutorChat() {
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = `
-                <div class="text-center py-5" style="color: var(--text-muted); margin: auto;">
+                <div class="tutor-empty-state text-center py-5" style="color: var(--text-muted); margin: auto;">
                     <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
