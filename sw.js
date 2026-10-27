@@ -19,6 +19,7 @@ const STATIC_ASSETS = [
   './assets/css/responsive-layouts.css',
   './assets/css/landing.css',
   './assets/css/brand-theme.css',
+  './assets/css/app-update-notice.css',
   './assets/css/design-system.css',
   './assets/css/onboarding-tour.css',
   './assets/js/landing.js',

@@ -11,9 +11,6 @@ if (currentUrl.searchParams.has('__keepai_refresh')) {
 document.addEventListener('DOMContentLoaded', () => {
     if (!window.APP_VERSION || window.APP_VERSION === 'local') return;
 
-    const toastContainer = document.getElementById('toast-container');
-    if (!toastContainer) return;
-
     const versionKey = 'keepai-app-version';
     let previousVersion;
     let updateWasRequested;
@@ -29,23 +26,46 @@ document.addEventListener('DOMContentLoaded', () => {
     const showUpdateNotice = () => {
         if (document.getElementById('keepai-release-notice')) return;
 
-        const notice = document.createElement('div');
+        const notice = document.createElement('dialog');
         notice.id = 'keepai-release-notice';
-        notice.className = 'toast';
-        notice.setAttribute('role', 'status');
-        notice.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;max-width:380px;padding:14px 18px;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #0F766E;border-radius:12px;box-shadow:0 8px 24px rgba(10,15,30,.2);color:#0f172a;font:600 13px Inter,sans-serif;';
+        notice.setAttribute('aria-labelledby', 'keepai-update-title');
+        notice.setAttribute('aria-describedby', 'keepai-update-description');
 
-        const message = document.createElement('span');
-        message.textContent = 'KeepAI has been updated. Reload to use the latest version.';
-        message.style.flex = '1 1 100%';
+        const badge = document.createElement('div');
+        badge.className = 'keepai-update-badge';
+        badge.textContent = 'KEEP AI · APP UPDATE';
+
+        const heading = document.createElement('h2');
+        heading.id = 'keepai-update-title';
+        heading.textContent = 'A fresh update is ready';
+
+        const message = document.createElement('p');
+        message.id = 'keepai-update-description';
+        message.textContent = 'Reload KeepAI to enjoy the latest improvements. Finish any unsaved work before updating.';
+
+        const actions = document.createElement('div');
+        actions.className = 'keepai-update-actions';
+
+        const laterButton = document.createElement('button');
+        laterButton.type = 'button';
+        laterButton.textContent = 'Not now';
+        laterButton.addEventListener('click', () => notice.close());
+        notice.addEventListener('close', () => notice.remove());
+
+        const errorMessage = document.createElement('p');
+        errorMessage.className = 'keepai-update-error';
+        errorMessage.setAttribute('role', 'alert');
+        errorMessage.hidden = true;
 
         const updateButton = document.createElement('button');
         updateButton.type = 'button';
         updateButton.textContent = 'Update now';
-        updateButton.style.cssText = 'padding:8px 14px;border:0;border-radius:8px;background:#0F766E;color:#fff;font:600 13px Inter,sans-serif;cursor:pointer;';
+        updateButton.className = 'keepai-update-primary';
+        updateButton.autofocus = true;
         updateButton.addEventListener('click', async () => {
             updateButton.disabled = true;
             updateButton.textContent = 'Updating…';
+            errorMessage.hidden = true;
             try {
                 if ('serviceWorker' in navigator) {
                     const registration = await navigator.serviceWorker.getRegistration();
@@ -63,11 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Could not refresh KeepAI after an update:', error);
                 updateButton.disabled = false;
                 updateButton.textContent = 'Try again';
+                errorMessage.textContent = 'The update could not be loaded. Check your connection and try again.';
+                errorMessage.hidden = false;
             }
         });
 
-        notice.append(message, updateButton);
-        toastContainer.appendChild(notice);
+        actions.append(laterButton, updateButton);
+        notice.append(badge, heading, message, errorMessage, actions);
+        document.body.appendChild(notice);
+        notice.showModal();
     };
 
     if (updateWasRequested) {
