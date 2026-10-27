@@ -1,95 +1,116 @@
 (function () {
   'use strict';
 
-  const TOUR_STORAGE_PREFIX = 'keepai_onboarding_status';
-  const TOUR_ACTIVE_STATE_KEY = 'keepai_onboarding_active';
+  const TOUR_STATUS_PREFIX = 'keepai_onboarding_status';
+  const ACTIVE_TOUR_KEY = 'keepai_onboarding_active';
   const TOUR_STEPS = {
     student: [
       {
         section: 'workspaces',
-        selector: '[data-section="workspaces"]',
-        title: 'Workspace hub',
-        description: 'Organize each course, subject, or project into a dedicated workspace so your notes, resources, and study sessions stay connected in one place.',
-        tip: 'Start with a workspace for the class you are studying this week and build a simple routine around it.'
+        selector: '.panel-head button[onclick="showCreateWorkspaceModal()"]',
+        title: 'Your workspace dashboard',
+        description: 'Create a workspace for each subject or project to keep its study materials organized.',
+        tip: 'Start with the course you are studying this week.'
       },
       {
         section: 'documents',
-        selector: '[data-section="documents"]',
-        title: 'Study library',
-        description: 'Upload notes, readings, and supporting documents here so your study materials stay organized, searchable, and ready to review anytime.',
-        tip: 'Use clear file names and consistent folders so your resources stay easy to find later.'
+        selector: '.panel-head button[onclick="showUploadDocumentModal()"]',
+        title: 'Add your study materials',
+        description: 'Upload course notes and readings to keep your source materials together and ready to use.',
+        tip: 'Clear file names make documents easier to find.'
       },
       {
         section: 'tutor',
-        selector: '[data-section="tutor"]',
-        title: 'AI tutor module',
-        description: 'Ask questions in your own words and get guided explanations designed to simplify difficult topics and strengthen understanding.',
-        tip: 'Try asking for a concept to be broken down step by step or compared with a real-world example.'
+        selector: '#tutor-input',
+        title: 'Ask the AI tutor',
+        description: 'Ask a question in your own words to get help understanding a topic or lesson.',
+        tip: 'Ask for a step-by-step explanation when a concept feels difficult.'
       },
       {
         section: 'learning',
-        selector: '[data-section="learning"]',
-        title: 'Learning studio',
-        description: 'Use the learning tools to practice key ideas through flashcards, review exercises, and guided study activities that reinforce learning.',
-        tip: 'Short, focused practice sessions help you retain ideas more effectively than long passive study blocks.'
+        selector: '#learning-section .tool-card button[onclick="openFlashcardPlayer()"]',
+        title: 'Review with flashcards',
+        description: 'Launch flashcards to practise key terms and concepts from your learning materials.',
+        tip: 'Use the cards for a quick, focused review session.'
+      },
+      {
+        section: 'learning',
+        selector: '#learning-section .tool-card button[onclick*="quiz"]',
+        title: 'Check your understanding',
+        description: 'Generate a practice quiz from your lessons to test what you have learned.',
+        tip: 'Use quiz results to spot topics that need another review.'
+      },
+      {
+        section: 'learning',
+        selector: '#learning-section .tool-card button[onclick*="summary"]',
+        title: 'Create a lesson summary',
+        description: 'Turn longer notes and lessons into a concise summary for easier review.',
+        tip: 'Summaries work best when you choose a focused lesson or topic.'
       },
       {
         section: 'progress',
-        selector: '[data-section="progress"]',
-        title: 'Progress dashboard',
-        description: 'Review your recent activity and study momentum to see how your routine is improving over time and where to focus next.',
-        tip: 'Checking your progress regularly helps you stay consistent and identify what needs attention.'
+        selector: '#progress-section .panel-head h2',
+        title: 'Track your progress',
+        description: 'Review your study activity, streak, workspace count, and quiz results in one place.',
+        tip: 'Check in regularly to see how your study routine is developing.'
       },
       {
         section: 'settings',
-        selector: '[data-section="settings"]',
-        title: 'Personalized settings',
-        description: 'Adjust your profile, preferences, and app experience from Settings to match your workflow, learning style, and account needs.',
-        tip: 'You are ready to begin. You can replay this walkthrough any time from the controls in the app.'
+        selector: '#settings-section h2',
+        title: 'Make KeepAI your own',
+        description: 'Manage your profile and preferences from Settings. Restart this tour from your profile menu whenever you need a refresher.',
+        tip: 'Your tour progress is saved separately for your account.'
       }
     ],
     admin: [
       {
         section: 'overview',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'overview\')"]',
+        selector: '#section-overview h1',
         title: 'Operations overview',
-        description: 'The Overview dashboard brings together the most important system signals, including activity trends, health checks, and key operational indicators.',
-        tip: 'Use this as your daily control center for checking the current health of the platform.'
+        description: 'Review platform activity, system health, and key operational indicators from the overview.',
+        tip: 'Use this as your starting point for a routine system check.'
       },
       {
         section: 'users',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'users\')"]',
+        selector: '#section-users h1',
         title: 'User management',
-        description: 'The User Management module helps administrators review accounts, verify access, and handle account-related actions with clear operational visibility.',
-        tip: 'Review account details carefully before approving or changing permissions.'
+        description: 'Review user accounts and handle account-related administration tasks.',
+        tip: 'Confirm account details before changing access or permissions.'
       },
       {
         section: 'documents',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'documents\')"]',
-        title: 'Content library',
-        description: 'The Documents module gives administrators visibility into shared resources, educational materials, and the broader content library used across the platform.',
-        tip: 'Keep the library structured and relevant so students can easily find the right learning materials.'
+        selector: '#section-documents h1',
+        title: 'Shared learning resources',
+        description: 'Review the platform document library and manage shared educational materials.',
+        tip: 'Keep resources relevant and easy for students to navigate.'
       },
       {
         section: 'announcements',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'announcements\')"]',
-        title: 'Communications center',
-        description: 'Publish announcements and updates to keep students informed with timely messages and action-oriented reminders.',
-        tip: 'Keep messages concise and specific so users know exactly what to do next.'
+        selector: '#section-announcements h1',
+        title: 'Announcements',
+        description: 'Share important updates and reminders with students through the portal.',
+        tip: 'Keep messages concise and clear about the action students should take.'
       },
       {
         section: 'playground',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'playground\')"]',
-        title: 'AI sandbox',
-        description: 'Use the AI Playground to test prompts, validate study workflows, and confirm that the assistant experience behaves as expected.',
-        tip: 'Run a representative prompt before sharing a new feature or significant update.'
+        selector: '#section-playground h1',
+        title: 'AI test console',
+        description: 'Try study prompts and check the assistant experience in the AI test console.',
+        tip: 'Test a representative prompt when validating a change.'
       },
       {
         section: 'system',
-        selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'system\')"]',
-        title: 'System & diagnostics',
-        description: 'The System and Database area provides diagnostics, monitoring controls, and operational tools to help maintain a healthy platform environment.',
-        tip: 'Use these tools to verify performance and investigate issues before changing critical settings.'
+        selector: '#section-system h1',
+        title: 'System diagnostics',
+        description: 'Review system and database diagnostics to help monitor the platform.',
+        tip: 'Use diagnostics to investigate issues before changing system settings.'
+      },
+      {
+        section: 'settings',
+        selector: '#section-settings h1',
+        title: 'Administrator settings',
+        description: 'Manage administrator preferences and account settings here.',
+        tip: 'You can restart this walkthrough from the Settings page.'
       }
     ]
   };
@@ -97,398 +118,379 @@
   let activeRole = null;
   let activeUserId = null;
   let activeStep = 0;
-  let activeDialog = null;
-  let highlightedElement = null;
   let previousFocusedElement = null;
-  let previousBodyOverflow = '';
-  let replayButton = null;
+  let tourRoot = null;
+  let guidance = null;
+  let arrowPath = null;
+  let currentTarget = null;
+  let resizeObserver = null;
+  let animationFrame = 0;
 
-  function getRoleFromPage() {
-    if (window.location.pathname.toLowerCase().includes('admin')) return 'admin';
-    return 'student';
+  function userKey() {
+    return encodeURIComponent(String(activeUserId || 'account'));
   }
 
-  function getCurrentUserKey() {
-    const userId = activeUserId || 'account';
-    return encodeURIComponent(String(userId));
+  function statusKey() {
+    return `${TOUR_STATUS_PREFIX}:${activeRole}:${userKey()}`;
   }
 
-  function getStorageKey() {
-    const role = activeRole || getRoleFromPage();
-    return `${TOUR_STORAGE_PREFIX}:${role}:${getCurrentUserKey()}`;
-  }
-
-  function hasTourStatus() {
+  function hasCompletedTour() {
     try {
-      const status = window.localStorage.getItem(getStorageKey());
-      return status === 'dismissed' || status === 'completed';
+      return ['dismissed', 'completed'].includes(window.localStorage.getItem(statusKey()));
     } catch (error) {
       console.warn('Could not read onboarding status:', error);
       return false;
     }
   }
 
-  function saveTourStatus(status) {
+  function saveStatus(status) {
     try {
-      window.localStorage.setItem(getStorageKey(), status);
+      window.localStorage.setItem(statusKey(), status);
     } catch (error) {
       console.warn('Could not save onboarding status:', error);
     }
   }
 
-  function saveTourCompletion() {
-    saveTourStatus('dismissed');
-  }
-
-  function saveActiveTourState() {
+  function saveActiveStep() {
     try {
-      const payload = JSON.stringify({
+      window.sessionStorage.setItem(ACTIVE_TOUR_KEY, JSON.stringify({
         role: activeRole,
         userId: activeUserId,
         step: activeStep
-      });
-      window.sessionStorage.setItem(TOUR_ACTIVE_STATE_KEY, payload);
+      }));
     } catch (error) {
-      console.warn('Could not save tour progress:', error);
+      console.warn('Could not save guided tour progress:', error);
     }
   }
 
-  function restoreActiveTourState() {
+  function restoreActiveStep() {
     try {
-      const raw = window.sessionStorage.getItem(TOUR_ACTIVE_STATE_KEY);
-      if (!raw) return null;
-      const state = JSON.parse(raw);
-      if (!state || !state.role || !state.step && state.step !== 0) return null;
-      return state;
+      const state = JSON.parse(window.sessionStorage.getItem(ACTIVE_TOUR_KEY) || 'null');
+      if (state && state.role === activeRole && state.userId === activeUserId
+        && Number.isInteger(state.step) && state.step >= 0
+        && state.step < TOUR_STEPS[activeRole].length) {
+        return state.step;
+      }
     } catch (error) {
-      console.warn('Could not restore tour progress:', error);
+      console.warn('Could not restore guided tour progress:', error);
+    }
+    return 0;
+  }
+
+  function getCurrentStep() {
+    return TOUR_STEPS[activeRole]?.[activeStep] || null;
+  }
+
+  function findTarget(step) {
+    if (!step) return null;
+    try {
+      const candidates = [
+        step.selector,
+        `[data-section="${step.section}"]`,
+        `.dash-nav .nav-link[onclick*="${step.section}"]`
+      ];
+      for (let index = 0; index < candidates.length; index += 1) {
+        const selector = candidates[index];
+        const target = document.querySelector(selector);
+        if (!target || !target.getClientRects().length) continue;
+        if (index > 0) {
+          const rect = target.getBoundingClientRect();
+          const isInViewport = rect.right > 0 && rect.bottom > 0
+            && rect.left < window.innerWidth && rect.top < window.innerHeight;
+          if (!isInViewport) continue;
+        }
+        return target;
+      }
+      return null;
+    } catch (error) {
+      console.warn('Could not find guided tour target:', error);
       return null;
     }
   }
 
-  function createReplayButton() {
-    if (replayButton) return;
+  function ensureRestartControl() {
+    const settings = document.querySelector('#settings-section, #section-settings');
+    if (!settings || settings.querySelector('[data-tour-restart]')) return;
 
-    replayButton = document.createElement('button');
-    replayButton.type = 'button';
-    replayButton.className = 'keepai-tour-replay';
-    replayButton.textContent = 'Replay tour';
-    replayButton.setAttribute('aria-label', 'Replay the KeepAI tutorial');
-    replayButton.addEventListener('click', () => openTour(true));
-    document.body.appendChild(replayButton);
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'keepai-tour-restart-button';
+    button.dataset.tourRestart = 'true';
+    button.textContent = 'Restart guided tour';
+    button.addEventListener('click', restart);
+    settings.appendChild(button);
   }
 
-  function resolveTourTarget(step) {
-    const selectors = [
-      step.selector,
-      `[data-section="${step.section}"]`,
-      `#section-${step.section}`,
-      `[data-tour-target="${step.section}"]`
-    ];
+  function createTour() {
+    if (tourRoot) return;
 
-    for (const selector of selectors) {
-      const target = document.querySelector(selector);
-      if (target) return target;
-    }
-
-    return null;
-  }
-
-  function attachRestartTourControl() {
-    const containers = [document.querySelector('#settings-section'), document.querySelector('#section-settings')].filter(Boolean);
-    containers.forEach(container => {
-      if (container.querySelector('[data-tour-restart]')) return;
-
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'keepai-tour-restart-button';
-      button.dataset.tourRestart = 'true';
-      button.innerHTML = '<i class="fas fa-route"></i><span>Restart guided tour</span>';
-      button.addEventListener('click', () => {
-        if (activeRole) {
-          openTour(true);
-          return;
-        }
-
-        const detectedRole = getRoleFromPage();
-        const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
-        window.KeepAITour?.start(detectedRole, storedUser || { id: 'account' });
-        openTour(true);
-      });
-
-      const existingActions = container.querySelector('.settings-actions, .settings-card, .settings-grid');
-      if (existingActions) {
-        existingActions.appendChild(button);
-      } else {
-        container.appendChild(button);
-      }
-    });
-  }
-
-  function positionTourDialog(dialog, target) {
-    const margin = 24;
-    const dialogWidth = Math.min(520, window.innerWidth - 24);
-    dialog.style.width = `${dialogWidth}px`;
-
-    if (!target) {
-      dialog.style.left = '50%';
-      dialog.style.top = '50%';
-      dialog.style.transform = 'translate(-50%, -50%)';
-      dialog.dataset.anchored = 'false';
-      return;
-    }
-
-    const rect = target.getBoundingClientRect();
-    const dialogHeight = dialog.offsetHeight || 310;
-    let left = rect.right + 28;
-    let top = rect.top + (rect.height / 2) - (dialogHeight / 2);
-
-    if (left + dialogWidth > window.innerWidth - margin) {
-      left = rect.left - dialogWidth - 28;
-    }
-
-    if (left < margin) {
-      left = (window.innerWidth - dialogWidth) / 2;
-    }
-
-    if (top < margin) {
-      top = margin;
-    }
-
-    if (top + dialogHeight > window.innerHeight - margin) {
-      top = window.innerHeight - dialogHeight - margin;
-    }
-
-    dialog.style.left = `${left}px`;
-    dialog.style.top = `${top}px`;
-    dialog.style.transform = 'none';
-    dialog.dataset.anchored = 'true';
-  }
-
-  function createDialog() {
-    const backdrop = document.createElement('div');
-    backdrop.className = 'keepai-tour-backdrop';
-    backdrop.innerHTML = `
-      <section class="keepai-tour-dialog" role="dialog" aria-modal="true" aria-labelledby="keepai-tour-title" aria-describedby="keepai-tour-description">
-        <header class="keepai-tour-header">
-          <div class="keepai-tour-brand">
-            <span class="keepai-tour-mark" aria-hidden="true">K</span>
-            <div>
-              <p class="keepai-tour-eyebrow">KeepAI guided tour</p>
-              <span class="keepai-tour-counter" data-tour-counter></span>
-            </div>
-          </div>
-          <button class="keepai-tour-button keepai-tour-button-quiet" type="button" data-tour-close aria-label="Close tutorial">Close</button>
-        </header>
-        <div class="keepai-tour-progress" role="progressbar" aria-label="Tutorial progress">
+    tourRoot = document.createElement('div');
+    tourRoot.className = 'keepai-tour-layer';
+    tourRoot.innerHTML = `
+      <svg class="keepai-tour-arrow" aria-hidden="true">
+        <defs>
+          <marker id="keepai-tour-arrowhead" viewBox="0 0 10 10" refX="8" refY="5"
+            markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z"></path>
+          </marker>
+        </defs>
+        <path class="keepai-tour-arrow-line" marker-end="url(#keepai-tour-arrowhead)"></path>
+      </svg>
+      <section class="keepai-tour-guidance" role="region" aria-live="polite" aria-labelledby="keepai-tour-title">
+        <div class="keepai-tour-meta">
+          <span class="keepai-tour-brand">KeepAI guide</span>
+          <span class="keepai-tour-counter" data-tour-counter></span>
+        </div>
+        <div class="keepai-tour-progress" role="progressbar" aria-label="Guided tour progress">
           <span data-tour-progress></span>
         </div>
-        <div class="keepai-tour-content" aria-live="polite">
-          <h2 id="keepai-tour-title"></h2>
-          <p id="keepai-tour-description"></p>
-          <div class="keepai-tour-tip">
-            <span class="keepai-tour-tip-icon" aria-hidden="true">✦</span>
-            <span data-tour-tip></span>
+        <h2 id="keepai-tour-title"></h2>
+        <p data-tour-description></p>
+        <p class="keepai-tour-tip" data-tour-tip></p>
+        <nav class="keepai-tour-controls" aria-label="Guided tour controls">
+          <button type="button" class="keepai-tour-control-quiet" data-tour-skip>Skip tour</button>
+          <div class="keepai-tour-control-group">
+            <button type="button" data-tour-back>Back</button>
+            <button type="button" class="keepai-tour-control-next" data-tour-next>Next</button>
           </div>
-        </div>
-        <footer class="keepai-tour-footer">
-          <button class="keepai-tour-button keepai-tour-button-quiet" type="button" data-tour-skip>Skip tour</button>
-          <div class="keepai-tour-actions">
-            <button class="keepai-tour-button" type="button" data-tour-back>Back</button>
-            <button class="keepai-tour-button keepai-tour-button-primary" type="button" data-tour-next>Next</button>
-          </div>
-        </footer>
+        </nav>
       </section>
     `;
+    document.body.appendChild(tourRoot);
 
-    const dialog = backdrop.querySelector('.keepai-tour-dialog');
-    const closeButton = backdrop.querySelector('[data-tour-close]');
-    const skipButton = backdrop.querySelector('[data-tour-skip]');
-    const backButton = backdrop.querySelector('[data-tour-back]');
-    const nextButton = backdrop.querySelector('[data-tour-next]');
-
-    closeButton.addEventListener('click', finishTour);
-    skipButton.addEventListener('click', finishTour);
-    backButton.addEventListener('click', () => moveToStep(activeStep - 1));
-    nextButton.addEventListener('click', () => {
+    guidance = tourRoot.querySelector('.keepai-tour-guidance');
+    arrowPath = tourRoot.querySelector('.keepai-tour-arrow-line');
+    tourRoot.querySelector('[data-tour-skip]').addEventListener('click', () => finish('dismissed'));
+    tourRoot.querySelector('[data-tour-back]').addEventListener('click', () => moveToStep(activeStep - 1));
+    tourRoot.querySelector('[data-tour-next]').addEventListener('click', () => {
       if (activeStep === TOUR_STEPS[activeRole].length - 1) {
-        finishTour();
+        finish('completed');
       } else {
         moveToStep(activeStep + 1);
       }
     });
+  }
 
-    backdrop.addEventListener('click', (event) => {
-      if (event.target === backdrop) finishTour();
+  function navigateToStep(step) {
+    if (activeRole === 'student' && typeof window.showSection === 'function') {
+      window.showSection(step.section, false);
+    } else if (activeRole === 'admin' && typeof window.switchDashboardTab === 'function') {
+      window.switchDashboardTab(step.section, false);
+    }
+  }
+
+  function setText(step) {
+    guidance.querySelector('[data-tour-counter]').textContent = `Step ${activeStep + 1} of ${TOUR_STEPS[activeRole].length}`;
+    const progress = guidance.querySelector('[data-tour-progress]');
+    progress.style.width = `${((activeStep + 1) / TOUR_STEPS[activeRole].length) * 100}%`;
+    progress.parentElement.setAttribute('aria-valuenow', String(activeStep + 1));
+    progress.parentElement.setAttribute('aria-valuemax', String(TOUR_STEPS[activeRole].length));
+    guidance.querySelector('#keepai-tour-title').textContent = step.title;
+    guidance.querySelector('[data-tour-description]').textContent = step.description;
+    guidance.querySelector('[data-tour-tip]').textContent = step.tip || '';
+    guidance.querySelector('[data-tour-back]').disabled = activeStep === 0;
+    guidance.querySelector('[data-tour-next]').textContent =
+      activeStep === TOUR_STEPS[activeRole].length - 1 ? 'Finish' : 'Next';
+  }
+
+  function positionGuidance(target) {
+    if (!guidance || !tourRoot) return;
+
+    const margin = 16;
+    const gap = 30;
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = document.documentElement.clientHeight;
+    const width = Math.min(320, viewportWidth - margin * 2);
+    guidance.style.width = `${width}px`;
+
+    const boxHeight = guidance.offsetHeight || 170;
+    let left = Math.max(margin, (viewportWidth - width) / 2);
+    let top = Math.max(margin, (viewportHeight - boxHeight) / 2);
+    let side = 'none';
+
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const candidates = [
+        { side: 'right', left: rect.right + gap, top: rect.top + rect.height / 2 - boxHeight / 2 },
+        { side: 'left', left: rect.left - width - gap, top: rect.top + rect.height / 2 - boxHeight / 2 },
+        { side: 'bottom', left: rect.left + rect.width / 2 - width / 2, top: rect.bottom + gap },
+        { side: 'top', left: rect.left + rect.width / 2 - width / 2, top: rect.top - boxHeight - gap }
+      ];
+      const fits = candidates.find(candidate =>
+        candidate.left >= margin
+        && candidate.left + width <= viewportWidth - margin
+        && candidate.top >= margin
+        && candidate.top + boxHeight <= viewportHeight - margin
+      );
+      const candidate = fits || candidates
+        .map(item => ({
+          ...item,
+          overflow: Math.max(0, margin - item.left)
+            + Math.max(0, item.left + width - viewportWidth + margin)
+            + Math.max(0, margin - item.top)
+            + Math.max(0, item.top + boxHeight - viewportHeight + margin)
+        }))
+        .sort((a, b) => a.overflow - b.overflow)[0];
+
+      left = Math.min(Math.max(margin, candidate.left), viewportWidth - width - margin);
+      top = Math.min(
+        Math.max(margin, candidate.top),
+        Math.max(margin, viewportHeight - boxHeight - margin)
+      );
+      side = candidate.side;
+    }
+
+    guidance.style.left = `${left}px`;
+    guidance.style.top = `${top}px`;
+    guidance.dataset.side = side;
+
+    if (!target || !arrowPath) {
+      arrowPath.setAttribute('d', '');
+      return;
+    }
+
+    const guidanceRect = guidance.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const targetX = targetRect.left + targetRect.width / 2;
+    const targetY = targetRect.top + targetRect.height / 2;
+    let startX = guidanceRect.left + guidanceRect.width / 2;
+    let startY = guidanceRect.top + guidanceRect.height / 2;
+
+    if (side === 'right') {
+      startX = guidanceRect.left;
+      startY = Math.min(Math.max(targetY, guidanceRect.top + 10), guidanceRect.bottom - 10);
+    } else if (side === 'left') {
+      startX = guidanceRect.right;
+      startY = Math.min(Math.max(targetY, guidanceRect.top + 10), guidanceRect.bottom - 10);
+    } else if (side === 'bottom') {
+      startX = Math.min(Math.max(targetX, guidanceRect.left + 12), guidanceRect.right - 12);
+      startY = guidanceRect.top;
+    } else if (side === 'top') {
+      startX = Math.min(Math.max(targetX, guidanceRect.left + 12), guidanceRect.right - 12);
+      startY = guidanceRect.bottom;
+    }
+
+    tourRoot.querySelector('.keepai-tour-arrow').setAttribute('viewBox', `0 0 ${viewportWidth} ${viewportHeight}`);
+    arrowPath.setAttribute('d', `M ${startX} ${startY} L ${targetX} ${targetY}`);
+  }
+
+  function refreshPosition() {
+    if (!tourRoot) return;
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = window.requestAnimationFrame(() => {
+      const target = findTarget(getCurrentStep());
+      if (target !== currentTarget) observeTarget(target);
+      positionGuidance(target);
     });
+  }
 
-    return backdrop;
+  function observeTarget(target) {
+    if (resizeObserver) {
+      resizeObserver.disconnect();
+      if (guidance) resizeObserver.observe(guidance);
+    }
+    currentTarget = target;
+    if (resizeObserver && target) resizeObserver.observe(target);
   }
 
   function moveToStep(stepIndex) {
     const steps = TOUR_STEPS[activeRole];
-    if (!steps || stepIndex < 0 || stepIndex >= steps.length) return;
-
-    const step = steps[stepIndex];
-    const target = resolveTourTarget(step);
-
-    if (highlightedElement) highlightedElement.classList.remove('keepai-tour-highlight');
-    highlightedElement = target;
-    if (highlightedElement) {
-      highlightedElement.classList.add('keepai-tour-highlight');
-      highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-    }
-
-    if (activeRole === 'student' && typeof window.showSection === 'function') {
-      window.showSection(step.section);
-    } else if (activeRole === 'admin' && typeof window.switchDashboardTab === 'function') {
-      window.switchDashboardTab(step.section);
-    }
+    if (!steps || stepIndex < 0 || stepIndex >= steps.length || !tourRoot) return;
 
     activeStep = stepIndex;
-    saveActiveTourState();
-
-    const dialog = activeDialog?.querySelector('.keepai-tour-dialog');
-    if (!dialog) return;
-
-    dialog.querySelector('[data-tour-counter]').textContent = `Step ${activeStep + 1} of ${steps.length}`;
-    dialog.querySelector('[data-tour-progress]').style.width = `${((activeStep + 1) / steps.length) * 100}%`;
-    dialog.querySelector('#keepai-tour-title').textContent = step.title;
-    dialog.querySelector('#keepai-tour-description').textContent = step.description;
-    dialog.querySelector('[data-tour-tip]').textContent = step.tip;
-
-    const backButton = dialog.querySelector('[data-tour-back]');
-    const nextButton = dialog.querySelector('[data-tour-next]');
-    backButton.disabled = activeStep === 0;
-    backButton.style.opacity = activeStep === 0 ? '0.5' : '1';
-    nextButton.textContent = activeStep === steps.length - 1 ? 'Finish tour' : 'Next';
-
-    positionTourDialog(dialog, highlightedElement);
-    window.requestAnimationFrame(() => {
-      dialog.classList.remove('keepai-tour-animate');
-      void dialog.offsetWidth;
-      dialog.classList.add('keepai-tour-animate');
-      nextButton.focus();
-    });
+    const step = steps[activeStep];
+    navigateToStep(step);
+    setText(step);
+    saveActiveStep();
+    guidance.classList.remove('keepai-tour-guidance-visible');
+    currentTarget = null;
+    window.setTimeout(() => {
+      const target = findTarget(step);
+      observeTarget(target);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      refreshPosition();
+      window.requestAnimationFrame(() => {
+        guidance.classList.add('keepai-tour-guidance-visible');
+        guidance.querySelector('[data-tour-next]').focus({ preventScroll: true });
+      });
+    }, 60);
   }
 
-  function openTour(replay) {
-    if (!activeRole || !TOUR_STEPS[activeRole]) return;
-    if (!replay && hasTourStatus()) return;
-    if (activeDialog) return;
+  function start(force) {
+    if (!activeRole || !TOUR_STEPS[activeRole] || tourRoot) return;
+    if (!force && hasCompletedTour()) return;
 
     previousFocusedElement = document.activeElement;
-    previousBodyOverflow = document.body.style.overflow;
-    activeDialog = createDialog();
-    document.body.appendChild(activeDialog);
-    document.body.style.overflow = 'hidden';
-
-    const persisted = restoreActiveTourState();
-    if (persisted && persisted.role === activeRole && persisted.userId === activeUserId) {
-      activeStep = Number.isFinite(persisted.step) ? persisted.step : 0;
-    } else {
-      activeStep = 0;
+    createTour();
+    if (typeof ResizeObserver === 'function') {
+      resizeObserver = new ResizeObserver(refreshPosition);
+      resizeObserver.observe(guidance);
     }
-
-    moveToStep(activeStep);
+    moveToStep(force ? 0 : restoreActiveStep());
+    guidance.querySelector('[data-tour-next]').focus({ preventScroll: true });
   }
 
-  function finishTour() {
-    if (!activeDialog) return;
-
-    if (highlightedElement) {
-      highlightedElement.classList.remove('keepai-tour-highlight');
-      highlightedElement = null;
+  function finish(status) {
+    if (!tourRoot) return;
+    saveStatus(status);
+    try {
+      window.sessionStorage.removeItem(ACTIVE_TOUR_KEY);
+    } catch (error) {
+      console.warn('Could not clear guided tour progress:', error);
     }
-
-    saveTourCompletion();
-    window.sessionStorage.removeItem(TOUR_ACTIVE_STATE_KEY);
-
-    activeDialog.remove();
-    activeDialog = null;
-    document.body.style.overflow = previousBodyOverflow;
-
-    if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
-      previousFocusedElement.focus();
+    if (resizeObserver) resizeObserver.disconnect();
+    resizeObserver = null;
+    tourRoot.remove();
+    tourRoot = null;
+    guidance = null;
+    arrowPath = null;
+    currentTarget = null;
+    if (previousFocusedElement && previousFocusedElement.isConnected) {
+      previousFocusedElement.focus({ preventScroll: true });
     }
     previousFocusedElement = null;
   }
 
-  function handleKeydown(event) {
-    if (!activeDialog) return;
+  function restart() {
+    if (!activeRole) return;
+    try {
+      window.localStorage.removeItem(statusKey());
+      window.sessionStorage.removeItem(ACTIVE_TOUR_KEY);
+    } catch (error) {
+      console.warn('Could not reset guided tour status:', error);
+    }
+    activeStep = 0;
+    start(true);
+  }
 
+  function handleKeydown(event) {
+    if (!tourRoot) return;
     if (event.key === 'Escape') {
       event.preventDefault();
-      finishTour();
-      return;
-    }
-
-    if (event.key === 'ArrowRight') {
+      finish('dismissed');
+    } else if (event.key === 'ArrowRight') {
       event.preventDefault();
-      activeDialog.querySelector('[data-tour-next]').click();
-      return;
-    }
-
-    if (event.key === 'ArrowLeft' && activeStep > 0) {
+      guidance.querySelector('[data-tour-next]').click();
+    } else if (event.key === 'ArrowLeft' && activeStep > 0) {
       event.preventDefault();
       moveToStep(activeStep - 1);
-      return;
-    }
-
-    if (event.key === 'Tab') {
-      const focusable = Array.from(activeDialog.querySelectorAll('button:not(:disabled)'));
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
     }
   }
 
   document.addEventListener('keydown', handleKeydown);
-  window.addEventListener('resize', () => {
-    if (activeDialog && highlightedElement) {
-      const dialog = activeDialog.querySelector('.keepai-tour-dialog');
-      if (dialog) positionTourDialog(dialog, highlightedElement);
-    }
-  });
+  window.addEventListener('scroll', refreshPosition, { passive: true, capture: true });
+  window.addEventListener('resize', refreshPosition, { passive: true });
 
   window.KeepAITour = {
     start(role, user) {
       if (!TOUR_STEPS[role]) return;
-
       activeRole = role;
       activeUserId = user && (user.id || user.username || user.email);
-      createReplayButton();
-      attachRestartTourControl();
-
-      const persisted = restoreActiveTourState();
-      if (persisted && persisted.role === activeRole && persisted.userId === activeUserId) {
-        activeStep = Number.isFinite(persisted.step) ? persisted.step : 0;
-      }
-
-      if (!hasTourStatus()) {
-        window.setTimeout(() => {
-          if (!activeDialog && !hasTourStatus()) {
-            openTour(false);
-          }
-        }, 300);
+      ensureRestartControl();
+      if (!hasCompletedTour()) {
+        window.setTimeout(start, 350);
       }
     },
-    restart() {
-      if (!activeRole) {
-        const fallbackRole = getRoleFromPage();
-        const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
-        activeRole = fallbackRole;
-        activeUserId = storedUser && (storedUser.id || storedUser.username || storedUser.email);
-      }
-      window.localStorage.removeItem(getStorageKey());
-      openTour(true);
-    }
+    restart
   };
 })();

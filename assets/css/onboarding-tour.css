@@ -1,295 +1,237 @@
-.keepai-tour-backdrop {
+.keepai-tour-layer {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(15, 23, 42, 0.62);
-  backdrop-filter: blur(4px);
-}
-
-.keepai-tour-dialog {
-  position: fixed;
-  left: 50%;
-  top: 50%;
-  z-index: 10001;
-  width: min(100%, 520px);
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  border-radius: 22px;
-  background: #fff;
-  box-shadow: 0 28px 80px rgba(15, 23, 42, 0.35);
-  color: #0f172a;
+  pointer-events: none;
+}
+
+.keepai-tour-arrow {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.keepai-tour-arrow-line {
+  fill: none;
+  stroke: var(--primary, #0f766e);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 6 7;
+  marker-end: url(#keepai-tour-arrowhead);
+  animation: keepaiTourArrowFlow 1.4s linear infinite;
+}
+
+#keepai-tour-arrowhead path {
+  fill: var(--primary, #0f766e);
+}
+
+.keepai-tour-guidance {
+  position: fixed;
+  z-index: 1;
+  width: min(320px, calc(100vw - 32px));
+  padding: 4px;
+  color: var(--text-main, #172033);
   font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  transform: translate(-50%, -50%);
-  transition: left 220ms ease, top 220ms ease, transform 220ms ease;
+  opacity: 0;
+  transform: translateY(7px);
+  transition: opacity 180ms ease, transform 220ms ease, left 220ms ease, top 220ms ease;
+  pointer-events: none;
 }
 
-.keepai-tour-dialog.keepai-tour-animate {
-  animation: keepaiTourSlideIn 220ms ease;
+.keepai-tour-guidance-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.keepai-tour-header {
+.keepai-tour-meta {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 24px 26px 20px;
-  background: linear-gradient(135deg, #E8F5F2, #fff);
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-bottom: 5px;
 }
 
 .keepai-tour-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.keepai-tour-mark {
-  display: grid;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  place-items: center;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #0F766E, #0F766E);
-  color: white;
-  font-size: 20px;
+  color: var(--primary-text, var(--primary, #0f766e));
+  font-size: 10px;
   font-weight: 800;
-  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.22);
-}
-
-.keepai-tour-eyebrow {
-  margin: 0 0 2px;
-  color: #0F766E;
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.13em;
   text-transform: uppercase;
 }
 
 .keepai-tour-counter {
-  color: #52647A;
-  font-size: 12px;
+  color: var(--text-muted, #52647a);
+  font-size: 11px;
   font-weight: 700;
-  white-space: nowrap;
 }
 
 .keepai-tour-progress {
-  height: 4px;
-  background: #DCE4EC;
+  width: 76px;
+  height: 2px;
+  margin-bottom: 11px;
+  background: #dce4ec;
 }
 
 .keepai-tour-progress span {
   display: block;
+  width: 0;
   height: 100%;
-  background: linear-gradient(90deg, #0F766E, #238B80);
-  transition: width 180ms ease;
+  background: var(--primary, #0f766e);
+  transition: width 260ms ease;
 }
 
-.keepai-tour-content {
-  padding: 26px 28px 24px;
-}
-
-.keepai-tour-content h2 {
-  margin: 0 0 10px;
-  color: #111827;
-  font-size: clamp(22px, 5vw, 28px);
+.keepai-tour-guidance h2 {
+  margin: 0 0 5px;
+  color: var(--text-main, #142d4e);
+  font-family: "Plus Jakarta Sans", Inter, sans-serif;
+  font-size: clamp(17px, 2.2vw, 20px);
   font-weight: 800;
-  letter-spacing: -0.035em;
-  line-height: 1.2;
+  letter-spacing: -0.025em;
+  line-height: 1.25;
 }
 
-.keepai-tour-content p {
+.keepai-tour-guidance > p {
   margin: 0;
-  color: #475569;
-  font-size: 15px;
-  line-height: 1.7;
-}
-
-.keepai-tour-tip {
-  display: flex;
-  gap: 10px;
-  margin-top: 20px;
-  padding: 13px 15px;
-  border: 1px solid #f2d5d5;
-  border-radius: 12px;
-  background: #E8F5F2;
-  color: #115E59;
+  color: var(--text-body, #334155);
   font-size: 13px;
+  font-weight: 500;
   line-height: 1.55;
 }
 
-.keepai-tour-tip-icon {
-  flex: 0 0 auto;
-  font-size: 15px;
+.keepai-tour-guidance .keepai-tour-tip {
+  margin-top: 6px;
+  color: var(--primary-text, var(--primary, #0f766e));
+  font-size: 11px;
+  line-height: 1.45;
 }
 
-.keepai-tour-footer {
+.keepai-tour-controls {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 24px 20px;
-  border-top: 1px solid #f1f5f9;
+  margin-top: 12px;
+  pointer-events: auto;
 }
 
-.keepai-tour-actions {
+.keepai-tour-control-group {
   display: flex;
-  gap: 9px;
+  align-items: center;
+  gap: 10px;
 }
 
-.keepai-tour-button {
-  min-height: 40px;
-  padding: 0 15px;
-  border: 1px solid #DCE4EC;
-  border-radius: 10px;
-  background: #fff;
-  color: #334155;
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+.keepai-tour-controls button {
+  min-height: 30px;
+  padding: 3px 7px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-muted, #52647a);
+  font: 700 11px/1.3 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
-  transition: background 150ms ease, border-color 150ms ease, transform 150ms ease;
+  transition: color 140ms ease, background 140ms ease, transform 140ms ease;
 }
 
-.keepai-tour-button:hover {
-  border-color: #cbd5e1;
-  background: #F4F7FA;
+.keepai-tour-controls button:hover:not(:disabled) {
+  background: var(--primary-light, rgba(15, 118, 110, 0.08));
+  color: var(--primary-text, var(--primary, #0f766e));
 }
 
-.keepai-tour-button:active {
+.keepai-tour-controls button:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.keepai-tour-button:focus-visible,
-.keepai-tour-replay:focus-visible {
-  outline: 3px solid rgba(15, 118, 110, 0.32);
+.keepai-tour-controls button:focus-visible,
+.keepai-tour-restart-button:focus-visible {
+  outline: 2px solid rgba(15, 118, 110, 0.75);
   outline-offset: 2px;
 }
 
-.keepai-tour-button-primary {
-  border-color: #0F766E;
-  background: #0F766E;
+.keepai-tour-controls button:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+}
+
+.keepai-tour-controls .keepai-tour-control-quiet {
+  padding-left: 0;
+}
+
+.keepai-tour-controls .keepai-tour-control-next {
+  padding: 6px 12px;
+  background: #0f766e;
   color: #fff;
 }
 
-.keepai-tour-button-primary:hover {
-  border-color: #115E59;
-  background: #115E59;
-}
-
-.keepai-tour-button-quiet {
-  border-color: transparent;
-  color: #52647A;
-}
-
-.keepai-tour-replay {
-  position: fixed;
-  right: 20px;
-  bottom: 20px;
-  z-index: 800;
-  min-height: 36px;
-  padding: 0 14px;
-  border: 1px solid rgba(255, 255, 255, 0.24);
-  border-radius: 999px;
-  background: #0F766E;
-  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25);
+.keepai-tour-controls .keepai-tour-control-next:hover {
+  background: #115e59;
   color: #fff;
-  font: 600 12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.keepai-tour-replay:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.35);
-}
-
-.keepai-tour-highlight {
-  position: relative !important;
-  z-index: 10002 !important;
-  outline: 3px solid rgba(251, 191, 36, 0.92) !important;
-  outline-offset: 3px !important;
-  border-radius: 10px !important;
-  box-shadow: 0 0 0 8px rgba(251, 191, 36, 0.18) !important;
 }
 
 .keepai-tour-restart-button {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  min-height: 42px;
-  margin-top: 10px;
-  padding: 10px 14px;
-  border: 1px solid rgba(15, 118, 110, 0.2);
-  border-radius: 12px;
-  background: linear-gradient(135deg, rgba(15, 118, 110, 0.08), rgba(15, 118, 110, 0.02));
+  min-height: 38px;
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: rgba(15, 118, 110, 0.08);
   color: #0f766e;
-  font-size: 12.5px;
-  font-weight: 700;
+  font: 700 12px/1.4 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
-  transition: background 180ms ease, transform 180ms ease;
 }
 
 .keepai-tour-restart-button:hover {
-  background: rgba(15, 118, 110, 0.12);
-  transform: translateY(-1px);
+  background: var(--primary-border, rgba(15, 118, 110, 0.14));
 }
 
-.keepai-tour-restart-button i {
-  font-size: 13px;
+@keyframes keepaiTourArrowFlow {
+  to { stroke-dashoffset: -26; }
 }
 
-@keyframes keepaiTourSlideIn {
-  from {
-    opacity: 0;
-    transform: translate(-50%, -42%) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
-}
-
-@media (max-width: 520px) {
-  .keepai-tour-backdrop {
-    padding: 12px;
+@media (max-width: 600px) {
+  .keepai-tour-guidance {
+    width: min(288px, calc(100vw - 28px));
   }
 
-  .keepai-tour-dialog {
-    border-radius: 18px;
+  .keepai-tour-guidance h2 {
+    font-size: 17px;
   }
 
-  .keepai-tour-header {
-    padding: 20px 20px 16px;
+  .keepai-tour-guidance > p {
+    font-size: 12px;
+    line-height: 1.45;
   }
 
-  .keepai-tour-content {
-    padding: 22px 20px;
+  .keepai-tour-guidance .keepai-tour-tip {
+    font-size: 10px;
   }
 
-  .keepai-tour-footer {
-    align-items: stretch;
-    padding: 14px 16px 16px;
+  .keepai-tour-controls {
+    gap: 6px;
+    margin-top: 7px;
   }
 
-  .keepai-tour-footer > .keepai-tour-button {
-    padding: 0 8px;
+  .keepai-tour-control-group {
+    gap: 5px;
   }
 
-  .keepai-tour-actions {
-    flex: 1;
-    justify-content: flex-end;
-  }
-
-  .keepai-tour-replay {
-    right: 14px;
-    bottom: 14px;
+  .keepai-tour-arrow-line {
+    stroke-width: 2;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .keepai-tour-arrow-line {
+    animation: none;
+  }
+
+  .keepai-tour-guidance,
   .keepai-tour-progress span,
-  .keepai-tour-button {
+  .keepai-tour-controls button {
     transition: none;
   }
 }
