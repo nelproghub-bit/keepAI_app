@@ -96,7 +96,7 @@ def get_user_by_id(user_id: str) -> Optional[Dict[str, Any]]:
         cur.execute(
             """
             SELECT id, username, email, full_name, student_id, role, created_at,
-                   google_id, password_login_enabled
+                   google_id, password_login_enabled, teaching_style, course_level
             FROM users
             WHERE id = ?
             """,

@@ -1891,6 +1891,41 @@
             box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
         }
 
+        .profile-identity-value {
+            position: relative;
+        }
+
+        .profile-identity-value input[readonly] {
+            padding-right: 42px;
+            border-color: var(--border);
+            background: var(--bg-subtle);
+            color: var(--text-muted);
+            cursor: text;
+        }
+
+        .profile-identity-value input[readonly]:focus {
+            border-color: var(--border);
+            background: var(--bg-subtle);
+            box-shadow: none;
+        }
+
+        .profile-identity-lock {
+            position: absolute;
+            top: 50%;
+            right: 14px;
+            color: var(--text-muted);
+            font-size: 13px;
+            pointer-events: none;
+            transform: translateY(-50%);
+        }
+
+        .profile-identity-note {
+            margin: -7px 0 18px;
+            color: var(--text-muted);
+            font-size: 11.5px;
+            line-height: 1.5;
+        }
+
         /* Toast Container */
         .toast-container {
             position: fixed;
@@ -2504,13 +2539,20 @@
                         <form id="settings-form" onsubmit="saveSettings(event)">
                             <div class="form-field">
                                 <label for="student-display-name">Student Full Name</label>
-                                <input type="text" id="student-display-name" value="Arnel Gubi">
+                                <div class="profile-identity-value">
+                                    <input type="text" id="student-display-name" readonly aria-readonly="true" aria-describedby="student-identity-lock-note" autocomplete="off">
+                                    <i class="fas fa-lock profile-identity-lock" aria-hidden="true"></i>
+                                </div>
                             </div>
 
                             <div class="form-field">
                                 <label for="student-display-id">Student Number / ID</label>
-                                <input type="text" id="student-display-id" value="C230170">
+                                <div class="profile-identity-value">
+                                    <input type="text" id="student-display-id" readonly aria-readonly="true" aria-describedby="student-identity-lock-note" autocomplete="off">
+                                    <i class="fas fa-lock profile-identity-lock" aria-hidden="true"></i>
+                                </div>
                             </div>
+                            <p id="student-identity-lock-note" class="profile-identity-note">Verified account details are protected. Contact an administrator if a correction is needed.</p>
 
                             <div class="form-field">
                                 <label for="learning-style">Preferred Teaching Style</label>
@@ -3419,7 +3461,9 @@
             const savedUser = localStorage.getItem('user');
             if (savedUser) {
                 try {
-                    currentUser = Object.assign(currentUser, JSON.parse(savedUser));
+                    const cachedUser = JSON.parse(savedUser);
+                    currentUser.teaching_style = currentUser.teaching_style || cachedUser.teaching_style;
+                    currentUser.course_level = currentUser.course_level || cachedUser.course_level;
                 } catch (e) {}
             }
 
@@ -3571,8 +3615,8 @@
             const menuNameEl = document.getElementById('menu-student-name');
             const menuEmailEl = document.getElementById('menu-student-email');
 
-            const displayName = currentUser.full_name || currentUser.username || 'Arnel Gubi';
-            const displayId = currentUser.student_id || 'C230170';
+            const displayName = currentUser.full_name || currentUser.username || 'Student';
+            const displayId = currentUser.student_id || 'Not provided';
 
             if (nameEl) nameEl.textContent = displayName;
             if (idEl) idEl.textContent = displayId;
@@ -5594,47 +5638,48 @@
         // ==================== SETTINGS & MISC ====================
         async function saveSettings(e) {
             if (e) e.preventDefault();
-            const name = document.getElementById('student-display-name').value.trim();
-            const id = document.getElementById('student-display-id').value.trim();
             const styleSelect = document.getElementById('learning-style');
             const levelSelect = document.getElementById('difficulty-level');
 
             const teachingStyle = styleSelect ? styleSelect.value : 'simple';
             const courseLevel = levelSelect ? levelSelect.value : 'intermediate';
 
-            if (name) currentUser.full_name = name;
-            if (id) currentUser.student_id = id;
-            currentUser.teaching_style = teachingStyle;
-            currentUser.course_level = courseLevel;
-
-            localStorage.setItem('user', JSON.stringify(currentUser));
-            localStorage.setItem('keepai_teaching_style', teachingStyle);
-            localStorage.setItem('keepai_course_level', courseLevel);
-
-            updateUIProfile();
-            updateTutorPreferenceDisplay();
-
-            // Sync with backend profile if authenticated
-            try {
-                const token = localStorage.getItem('access_token');
-                if (token) {
-                    await fetch(`${API_BASE}/auth/profile`, {
+            const token = localStorage.getItem('access_token');
+            if (navigator.onLine && !token) {
+                showToast('Sign in again before saving account preferences.', 'error');
+                return;
+            }
+            if (token && navigator.onLine) {
+                try {
+                    const response = await fetch(`${API_BASE}/auth/profile`, {
                         method: 'PUT',
                         headers: {
                             'Content-Type': 'application/json',
                             'Authorization': `Bearer ${token}`
                         },
                         body: JSON.stringify({
-                            full_name: currentUser.full_name,
-                            student_id: currentUser.student_id,
                             teaching_style: teachingStyle,
                             course_level: courseLevel
                         })
                     });
+                    if (!response.ok) {
+                        const result = await response.json().catch(() => ({}));
+                        throw new Error(result.detail || `Profile preferences could not be saved (${response.status}).`);
+                    }
+                } catch (err) {
+                    console.error('Could not save profile preferences:', err);
+                    showToast(err.message || 'Could not save your preferences. Please try again.', 'error');
+                    return;
                 }
-            } catch (err) {
-                console.warn('Backend profile sync notice:', err);
             }
+
+            currentUser.teaching_style = teachingStyle;
+            currentUser.course_level = courseLevel;
+            localStorage.setItem('user', JSON.stringify(currentUser));
+            localStorage.setItem('keepai_teaching_style', teachingStyle);
+            localStorage.setItem('keepai_course_level', courseLevel);
+            updateUIProfile();
+            updateTutorPreferenceDisplay();
 
             const styleLabels = {
                 'simple': 'Simple & Clear',
@@ -5648,7 +5693,8 @@
                 'advanced': 'Advanced Capstone'
             };
 
-            showToast(`✅ Saved! AI Tutor is now in "${styleLabels[teachingStyle] || teachingStyle}" mode for ${levelLabels[courseLevel] || courseLevel} level.`, 'success');
+            const saveMessage = `Saved! AI Tutor is now in "${styleLabels[teachingStyle] || teachingStyle}" mode for ${levelLabels[courseLevel] || courseLevel} level.`;
+            showToast(navigator.onLine ? saveMessage : `${saveMessage} Changes are stored on this device until you reconnect.`, navigator.onLine ? 'success' : 'warning');
         }
 
         function updateTutorPreferenceDisplay() {

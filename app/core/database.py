@@ -227,6 +227,8 @@ def init_db():
             role VARCHAR(32) NOT NULL DEFAULT 'student',
             google_id VARCHAR(255),
             password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
+            course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         )
@@ -237,6 +239,12 @@ def init_db():
         cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS google_id VARCHAR(255)")
         cursor.execute(
             "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE"
+        )
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple'"
+        )
+        cursor.execute(
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate'"
         )
         cursor.execute("""
         CREATE TABLE IF NOT EXISTS student_stats (
@@ -380,6 +388,20 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_identity_audit_log (
+            id VARCHAR(64) PRIMARY KEY,
+            admin_user_id VARCHAR(64) NOT NULL,
+            target_user_id VARCHAR(64) NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            changes_json TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_identity_audit_target ON admin_identity_audit_log(target_user_id, created_at)"
+        )
         cursor.execute(
             "CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)"
         )
@@ -414,6 +436,8 @@ def init_db():
             role VARCHAR(32) NOT NULL DEFAULT 'student',
             google_id VARCHAR(255),
             password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+            teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple',
+            course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP NULL
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -430,6 +454,16 @@ def init_db():
         if not cursor.fetchone():
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN password_login_enabled BOOLEAN NOT NULL DEFAULT TRUE"
+            )
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'teaching_style'")
+        if not cursor.fetchone():
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN teaching_style VARCHAR(32) NOT NULL DEFAULT 'simple'"
+            )
+        cursor.execute("SHOW COLUMNS FROM users LIKE 'course_level'")
+        if not cursor.fetchone():
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN course_level VARCHAR(32) NOT NULL DEFAULT 'intermediate'"
             )
 
         cursor.execute("""
@@ -582,6 +616,18 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_identity_audit_log (
+            id VARCHAR(64) PRIMARY KEY,
+            admin_user_id VARCHAR(64) NOT NULL,
+            target_user_id VARCHAR(64) NOT NULL,
+            action VARCHAR(64) NOT NULL,
+            changes_json TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_admin_identity_audit_target (target_user_id, created_at)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+        """)
         conn.commit()
         conn.close()
         print(f"[KeepAI] Connected to MariaDB / MySQL database: '{DB_NAME}' at {DB_HOST}:{DB_PORT}")
@@ -598,6 +644,8 @@ def init_db():
             role TEXT NOT NULL DEFAULT 'student',
             google_id TEXT,
             password_login_enabled INTEGER NOT NULL DEFAULT 1,
+            teaching_style TEXT NOT NULL DEFAULT 'simple',
+            course_level TEXT NOT NULL DEFAULT 'intermediate',
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             last_login TIMESTAMP
         )
@@ -612,6 +660,14 @@ def init_db():
         if "password_login_enabled" not in user_columns:
             cursor.execute(
                 "ALTER TABLE users ADD COLUMN password_login_enabled INTEGER NOT NULL DEFAULT 1"
+            )
+        if "teaching_style" not in user_columns:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN teaching_style TEXT NOT NULL DEFAULT 'simple'"
+            )
+        if "course_level" not in user_columns:
+            cursor.execute(
+                "ALTER TABLE users ADD COLUMN course_level TEXT NOT NULL DEFAULT 'intermediate'"
             )
 
         cursor.execute("""
@@ -754,6 +810,20 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
         """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS admin_identity_audit_log (
+            id TEXT PRIMARY KEY,
+            admin_user_id TEXT NOT NULL,
+            target_user_id TEXT NOT NULL,
+            action TEXT NOT NULL,
+            changes_json TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+        """)
+        cursor.execute(
+            "CREATE INDEX IF NOT EXISTS idx_admin_identity_audit_target ON admin_identity_audit_log(target_user_id, created_at)"
+        )
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_push_subscriptions_user ON push_subscriptions(user_id)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active, created_at)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_announcement_reads_user ON announcement_reads(user_id)")

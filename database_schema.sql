@@ -19,11 +19,25 @@ CREATE TABLE IF NOT EXISTS `users` (
     `student_id` VARCHAR(64) NOT NULL DEFAULT 'Student',
     `password_hash` VARCHAR(255) NOT NULL,
     `role` VARCHAR(32) NOT NULL DEFAULT 'student',
+    `teaching_style` VARCHAR(32) NOT NULL DEFAULT 'simple',
+    `course_level` VARCHAR(32) NOT NULL DEFAULT 'intermediate',
     `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `last_login` TIMESTAMP NULL DEFAULT NULL,
     PRIMARY KEY (`id`),
     UNIQUE KEY `uq_username` (`username`),
     UNIQUE KEY `uq_email` (`email`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `admin_identity_audit_log` (
+    `id` VARCHAR(64) NOT NULL,
+    `admin_user_id` VARCHAR(64) NOT NULL,
+    `target_user_id` VARCHAR(64) NOT NULL,
+    `action` VARCHAR(64) NOT NULL,
+    `changes_json` LONGTEXT NOT NULL,
+    `reason` TEXT NOT NULL,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_admin_identity_audit_target` (`target_user_id`, `created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- 2. Student Learning Progress & Academic Stats

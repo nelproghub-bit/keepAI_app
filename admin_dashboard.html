@@ -2984,6 +2984,10 @@ body.admin-theme-dark .modal-card textarea {
           </select>
         </div>
       </div>
+      <div class="form-group">
+        <label for="edit-identity-reason">Identity correction reason</label>
+        <textarea id="edit-identity-reason" rows="2" placeholder="Required when correcting a student's registered name or ID"></textarea>
+      </div>
       <div class="modal-actions" style="margin-top: 20px;">
         <button type="button" class="btn btn-secondary" onclick="closeEditUserModal()">Cancel</button>
         <button type="submit" class="btn btn-primary" id="btn-submit-edit-user" style="width: auto;">
@@ -4120,6 +4124,7 @@ function openEditUserModal(userId) {
   document.getElementById('edit-fullname').value = user.full_name !== 'N/A' ? user.full_name : '';
   document.getElementById('edit-email').value = user.email !== 'N/A' ? user.email : '';
   document.getElementById('edit-studentid').value = user.student_id !== 'N/A' ? user.student_id : '';
+  document.getElementById('edit-identity-reason').value = '';
   document.getElementById('edit-role').value = user.role || 'student';
   hideAlertBox('edit-user-alert');
 
@@ -4139,6 +4144,7 @@ async function handleEditUserSubmit(e) {
   const email = document.getElementById('edit-email').value.trim();
   const student_id = document.getElementById('edit-studentid').value.trim();
   const role = document.getElementById('edit-role').value;
+  const identity_correction_reason = document.getElementById('edit-identity-reason').value.trim();
   const btn = document.getElementById('btn-submit-edit-user');
 
   btn.disabled = true;
@@ -4147,7 +4153,7 @@ async function handleEditUserSubmit(e) {
   try {
     await adminAnnouncementRequest(`/admin/users/${user_id}`, {
       method: 'PUT',
-      body: JSON.stringify({ full_name, email, student_id, role })
+      body: JSON.stringify({ full_name, email, student_id, role, identity_correction_reason })
     });
 
     closeEditUserModal();

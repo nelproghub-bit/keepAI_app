@@ -1,5 +1,6 @@
 import tempfile
 import time
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
@@ -85,6 +86,59 @@ class AdminSettingsTests(unittest.TestCase):
         self.assertTrue(response.json()["student_registration"]["enabled"])
         self.assertFalse(response.json()["system_maintenance"]["enabled"])
         self.assertIn("ai_engine", response.json())
+
+    def test_admin_identity_corrections_require_reason_and_are_audited(self):
+        student = user_service.register(
+            full_name="Original Student",
+            student_id="STUDENT-OLD",
+            email="identity-correction@example.test",
+            username="identity_correction_student",
+            password="test-password",
+        )
+
+        rejected = self.client.put(
+            f"/api/admin/users/{student['id']}",
+            json={"full_name": "Corrected Student", "student_id": "STUDENT-NEW"},
+        )
+        self.assertEqual(rejected.status_code, 400, rejected.text)
+
+        corrected = self.client.put(
+            f"/api/admin/users/{student['id']}",
+            json={
+                "full_name": "Corrected Student",
+                "student_id": "STUDENT-NEW",
+                "identity_correction_reason": "Verified against official student records.",
+            },
+        )
+        self.assertEqual(corrected.status_code, 200, corrected.text)
+
+        conn = database.get_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT full_name, student_id FROM users WHERE id = ?",
+                (student["id"],),
+            )
+            updated_user = cursor.fetchone()
+            cursor.execute(
+                """
+                SELECT admin_user_id, target_user_id, action, changes_json, reason
+                FROM admin_identity_audit_log
+                WHERE target_user_id = ?
+                """,
+                (student["id"],),
+            )
+            audit = cursor.fetchone()
+        finally:
+            conn.close()
+
+        self.assertEqual(updated_user["full_name"], "Corrected Student")
+        self.assertEqual(updated_user["student_id"], "STUDENT-NEW")
+        self.assertEqual(audit["admin_user_id"], "settings-test-admin")
+        self.assertEqual(audit["action"], "student_identity_corrected")
+        self.assertEqual(audit["reason"], "Verified against official student records.")
+        self.assertEqual(json.loads(audit["changes_json"])["student_id"]["old"], "STUDENT-OLD")
+        self.assertEqual(json.loads(audit["changes_json"])["student_id"]["new"], "STUDENT-NEW")
 
     def test_maintenance_mode_blocks_public_access_but_keeps_admin_available(self):
         set_system_maintenance_setting(True, "settings-test-admin")

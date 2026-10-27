@@ -3,8 +3,8 @@ import time
 
 import requests
 from fastapi import APIRouter, HTTPException, Depends, status
-from pydantic import BaseModel, Field
-from app.core.security import create_access_token, get_current_user
+from pydantic import BaseModel, ConfigDict, Field
+from app.core.security import create_access_token, get_current_admin_user, get_current_user
 from app.core.config import GOOGLE_OAUTH_CLIENT_ID
 from app.services.platform_settings import is_student_registration_enabled
 from app.services.user_service import StudentRegistrationDisabledError, user_service
@@ -23,10 +23,10 @@ class LoginRequest(BaseModel):
     password: str = Field(min_length=1, max_length=128)
 
 class ProfileUpdateRequest(BaseModel):
-    full_name: Optional[str] = None
-    student_id: Optional[str] = None
     teaching_style: Optional[str] = None
     course_level: Optional[str] = None
+
+    model_config = ConfigDict(extra="forbid")
 
 class StatsSyncRequest(BaseModel):
     questions_asked: Optional[int] = None
@@ -235,14 +235,12 @@ def update_student_profile(
     """Update authenticated student profile details and preferences"""
     updated_user = user_service.update_profile(
         user_id=current_user["id"],
-        full_name=request.full_name,
-        student_id=request.student_id,
         teaching_style=request.teaching_style,
         course_level=request.course_level
     )
     return {"user": updated_user}
 
 @router.get("/users")
-def get_all_students(current_user: Dict[str, Any] = Depends(get_current_user)):
+def get_all_students(current_user: Dict[str, Any] = Depends(get_current_admin_user)):
     """Admin view: Retrieve list of registered student accounts"""
     return {"users": user_service.list_users()}

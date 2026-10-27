@@ -129,7 +129,7 @@ class UserService:
             cur.execute(
                 """
                 SELECT id, username, email, full_name, student_id, role,
-                       google_id, password_login_enabled
+                       google_id, password_login_enabled, teaching_style, course_level
                 FROM users
                 WHERE LOWER(email) = ?
                 """,
@@ -162,7 +162,7 @@ class UserService:
                     cur.execute(
                         """
                         SELECT id, username, email, full_name, student_id, role,
-                               google_id, password_login_enabled
+                               google_id, password_login_enabled, teaching_style, course_level
                         FROM users
                         WHERE id = ?
                         """,
@@ -218,6 +218,8 @@ class UserService:
                 "full_name": clean_name,
                 "student_id": student_id,
                 "role": "student",
+                "teaching_style": "simple",
+                "course_level": "intermediate",
                 "google_id": google_id,
                 "password_login_enabled": False,
                 "google_linked": True,
@@ -282,7 +284,7 @@ class UserService:
             cur.execute(
                 """
                 SELECT id, username, email, full_name, student_id, password_hash,
-                       role, password_login_enabled
+                       role, password_login_enabled, teaching_style, course_level
                 FROM users
                 WHERE username = ? OR email = ? OR LOWER(student_id) = ?
                 """,
@@ -407,8 +409,6 @@ class UserService:
     def update_profile(
         self, 
         user_id: str, 
-        full_name: Optional[str] = None, 
-        student_id: Optional[str] = None,
         teaching_style: Optional[str] = None,
         course_level: Optional[str] = None
     ) -> Dict[str, Any]:
@@ -418,12 +418,6 @@ class UserService:
             cur = conn.cursor()
             fields = []
             values = []
-            if full_name:
-                fields.append("full_name = ?")
-                values.append(full_name.strip())
-            if student_id:
-                fields.append("student_id = ?")
-                values.append(student_id.strip())
             if teaching_style:
                 fields.append("teaching_style = ?")
                 values.append(teaching_style.strip())

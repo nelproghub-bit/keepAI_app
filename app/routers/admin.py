@@ -64,10 +64,11 @@ class CreateUserRequest(BaseModel):
     password: str = Field(min_length=6, max_length=128)
 
 class UpdateUserRequest(BaseModel):
-    full_name: Optional[str] = None
+    full_name: Optional[str] = Field(default=None, min_length=2, max_length=120)
     email: Optional[str] = None
-    student_id: Optional[str] = None
+    student_id: Optional[str] = Field(default=None, min_length=1, max_length=64)
     role: Optional[str] = None
+    identity_correction_reason: Optional[str] = Field(default=None, max_length=500)
 
 class ResetPasswordRequest(BaseModel):
     new_password: str = Field(min_length=6, max_length=128)
@@ -318,22 +319,42 @@ def update_user_info(
     conn = get_connection()
     try:
         cur = conn.cursor()
-        cur.execute("SELECT id, role FROM users WHERE id = ?", (user_id,))
+        cur.execute(
+            "SELECT id, role, full_name, student_id FROM users WHERE id = ?",
+            (user_id,),
+        )
         user = cur.fetchone()
         if not user:
             raise HTTPException(status_code=404, detail="User account not found.")
 
         updates = []
         params = []
+        identity_changes = {}
         if request.full_name is not None:
+            full_name = request.full_name.strip()
+            if not full_name:
+                raise HTTPException(status_code=422, detail="Student full name cannot be empty.")
             updates.append("full_name = ?")
-            params.append(request.full_name.strip())
+            params.append(full_name)
+            if full_name != user["full_name"]:
+                identity_changes["full_name"] = {
+                    "old": user["full_name"],
+                    "new": full_name,
+                }
         if request.email is not None:
             updates.append("email = ?")
             params.append(request.email.strip().lower())
         if request.student_id is not None:
+            student_id = request.student_id.strip()
+            if not student_id:
+                raise HTTPException(status_code=422, detail="Student number / ID cannot be empty.")
             updates.append("student_id = ?")
-            params.append(request.student_id.strip())
+            params.append(student_id)
+            if student_id != user["student_id"]:
+                identity_changes["student_id"] = {
+                    "old": user["student_id"],
+                    "new": student_id,
+                }
         if request.role is not None:
             new_role = request.role.strip().lower()
             if new_role == "admin" and user["role"] != "admin":
@@ -342,9 +363,32 @@ def update_user_info(
             updates.append("role = ?")
             params.append(new_role)
 
+        reason = (request.identity_correction_reason or "").strip()
+        if identity_changes and len(reason) < 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Provide a correction reason of at least 10 characters for identity changes.",
+            )
+
         if updates:
             params.append(user_id)
             cur.execute(f"UPDATE users SET {', '.join(updates)} WHERE id = ?", tuple(params))
+            if identity_changes:
+                cur.execute(
+                    """
+                    INSERT INTO admin_identity_audit_log
+                        (id, admin_user_id, target_user_id, action, changes_json, reason)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        str(uuid.uuid4()),
+                        current_user["id"],
+                        user_id,
+                        "student_identity_corrected",
+                        json.dumps(identity_changes),
+                        reason,
+                    ),
+                )
             conn.commit()
 
         return {"message": "User information updated successfully."}

@@ -53,6 +53,7 @@ class StudentLoginIdentifierTests(unittest.TestCase):
             },
         )
         self.assertEqual(response.status_code, 201, response.text)
+        return response.json()
 
     def login(self, identifier):
         return self.client.post(
@@ -92,6 +93,53 @@ class StudentLoginIdentifierTests(unittest.TestCase):
         )
 
         self.assertEqual(response.status_code, 422)
+
+    def test_student_profile_rejects_identity_changes_and_keeps_database_identity(self):
+        registration = self.register_student(student_id="VERIFIED-1")
+        headers = {"Authorization": f"Bearer {registration['access_token']}"}
+
+        rejected = self.client.put(
+            "/api/auth/profile",
+            headers=headers,
+            json={
+                "full_name": "Changed Name",
+                "student_id": "CHANGED-2",
+                "teaching_style": "detailed",
+                "course_level": "advanced",
+            },
+        )
+
+        self.assertEqual(rejected.status_code, 422, rejected.text)
+        profile = self.client.get("/api/auth/me", headers=headers)
+        self.assertEqual(profile.status_code, 200, profile.text)
+        self.assertEqual(profile.json()["user"]["full_name"], "Test Learner")
+        self.assertEqual(profile.json()["user"]["student_id"], "VERIFIED-1")
+
+    def test_student_profile_updates_allowed_preferences_only(self):
+        registration = self.register_student(student_id="VERIFIED-1")
+        headers = {"Authorization": f"Bearer {registration['access_token']}"}
+
+        response = self.client.put(
+            "/api/auth/profile",
+            headers=headers,
+            json={"teaching_style": "detailed", "course_level": "advanced"},
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        user = response.json()["user"]
+        self.assertEqual(user["teaching_style"], "detailed")
+        self.assertEqual(user["course_level"], "advanced")
+        self.assertEqual(user["full_name"], "Test Learner")
+        self.assertEqual(user["student_id"], "VERIFIED-1")
+
+    def test_student_cannot_list_other_users_through_auth_users_endpoint(self):
+        registration = self.register_student()
+        response = self.client.get(
+            "/api/auth/users",
+            headers={"Authorization": f"Bearer {registration['access_token']}"},
+        )
+
+        self.assertEqual(response.status_code, 403, response.text)
 
     def test_password_can_be_changed_with_current_password(self):
         self.register_student()
