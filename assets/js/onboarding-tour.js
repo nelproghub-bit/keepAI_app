@@ -297,13 +297,13 @@
     if (!guidance || !tourRoot) return;
 
     const margin = 16;
-    const gap = 30;
+    const gap = 20;
     const viewportWidth = document.documentElement.clientWidth;
     const viewportHeight = document.documentElement.clientHeight;
-    const width = Math.min(320, viewportWidth - margin * 2);
+    const width = Math.max(0, Math.min(380, viewportWidth - margin * 2));
     guidance.style.width = `${width}px`;
 
-    const boxHeight = guidance.offsetHeight || 170;
+    const boxHeight = guidance.offsetHeight || 220;
     let left = Math.max(margin, (viewportWidth - width) / 2);
     let top = Math.max(margin, (viewportHeight - boxHeight) / 2);
     let side = 'none';
@@ -316,27 +316,31 @@
         { side: 'bottom', left: rect.left + rect.width / 2 - width / 2, top: rect.bottom + gap },
         { side: 'top', left: rect.left + rect.width / 2 - width / 2, top: rect.top - boxHeight - gap }
       ];
-      const fits = candidates.find(candidate =>
-        candidate.left >= margin
-        && candidate.left + width <= viewportWidth - margin
-        && candidate.top >= margin
-        && candidate.top + boxHeight <= viewportHeight - margin
-      );
-      const candidate = fits || candidates
-        .map(item => ({
-          ...item,
-          overflow: Math.max(0, margin - item.left)
-            + Math.max(0, item.left + width - viewportWidth + margin)
-            + Math.max(0, margin - item.top)
-            + Math.max(0, item.top + boxHeight - viewportHeight + margin)
-        }))
-        .sort((a, b) => a.overflow - b.overflow)[0];
-
-      left = Math.min(Math.max(margin, candidate.left), viewportWidth - width - margin);
-      top = Math.min(
-        Math.max(margin, candidate.top),
-        Math.max(margin, viewportHeight - boxHeight - margin)
-      );
+      const rankedCandidates = candidates.map(candidate => {
+        const candidateLeft = Math.min(Math.max(margin, candidate.left), viewportWidth - width - margin);
+        const candidateTop = Math.min(Math.max(margin, candidate.top), viewportHeight - boxHeight - margin);
+        const overlapWidth = Math.max(
+          0,
+          Math.min(candidateLeft + width, rect.right) - Math.max(candidateLeft, rect.left)
+        );
+        const overlapHeight = Math.max(
+          0,
+          Math.min(candidateTop + boxHeight, rect.bottom) - Math.max(candidateTop, rect.top)
+        );
+        const overflow = Math.max(0, margin - candidate.left)
+          + Math.max(0, candidate.left + width - viewportWidth + margin)
+          + Math.max(0, margin - candidate.top)
+          + Math.max(0, candidate.top + boxHeight - viewportHeight + margin);
+        return {
+          ...candidate,
+          left: candidateLeft,
+          top: candidateTop,
+          score: overflow * 10000 + overlapWidth * overlapHeight
+        };
+      }).sort((first, second) => first.score - second.score);
+      const candidate = rankedCandidates[0];
+      left = candidate.left;
+      top = candidate.top;
       side = candidate.side;
     }
 
@@ -351,6 +355,15 @@
 
     const guidanceRect = guidance.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
+    const intersects = guidanceRect.left < targetRect.right
+      && guidanceRect.right > targetRect.left
+      && guidanceRect.top < targetRect.bottom
+      && guidanceRect.bottom > targetRect.top;
+    if (intersects) {
+      arrowPath.setAttribute('d', '');
+      return;
+    }
+
     const targetX = targetRect.left + targetRect.width / 2;
     const targetY = targetRect.top + targetRect.height / 2;
     let startX = guidanceRect.left + guidanceRect.width / 2;
@@ -407,7 +420,13 @@
     window.setTimeout(() => {
       const target = findTarget(step);
       observeTarget(target);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      if (target) {
+        target.scrollIntoView({
+          behavior: 'smooth',
+          block: window.innerWidth <= 600 ? 'start' : 'center',
+          inline: 'nearest'
+        });
+      }
       refreshPosition();
       window.requestAnimationFrame(() => {
         guidance.classList.add('keepai-tour-guidance-visible');
