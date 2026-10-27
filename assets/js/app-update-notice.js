@@ -37,11 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const heading = document.createElement('h2');
         heading.id = 'keepai-update-title';
-        heading.textContent = 'A fresh update is ready';
+        heading.textContent = 'App update ready';
 
         const message = document.createElement('p');
         message.id = 'keepai-update-description';
-        message.textContent = 'Reload KeepAI to enjoy the latest improvements. Finish any unsaved work before updating.';
+        message.textContent = 'KeepAI has been updated. Reload to use the latest version.';
 
         const actions = document.createElement('div');
         actions.className = 'keepai-update-actions';

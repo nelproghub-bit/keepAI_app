@@ -2033,7 +2033,7 @@
     </style>
     <link href="assets/css/responsive-layouts.css" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/brand-theme.css">
-<link rel="stylesheet" href="assets/css/app-update-notice.css">
+<link rel="stylesheet" href="assets/css/app-update-notice.css?v=dialog-2">
 </head>
 <body>
     <!-- Offline Alert Banner -->
@@ -2156,6 +2156,9 @@
                             </div>
                             <button class="dropdown-item" onclick="showSection('settings')">
                                 <i class="fas fa-user-cog"></i> Account Settings
+                            </button>
+                            <button class="dropdown-item" type="button" onclick="window.KeepAITour?.restart?.()">
+                                <i class="fas fa-route"></i> Restart Guided Tour
                             </button>
                             <button class="dropdown-item" onclick="toggleDarkMode()">
                                 <i class="fas fa-moon"></i> Toggle Dark Theme
@@ -3005,7 +3008,7 @@
 
     <!-- ==================== CORE JAVASCRIPT ENGINE ==================== -->
     <script src="assets/js/push-notifications.js"></script>
-    <script src="assets/js/app-update-notice.js"></script>
+    <script src="assets/js/app-update-notice.js?v=dialog-2"></script>
     <script src="assets/js/onboarding-tour.js"></script>
     <script>
         var API_BASE = window.API_BASE;

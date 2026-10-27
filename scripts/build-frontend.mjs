@@ -68,6 +68,17 @@ for (const directory of ['assets', 'icons']) {
   await cp(path.join(projectRoot, directory), path.join(outputDirectory, directory), { recursive: true });
 }
 
+// Keep the update dialog's markup and styles on the same release. Older
+// service workers may otherwise serve a cached toast script with newer CSS.
+for (const filename of ['student_dashboard.html', 'admin_dashboard.html']) {
+  const pagePath = path.join(outputDirectory, filename);
+  const page = await readFile(pagePath, 'utf8');
+  await writeFile(pagePath, page.replace(
+    /(assets\/(?:css\/app-update-notice\.css|js\/app-update-notice\.js))(?:\?[^"\s]*)?/g,
+    `$1?v=${appVersion === 'local' ? 'dialog-2' : appVersion}`
+  ));
+}
+
 await mkdir(path.join(outputDirectory, 'assets', 'js'), { recursive: true });
 const apiConfig = [
   `const API_BASE_URL = ${JSON.stringify(apiBaseUrl)};`,

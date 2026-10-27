@@ -1,94 +1,95 @@
 (function () {
   'use strict';
 
-  const TOUR_STORAGE_PREFIX = 'keepai_onboarding_completed';
+  const TOUR_STORAGE_PREFIX = 'keepai_onboarding_status';
+  const TOUR_ACTIVE_STATE_KEY = 'keepai_onboarding_active';
   const TOUR_STEPS = {
     student: [
       {
         section: 'workspaces',
         selector: '[data-section="workspaces"]',
-        title: 'Your study starts here',
-        description: 'Workspaces keep each subject or project organized. Create one for a course, then bring its notes and study sessions together.',
-        tip: 'Start with a workspace for the class you are studying this week.'
+        title: 'Workspace hub',
+        description: 'Organize each course, subject, or project into a dedicated workspace so your notes, resources, and study sessions stay connected in one place.',
+        tip: 'Start with a workspace for the class you are studying this week and build a simple routine around it.'
       },
       {
         section: 'documents',
         selector: '[data-section="documents"]',
-        title: 'Bring your materials along',
-        description: 'Upload your course notes and supported documents in the Study Documents area. Keep your source material organized and ready to use.',
-        tip: 'Use clear file names so your materials are easy to find later.'
+        title: 'Study library',
+        description: 'Upload notes, readings, and supporting documents here so your study materials stay organized, searchable, and ready to review anytime.',
+        tip: 'Use clear file names and consistent folders so your resources stay easy to find later.'
       },
       {
         section: 'tutor',
         selector: '[data-section="tutor"]',
-        title: 'Ask the AI Study Tutor',
-        description: 'Ask questions in your own words and get explanations designed to make difficult topics easier to understand.',
-        tip: 'Try asking for a concept to be explained step by step.'
+        title: 'AI tutor module',
+        description: 'Ask questions in your own words and get guided explanations designed to simplify difficult topics and strengthen understanding.',
+        tip: 'Try asking for a concept to be broken down step by step or compared with a real-world example.'
       },
       {
         section: 'learning',
         selector: '[data-section="learning"]',
-        title: 'Turn learning into practice',
-        description: 'Use the learning tools to create study resources, review key ideas, and check your understanding with practice activities.',
-        tip: 'A short practice session is a useful way to reinforce a lesson.'
+        title: 'Learning studio',
+        description: 'Use the learning tools to practice key ideas through flashcards, review exercises, and guided study activities that reinforce learning.',
+        tip: 'Short, focused practice sessions help you retain ideas more effectively than long passive study blocks.'
       },
       {
         section: 'progress',
         selector: '[data-section="progress"]',
-        title: 'See how you are progressing',
-        description: 'Visit your progress area to review your study activity and see how your learning routine is developing.',
-        tip: 'Check in regularly to keep your study goals in view.'
+        title: 'Progress dashboard',
+        description: 'Review your recent activity and study momentum to see how your routine is improving over time and where to focus next.',
+        tip: 'Checking your progress regularly helps you stay consistent and identify what needs attention.'
       },
       {
         section: 'settings',
         selector: '[data-section="settings"]',
-        title: 'Make KeepAI yours',
-        description: 'Manage your account and preferences from Settings. You can return to any area at any time using the sidebar.',
-        tip: 'You are ready to begin. Your tour can be replayed from the button on this page.'
+        title: 'Personalized settings',
+        description: 'Adjust your profile, preferences, and app experience from Settings to match your workflow, learning style, and account needs.',
+        tip: 'You are ready to begin. You can replay this walkthrough any time from the controls in the app.'
       }
     ],
     admin: [
       {
         section: 'overview',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'overview\')"]',
-        title: 'Your administration overview',
-        description: 'The Overview brings together the main system statistics and a quick snapshot of activity across KeepAI.',
-        tip: 'Use this as your starting point for a regular system check.'
+        title: 'Operations overview',
+        description: 'The Overview dashboard brings together the most important system signals, including activity trends, health checks, and key operational indicators.',
+        tip: 'Use this as your daily control center for checking the current health of the platform.'
       },
       {
         section: 'users',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'users\')"]',
-        title: 'Manage user accounts',
-        description: 'User Management is where administrators can review accounts and handle account-related tasks.',
-        tip: 'Review account details carefully before making changes.'
+        title: 'User management',
+        description: 'The User Management module helps administrators review accounts, verify access, and handle account-related actions with clear operational visibility.',
+        tip: 'Review account details carefully before approving or changing permissions.'
       },
       {
         section: 'documents',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'documents\')"]',
-        title: 'Review shared documents',
-        description: 'The Documents area gives administrators a place to review the document library and manage shared learning resources.',
-        tip: 'Keep the library relevant and easy for students to navigate.'
+        title: 'Content library',
+        description: 'The Documents module gives administrators visibility into shared resources, educational materials, and the broader content library used across the platform.',
+        tip: 'Keep the library structured and relevant so students can easily find the right learning materials.'
       },
       {
         section: 'announcements',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'announcements\')"]',
-        title: 'Keep students informed',
-        description: 'Publish announcements to share important updates and reminders with students using the portal.',
-        tip: 'Make announcements concise and include the action students need to take.'
+        title: 'Communications center',
+        description: 'Publish announcements and updates to keep students informed with timely messages and action-oriented reminders.',
+        tip: 'Keep messages concise and specific so users know exactly what to do next.'
       },
       {
         section: 'playground',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'playground\')"]',
-        title: 'Check the AI experience',
-        description: 'Use the AI Test Console to try the available study modes and verify the assistant experience.',
-        tip: 'Test a representative prompt before sharing a change or update.'
+        title: 'AI sandbox',
+        description: 'Use the AI Playground to test prompts, validate study workflows, and confirm that the assistant experience behaves as expected.',
+        tip: 'Run a representative prompt before sharing a new feature or significant update.'
       },
       {
         section: 'system',
         selector: '.dash-nav .nav-link[onclick*="switchDashboardTab(\'system\')"]',
-        title: 'Monitor system health',
-        description: 'System & Database contains diagnostics and operational information to help you review the application status.',
-        tip: 'Use these tools for monitoring; avoid changing settings unless you understand their impact.'
+        title: 'System & diagnostics',
+        description: 'The System and Database area provides diagnostics, monitoring controls, and operational tools to help maintain a healthy platform environment.',
+        tip: 'Use these tools to verify performance and investigate issues before changing critical settings.'
       }
     ]
   };
@@ -102,24 +103,66 @@
   let previousBodyOverflow = '';
   let replayButton = null;
 
-  function getStorageKey() {
-    return `${TOUR_STORAGE_PREFIX}:${activeRole}:${encodeURIComponent(String(activeUserId || 'account'))}`;
+  function getRoleFromPage() {
+    if (window.location.pathname.toLowerCase().includes('admin')) return 'admin';
+    return 'student';
   }
 
-  function hasCompletedTour() {
+  function getCurrentUserKey() {
+    const userId = activeUserId || 'account';
+    return encodeURIComponent(String(userId));
+  }
+
+  function getStorageKey() {
+    const role = activeRole || getRoleFromPage();
+    return `${TOUR_STORAGE_PREFIX}:${role}:${getCurrentUserKey()}`;
+  }
+
+  function hasTourStatus() {
     try {
-      return window.localStorage.getItem(getStorageKey()) === 'true';
+      const status = window.localStorage.getItem(getStorageKey());
+      return status === 'dismissed' || status === 'completed';
     } catch (error) {
       console.warn('Could not read onboarding status:', error);
       return false;
     }
   }
 
-  function saveTourCompletion() {
+  function saveTourStatus(status) {
     try {
-      window.localStorage.setItem(getStorageKey(), 'true');
+      window.localStorage.setItem(getStorageKey(), status);
     } catch (error) {
       console.warn('Could not save onboarding status:', error);
+    }
+  }
+
+  function saveTourCompletion() {
+    saveTourStatus('dismissed');
+  }
+
+  function saveActiveTourState() {
+    try {
+      const payload = JSON.stringify({
+        role: activeRole,
+        userId: activeUserId,
+        step: activeStep
+      });
+      window.sessionStorage.setItem(TOUR_ACTIVE_STATE_KEY, payload);
+    } catch (error) {
+      console.warn('Could not save tour progress:', error);
+    }
+  }
+
+  function restoreActiveTourState() {
+    try {
+      const raw = window.sessionStorage.getItem(TOUR_ACTIVE_STATE_KEY);
+      if (!raw) return null;
+      const state = JSON.parse(raw);
+      if (!state || !state.role || !state.step && state.step !== 0) return null;
+      return state;
+    } catch (error) {
+      console.warn('Could not restore tour progress:', error);
+      return null;
     }
   }
 
@@ -133,6 +176,93 @@
     replayButton.setAttribute('aria-label', 'Replay the KeepAI tutorial');
     replayButton.addEventListener('click', () => openTour(true));
     document.body.appendChild(replayButton);
+  }
+
+  function resolveTourTarget(step) {
+    const selectors = [
+      step.selector,
+      `[data-section="${step.section}"]`,
+      `#section-${step.section}`,
+      `[data-tour-target="${step.section}"]`
+    ];
+
+    for (const selector of selectors) {
+      const target = document.querySelector(selector);
+      if (target) return target;
+    }
+
+    return null;
+  }
+
+  function attachRestartTourControl() {
+    const containers = [document.querySelector('#settings-section'), document.querySelector('#section-settings')].filter(Boolean);
+    containers.forEach(container => {
+      if (container.querySelector('[data-tour-restart]')) return;
+
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'keepai-tour-restart-button';
+      button.dataset.tourRestart = 'true';
+      button.innerHTML = '<i class="fas fa-route"></i><span>Restart guided tour</span>';
+      button.addEventListener('click', () => {
+        if (activeRole) {
+          openTour(true);
+          return;
+        }
+
+        const detectedRole = getRoleFromPage();
+        const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
+        window.KeepAITour?.start(detectedRole, storedUser || { id: 'account' });
+        openTour(true);
+      });
+
+      const existingActions = container.querySelector('.settings-actions, .settings-card, .settings-grid');
+      if (existingActions) {
+        existingActions.appendChild(button);
+      } else {
+        container.appendChild(button);
+      }
+    });
+  }
+
+  function positionTourDialog(dialog, target) {
+    const margin = 24;
+    const dialogWidth = Math.min(520, window.innerWidth - 24);
+    dialog.style.width = `${dialogWidth}px`;
+
+    if (!target) {
+      dialog.style.left = '50%';
+      dialog.style.top = '50%';
+      dialog.style.transform = 'translate(-50%, -50%)';
+      dialog.dataset.anchored = 'false';
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const dialogHeight = dialog.offsetHeight || 310;
+    let left = rect.right + 28;
+    let top = rect.top + (rect.height / 2) - (dialogHeight / 2);
+
+    if (left + dialogWidth > window.innerWidth - margin) {
+      left = rect.left - dialogWidth - 28;
+    }
+
+    if (left < margin) {
+      left = (window.innerWidth - dialogWidth) / 2;
+    }
+
+    if (top < margin) {
+      top = margin;
+    }
+
+    if (top + dialogHeight > window.innerHeight - margin) {
+      top = window.innerHeight - dialogHeight - margin;
+    }
+
+    dialog.style.left = `${left}px`;
+    dialog.style.top = `${top}px`;
+    dialog.style.transform = 'none';
+    dialog.dataset.anchored = 'true';
   }
 
   function createDialog() {
@@ -171,33 +301,43 @@
       </section>
     `;
 
-    backdrop.querySelector('[data-tour-close]').addEventListener('click', finishTour);
-    backdrop.querySelector('[data-tour-skip]').addEventListener('click', finishTour);
-    backdrop.querySelector('[data-tour-back]').addEventListener('click', () => moveToStep(activeStep - 1));
-    backdrop.querySelector('[data-tour-next]').addEventListener('click', () => {
+    const dialog = backdrop.querySelector('.keepai-tour-dialog');
+    const closeButton = backdrop.querySelector('[data-tour-close]');
+    const skipButton = backdrop.querySelector('[data-tour-skip]');
+    const backButton = backdrop.querySelector('[data-tour-back]');
+    const nextButton = backdrop.querySelector('[data-tour-next]');
+
+    closeButton.addEventListener('click', finishTour);
+    skipButton.addEventListener('click', finishTour);
+    backButton.addEventListener('click', () => moveToStep(activeStep - 1));
+    nextButton.addEventListener('click', () => {
       if (activeStep === TOUR_STEPS[activeRole].length - 1) {
         finishTour();
       } else {
         moveToStep(activeStep + 1);
       }
     });
-    backdrop.addEventListener('click', event => {
+
+    backdrop.addEventListener('click', (event) => {
       if (event.target === backdrop) finishTour();
     });
+
     return backdrop;
   }
 
   function moveToStep(stepIndex) {
     const steps = TOUR_STEPS[activeRole];
-    if (stepIndex < 0 || stepIndex >= steps.length) return;
+    if (!steps || stepIndex < 0 || stepIndex >= steps.length) return;
 
-    activeStep = stepIndex;
-    const step = steps[activeStep];
-    const navTarget = document.querySelector(step.selector);
+    const step = steps[stepIndex];
+    const target = resolveTourTarget(step);
 
     if (highlightedElement) highlightedElement.classList.remove('keepai-tour-highlight');
-    highlightedElement = navTarget;
-    if (highlightedElement) highlightedElement.classList.add('keepai-tour-highlight');
+    highlightedElement = target;
+    if (highlightedElement) {
+      highlightedElement.classList.add('keepai-tour-highlight');
+      highlightedElement.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+    }
 
     if (activeRole === 'student' && typeof window.showSection === 'function') {
       window.showSection(step.section);
@@ -205,40 +345,69 @@
       window.switchDashboardTab(step.section);
     }
 
-    activeDialog.querySelector('[data-tour-counter]').textContent = `Step ${activeStep + 1} of ${steps.length}`;
-    activeDialog.querySelector('[data-tour-progress]').style.width = `${((activeStep + 1) / steps.length) * 100}%`;
-    activeDialog.querySelector('[data-tour-progress]').parentElement.setAttribute('aria-valuenow', String(activeStep + 1));
-    activeDialog.querySelector('[data-tour-progress]').parentElement.setAttribute('aria-valuemax', String(steps.length));
-    activeDialog.querySelector('#keepai-tour-title').textContent = step.title;
-    activeDialog.querySelector('#keepai-tour-description').textContent = step.description;
-    activeDialog.querySelector('[data-tour-tip]').textContent = step.tip;
-    activeDialog.querySelector('[data-tour-back]').disabled = activeStep === 0;
-    activeDialog.querySelector('[data-tour-back]').style.opacity = activeStep === 0 ? '0.5' : '1';
-    activeDialog.querySelector('[data-tour-next]').textContent = activeStep === steps.length - 1 ? 'Finish tour' : 'Next';
-    activeDialog.querySelector('[data-tour-next]').focus();
+    activeStep = stepIndex;
+    saveActiveTourState();
+
+    const dialog = activeDialog?.querySelector('.keepai-tour-dialog');
+    if (!dialog) return;
+
+    dialog.querySelector('[data-tour-counter]').textContent = `Step ${activeStep + 1} of ${steps.length}`;
+    dialog.querySelector('[data-tour-progress]').style.width = `${((activeStep + 1) / steps.length) * 100}%`;
+    dialog.querySelector('#keepai-tour-title').textContent = step.title;
+    dialog.querySelector('#keepai-tour-description').textContent = step.description;
+    dialog.querySelector('[data-tour-tip]').textContent = step.tip;
+
+    const backButton = dialog.querySelector('[data-tour-back]');
+    const nextButton = dialog.querySelector('[data-tour-next]');
+    backButton.disabled = activeStep === 0;
+    backButton.style.opacity = activeStep === 0 ? '0.5' : '1';
+    nextButton.textContent = activeStep === steps.length - 1 ? 'Finish tour' : 'Next';
+
+    positionTourDialog(dialog, highlightedElement);
+    window.requestAnimationFrame(() => {
+      dialog.classList.remove('keepai-tour-animate');
+      void dialog.offsetWidth;
+      dialog.classList.add('keepai-tour-animate');
+      nextButton.focus();
+    });
   }
 
   function openTour(replay) {
-    if (!activeRole || !TOUR_STEPS[activeRole] || activeDialog) return;
-    if (!replay && hasCompletedTour()) return;
+    if (!activeRole || !TOUR_STEPS[activeRole]) return;
+    if (!replay && hasTourStatus()) return;
+    if (activeDialog) return;
 
     previousFocusedElement = document.activeElement;
     previousBodyOverflow = document.body.style.overflow;
-    activeStep = 0;
     activeDialog = createDialog();
     document.body.appendChild(activeDialog);
     document.body.style.overflow = 'hidden';
-    moveToStep(0);
+
+    const persisted = restoreActiveTourState();
+    if (persisted && persisted.role === activeRole && persisted.userId === activeUserId) {
+      activeStep = Number.isFinite(persisted.step) ? persisted.step : 0;
+    } else {
+      activeStep = 0;
+    }
+
+    moveToStep(activeStep);
   }
 
   function finishTour() {
     if (!activeDialog) return;
+
+    if (highlightedElement) {
+      highlightedElement.classList.remove('keepai-tour-highlight');
+      highlightedElement = null;
+    }
+
     saveTourCompletion();
-    if (highlightedElement) highlightedElement.classList.remove('keepai-tour-highlight');
-    highlightedElement = null;
+    window.sessionStorage.removeItem(TOUR_ACTIVE_STATE_KEY);
+
     activeDialog.remove();
     activeDialog = null;
     document.body.style.overflow = previousBodyOverflow;
+
     if (previousFocusedElement && typeof previousFocusedElement.focus === 'function') {
       previousFocusedElement.focus();
     }
@@ -247,20 +416,30 @@
 
   function handleKeydown(event) {
     if (!activeDialog) return;
+
     if (event.key === 'Escape') {
       event.preventDefault();
       finishTour();
-    } else if (event.key === 'ArrowRight') {
+      return;
+    }
+
+    if (event.key === 'ArrowRight') {
       event.preventDefault();
-      const nextButton = activeDialog.querySelector('[data-tour-next]');
-      nextButton.click();
-    } else if (event.key === 'ArrowLeft' && activeStep > 0) {
+      activeDialog.querySelector('[data-tour-next]').click();
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' && activeStep > 0) {
       event.preventDefault();
       moveToStep(activeStep - 1);
-    } else if (event.key === 'Tab') {
+      return;
+    }
+
+    if (event.key === 'Tab') {
       const focusable = Array.from(activeDialog.querySelectorAll('button:not(:disabled)'));
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
+
       if (event.shiftKey && document.activeElement === first) {
         event.preventDefault();
         last.focus();
@@ -272,16 +451,44 @@
   }
 
   document.addEventListener('keydown', handleKeydown);
+  window.addEventListener('resize', () => {
+    if (activeDialog && highlightedElement) {
+      const dialog = activeDialog.querySelector('.keepai-tour-dialog');
+      if (dialog) positionTourDialog(dialog, highlightedElement);
+    }
+  });
 
   window.KeepAITour = {
     start(role, user) {
       if (!TOUR_STEPS[role]) return;
+
       activeRole = role;
       activeUserId = user && (user.id || user.username || user.email);
       createReplayButton();
-      if (!hasCompletedTour()) {
-        window.setTimeout(() => openTour(false), 300);
+      attachRestartTourControl();
+
+      const persisted = restoreActiveTourState();
+      if (persisted && persisted.role === activeRole && persisted.userId === activeUserId) {
+        activeStep = Number.isFinite(persisted.step) ? persisted.step : 0;
       }
+
+      if (!hasTourStatus()) {
+        window.setTimeout(() => {
+          if (!activeDialog && !hasTourStatus()) {
+            openTour(false);
+          }
+        }, 300);
+      }
+    },
+    restart() {
+      if (!activeRole) {
+        const fallbackRole = getRoleFromPage();
+        const storedUser = JSON.parse(window.localStorage.getItem('user') || 'null');
+        activeRole = fallbackRole;
+        activeUserId = storedUser && (storedUser.id || storedUser.username || storedUser.email);
+      }
+      window.localStorage.removeItem(getStorageKey());
+      openTour(true);
     }
   };
 })();

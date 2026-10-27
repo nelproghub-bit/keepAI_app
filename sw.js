@@ -20,6 +20,7 @@ const STATIC_ASSETS = [
   './assets/css/landing.css',
   './assets/css/brand-theme.css',
   './assets/css/app-update-notice.css',
+  './assets/js/app-update-notice.js',
   './assets/css/design-system.css',
   './assets/css/onboarding-tour.css',
   './assets/js/landing.js',
@@ -106,7 +107,11 @@ self.addEventListener('fetch', event => {
   }
 
   // Navigation requests (HTML pages): Network-first with cache fallback
-  if (req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
+  const isUpdateAsset = url.origin === self.location.origin && (
+    url.pathname.endsWith('/assets/js/app-update-notice.js')
+    || url.pathname.endsWith('/assets/css/app-update-notice.css')
+  );
+  if (isUpdateAsset || req.mode === 'navigate' || req.headers.get('accept')?.includes('text/html')) {
     event.respondWith(
       fetch(req, { cache: 'no-cache' })
         .then(networkResponse => {
@@ -117,6 +122,10 @@ self.addEventListener('fetch', event => {
           return networkResponse;
         })
         .catch(() => {
+          if (isUpdateAsset) {
+            return caches.open(CACHE_NAME).then(cache => cache.match(req, { ignoreSearch: true }))
+              .then(cached => cached || new Response('', { status: 503, statusText: 'Offline' }));
+          }
           return caches.match(req, { ignoreSearch: true }).then(cached => {
             if (cached) return cached;
             return caches.match('./student_login.html') || caches.match('./student_dashboard.html');
