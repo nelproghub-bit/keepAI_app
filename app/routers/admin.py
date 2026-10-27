@@ -6,7 +6,7 @@ import subprocess
 import platform
 import json
 from typing import Optional, Dict, Any, List
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel, Field
 
 from app.core.security import (
@@ -15,6 +15,7 @@ from app.core.security import (
 )
 from app.core.database import get_connection, is_mysql_fallback_active
 from app.core.config import GEMINI_MODEL, GEMINI_API_KEY
+from app.core.rate_limiter import enforce_login_rate_limit, admin_login_protector, get_client_ip
 from app.services.user_service import user_service
 from app.services.rag_service import delete_file_chunks, get_tutor_context
 from app.services.gemini_service import generate
@@ -132,10 +133,12 @@ def register_admin(request: AdminRegisterRequest):
         )
 
 @router.post("/login")
-def login_admin(request: AdminLoginRequest):
+def login_admin(request: AdminLoginRequest, raw_request: Request):
     """
     Authenticate administrator credentials and verify admin role.
     """
+    client_ip = get_client_ip(raw_request)
+    enforce_login_rate_limit(raw_request, request.identifier, is_admin=True)
     user = user_service.authenticate_admin(request.identifier, request.password)
     if is_mysql_fallback_active():
         raise HTTPException(
@@ -143,11 +146,13 @@ def login_admin(request: AdminLoginRequest):
             detail="The configured MySQL/MariaDB database is unavailable. Start MySQL in XAMPP and try again.",
         )
     if not user:
+        admin_login_protector.record_failure(request.identifier, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid administrator credentials or unauthorized account."
         )
 
+    admin_login_protector.record_success(request.identifier, client_ip)
     token = create_access_token({"sub": user["id"], "username": user["username"], "role": "admin"})
     return {
         "message": "Administrator signed in successfully.",

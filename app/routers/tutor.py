@@ -1,5 +1,6 @@
 from typing import Optional, Dict, Any
 from uuid import uuid4
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
@@ -10,8 +11,10 @@ from app.services.user_service import user_service
 from app.services.progress_service import record_activity
 from app.services.rag_service import get_tutor_context
 from app.services.gemini_service import AIProviderError, generate, generate_stream
+from app.core.ai_guardrails import build_guarded_tutor_prompt
 
 router = APIRouter(tags=["AI Tutor"])
+logger = logging.getLogger(__name__)
 
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
@@ -27,86 +30,21 @@ class SaveTutorTurnRequest(BaseModel):
     teaching_style: str = Field(default="simple", max_length=32)
     course_level: str = Field(default="intermediate", max_length=32)
 
-TEACHING_STYLE_DIRECTIVES = {
-    "simple": (
-        "TEACHING STYLE: Simple & Clear (Plain English).\n"
-        "- Explain concepts in straightforward, everyday language.\n"
-        "- Avoid unnecessary technical jargon. If a technical term is required, define it immediately in simple terms.\n"
-        "- Use clean, short bullet points and break ideas down into 2-3 digestible points.\n"
-        "- Focus on what the student needs to know to understand the core idea quickly."
-    ),
-    "socratic": (
-        "TEACHING STYLE: Guiding / Socratic Method (Step-by-Step Questions).\n"
-        "- Do NOT just dump the full final answer right away.\n"
-        "- Guide the student interactively: break down the problem into logical stepping stones.\n"
-        "- Provide a hint or key observation from the lesson, and then ask a thought-provoking guiding question to lead them to the answer.\n"
-        "- Encourage their critical thinking, praise their progress, and invite them to respond to your question."
-    ),
-    "detailed": (
-        "TEACHING STYLE: Detailed & In-Depth Academic Depth.\n"
-        "- Provide a thorough, comprehensive university-level explanation.\n"
-        "- Cover theoretical principles, architecture, underlying mechanisms, key definitions, and edge cases.\n"
-        "- Include structural breakdowns, pros/cons, and academic citations/page references from the course document."
-    ),
-    "visual": (
-        "TEACHING STYLE: Everyday Examples & Relatable Analogies.\n"
-        "- Anchor every single concept in an intuitive real-world analogy or everyday metaphor (e.g. comparing protocol handshakes to postal mail, memory caches to kitchen counters, HCI to a car dashboard).\n"
-        "- Walk through concrete scenarios and practical real-life examples so the student can visualize the abstract concepts clearly."
-    )
-}
-
-COURSE_LEVEL_DIRECTIVES = {
-    "beginner": (
-        "COURSE LEVEL: Introductory / Freshman.\n"
-        "- Assume the student has little or no prior background in this subject.\n"
-        "- Define all terms thoroughly, use gentle pacing, and emphasize foundational intuition ('What is this?' and 'Why is it used?')."
-    ),
-    "intermediate": (
-        "COURSE LEVEL: Undergraduate / Intermediate.\n"
-        "- Suitable for university students in Bachelor of Science in Computer Science / IT / Engineering.\n"
-        "- Balance core theoretical concepts with practical software/hardware engineering context, system architecture, and standard terminology."
-    ),
-    "advanced": (
-        "COURSE LEVEL: Advanced Capstone / Senior.\n"
-        "- Treat the student as a senior researcher or graduating engineer working on capstone systems.\n"
-        "- Emphasize architectural trade-offs, scalability, performance optimizations, security implications, edge cases, and industry design standards."
-    )
-}
-
 def build_tutor_system_prompt(
     teaching_style: str = "simple",
     course_level: str = "intermediate",
     has_materials: bool = False,
     sources: list = None
 ) -> str:
-    style_key = (teaching_style or "simple").lower().strip()
-    level_key = (course_level or "intermediate").lower().strip()
-
-    style_dir = TEACHING_STYLE_DIRECTIVES.get(style_key, TEACHING_STYLE_DIRECTIVES["simple"])
-    level_dir = COURSE_LEVEL_DIRECTIVES.get(level_key, COURSE_LEVEL_DIRECTIVES["intermediate"])
-
-    base_role = (
-        "You are KeepAI, a friendly, expert, and empathetic academic study tutor.\n\n"
-        f"{style_dir}\n\n"
-        f"{level_dir}\n\n"
+    system, _ = build_guarded_tutor_prompt(
+        question="",
+        context=" " if has_materials else None,
+        teaching_style=teaching_style,
+        course_level=course_level,
+        has_materials=has_materials,
+        sources=sources,
     )
-
-    if has_materials:
-        material_rules = (
-            "GROUNDING & CITATION RULES:\n"
-            "- Ground all your factual answers in the provided course materials.\n"
-            "- Cite specific sections, topics, or page numbers (e.g., [Page 1], [Page 2]) when referencing definitions, outcomes, or examples.\n"
-            "- If the student asks for a summary, give a well-structured summary matching your teaching style.\n"
-            "- If a question cannot be answered from the materials, state that politely while offering helpful conceptual guidance."
-        )
-    else:
-        material_rules = (
-            "NOTE: The student has not yet uploaded or selected course materials for this query.\n"
-            "- Answer using your general academic knowledge according to the assigned teaching style and course level.\n"
-            "- Kindly remind them they can attach or select a lesson in the Library for specific document-grounded help."
-        )
-
-    return f"{base_role}{material_rules}"
+    return system
 
 def get_owned_document_name(
     user_id: str,
@@ -155,23 +93,15 @@ def stream_keepai(
 
     course_level = request.course_level or "intermediate"
     tutor_ctx = get_tutor_context(uid, request.question, target_filename=document_name)
-    if tutor_ctx["has_materials"]:
-        system = build_tutor_system_prompt(
-            teaching_style=request.teaching_style,
-            course_level=course_level,
-            has_materials=True,
-            sources=tutor_ctx.get("sources", [])
-        )
-        prompt = f"Lesson material from uploaded document:\n{tutor_ctx['context']}\n\nStudent question: {request.question}"
-        has_sources = True
-    else:
-        system = build_tutor_system_prompt(
-            teaching_style=request.teaching_style,
-            course_level=course_level,
-            has_materials=False
-        )
-        prompt = f"Student question: {request.question}"
-        has_sources = False
+    has_sources = bool(tutor_ctx["has_materials"])
+    system, prompt = build_guarded_tutor_prompt(
+        question=request.question,
+        context=tutor_ctx.get("context"),
+        teaching_style=request.teaching_style,
+        course_level=course_level,
+        has_materials=has_sources,
+        sources=tutor_ctx.get("sources", []),
+    )
 
     sources = tutor_ctx.get("sources", [])
     read_mode = tutor_ctx.get("read_mode", "none")
@@ -197,8 +127,12 @@ def stream_keepai(
             ):
                 token_event = {"type": "token", "token": token}
                 yield f"data: {json.dumps(token_event)}\n\n"
-        except Exception as e:
-            err_event = {"type": "error", "error": str(e)}
+        except Exception as exc:
+            logger.warning("Tutor stream failed (%s)", type(exc).__name__)
+            err_event = {
+                "type": "error",
+                "error": "The AI service could not generate a response. Please try again.",
+            }
             yield f"data: {json.dumps(err_event)}\n\n"
             
         done_event = {"type": "done"}
@@ -226,45 +160,30 @@ def ask_keepai(
 
     course_level = request.course_level or "intermediate"
     tutor_ctx = get_tutor_context(uid, request.question, target_filename=document_name)
-    
-    if tutor_ctx["has_materials"]:
-        context = tutor_ctx["context"]
-        sources = tutor_ctx["sources"]
-        read_mode = tutor_ctx.get("read_mode", "targeted_retrieval")
-        system = build_tutor_system_prompt(
+    has_sources = bool(tutor_ctx["has_materials"])
+    sources = tutor_ctx.get("sources", [])
+    read_mode = tutor_ctx.get("read_mode", "targeted_retrieval" if has_sources else "none")
+    system, prompt = build_guarded_tutor_prompt(
+        question=request.question,
+        context=tutor_ctx.get("context"),
+        teaching_style=request.teaching_style,
+        course_level=course_level,
+        has_materials=has_sources,
+        sources=sources,
+    )
+    try:
+        answer = generate(
+            prompt,
+            system=system,
+            user_id=uid,
             teaching_style=request.teaching_style,
-            course_level=course_level,
-            has_materials=True,
-            sources=sources
+            has_sources=has_sources,
         )
-        try:
-            answer = generate(
-                f"Lesson material from uploaded document:\n{context}\n\nStudent question: {request.question}",
-                system=system,
-                user_id=uid,
-                teaching_style=request.teaching_style,
-                has_sources=True
-            )
-        except AIProviderError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-    else:
-        system = build_tutor_system_prompt(
-            teaching_style=request.teaching_style,
-            course_level=course_level,
-            has_materials=False
-        )
-        try:
-            answer = generate(
-                f"Student question: {request.question}",
-                system=system,
-                user_id=uid,
-                teaching_style=request.teaching_style,
-                has_sources=False
-            )
-        except AIProviderError as exc:
-            raise HTTPException(status_code=503, detail=str(exc)) from exc
-        sources = []
-        read_mode = "none"
+    except AIProviderError as exc:
+        raise HTTPException(
+            status_code=503,
+            detail="The AI service could not generate a response. Please try again.",
+        ) from exc
 
     record_activity(
         uid,

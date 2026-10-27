@@ -18,6 +18,7 @@ from app.core.maintenance import (
     MAINTENANCE_STATUS_PATH,
     MaintenanceModeMiddleware,
 )
+from app.core.security_headers import SecurityHeadersMiddleware
 from app.services.knowledge_loader import initialize_knowledge_base
 from app.services.rag_service import sync_initial_documents_to_db
 from app.services.platform_settings import get_system_maintenance_setting
@@ -47,6 +48,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DIST_DIR = os.path.join(BASE_DIR, "dist")
 FRONTEND_DIR = DIST_DIR if os.path.isdir(DIST_DIR) else BASE_DIR
 
+app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(
     MaintenanceModeMiddleware,
     maintenance_page=os.path.join(FRONTEND_DIR, "maintenance.html"),

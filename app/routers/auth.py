@@ -2,10 +2,11 @@ from typing import Optional, List, Dict, Any, Literal
 import time
 
 import requests
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from pydantic import BaseModel, ConfigDict, Field
 from app.core.security import create_access_token, get_current_admin_user, get_current_user
 from app.core.config import GOOGLE_OAUTH_CLIENT_ID
+from app.core.rate_limiter import enforce_login_rate_limit, login_protector, get_client_ip
 from app.services.platform_settings import is_student_registration_enabled
 from app.services.user_service import StudentRegistrationDisabledError, user_service
 
@@ -67,19 +68,24 @@ def register_student(request: RegisterRequest):
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Registration failed: " + str(e))
 
 @router.post("/login")
-def login_student(request: LoginRequest):
-    """Authenticate a student with username, email, or student ID."""
+def login_student(request: LoginRequest, raw_request: Request):
+    """Authenticate a student with username, email, or student ID with brute-force protection."""
+    client_ip = get_client_ip(raw_request)
+    enforce_login_rate_limit(raw_request, request.identifier, is_admin=False)
+
     user = user_service.authenticate(
         identifier=request.identifier,
         password=request.password
     )
     if not user:
+        login_protector.record_failure(request.identifier, client_ip)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials. Please verify your username, email, or student ID and password.",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
+    login_protector.record_success(request.identifier, client_ip)
     token = create_access_token({"sub": user["id"], "username": user["username"]})
     stats = user_service.get_stats(user["id"])
     return {

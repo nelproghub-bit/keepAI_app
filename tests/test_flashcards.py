@@ -95,6 +95,8 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertEqual(cards[0]["generation_method"], "ai")
         self.assertIn(generated["back"], generated["source_excerpt"])
         self.assertTrue(cards[0]["card_key"])
+        self.assertIn("<student_query>", generate.call_args.args[0])
+        self.assertIn("<lesson_document_excerpt>", generate.call_args.args[0])
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
@@ -127,7 +129,8 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertTrue(all(card["generation_method"] == "document_extract" for card in cards))
         self.assertTrue(all(card["source_excerpt"] in source for card in cards))
 
-    def test_arbitrary_paragraphs_are_not_turned_into_flashcards(self):
+    @patch.object(learning_tools, "generate", return_value="[]")
+    def test_arbitrary_paragraphs_are_not_turned_into_flashcards(self, generate):
         cards = build_extractive_flashcards(
             "A sequence of unrelated words with no definition or explicit example.",
             "term-definition",

@@ -149,8 +149,8 @@ class KeepAITrainingService:
     def get_style_preference(self, teaching_style: str) -> str:
         """Map teaching style to dataset style"""
         style_mapping = {
-            'simple': 'taglish',
-            'beginner': 'taglish', 
+            'simple': 'academic',
+            'beginner': 'academic',
             'examples': 'academic',
             'professor': 'professor',
             'step-by-step': 'academic',

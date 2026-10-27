@@ -9,6 +9,7 @@ from app.core.config import (
     GEMINI_API_KEY, GEMINI_MODEL, GEMINI_EMBED_MODEL
 )
 from app.services.training_service import training_service
+from app.core.ai_guardrails import OutputGuardrail, compose_ai_system_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -35,8 +36,10 @@ class AIService:
             prompt, teaching_style, "", has_sources
         )
 
-        if training_info['enhanced_instruction'] and not has_sources:
+        default_sys = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words."
+        if (not system or system == default_sys) and training_info.get('enhanced_instruction') and not has_sources:
             system = training_info['enhanced_instruction']
+        system = compose_ai_system_prompt(system)
 
         try:
             if self.provider == "openai" and OPENAI_API_KEY:
@@ -84,14 +87,15 @@ class AIService:
                 "The AI service could not generate a response. Please try again."
             ) from exc
 
+        safe_response = OutputGuardrail.validate_and_sanitize(response)
         _conversation_memory.setdefault(user_id, []).append({
             "prompt": prompt,
-            "response": response,
+            "response": safe_response,
             "task_type": training_info['task_type'],
             "style": training_info['style']
         })
         _conversation_memory[user_id] = _conversation_memory[user_id][-5:]
-        return response
+        return safe_response
 
     def _configured_model(self) -> str:
         if self.provider == "gemini":
@@ -164,27 +168,20 @@ class AIService:
             training_info = training_service.generate_enhanced_response(
                 prompt, teaching_style, "", has_sources
             )
-            if training_info.get('enhanced_instruction') and not has_sources:
+            default_sys = "You are KeepAI, a friendly study assistant who explains lessons in simple, clear, and easy-to-understand words."
+            if (not system or system == default_sys) and training_info.get('enhanced_instruction') and not has_sources:
                 system = training_info['enhanced_instruction']
+            system = compose_ai_system_prompt(system)
 
             if self.provider == "gemini" and GEMINI_API_KEY:
                 for token in self._generate_gemini_stream(prompt, system, timeout=timeout):
                     full_tokens.append(token)
-                    yield token
             elif self.provider == "openai" and OPENAI_API_KEY:
                 response = self._generate_openai(prompt, system)
-                for chunk in response.split(" "):
-                    part = chunk + " "
-                    full_tokens.append(part)
-                    yield part
-                    time.sleep(0.01)
+                full_tokens.append(response)
             elif self.provider == "anthropic" and ANTHROPIC_API_KEY:
                 response = self._generate_anthropic(prompt, system)
-                for chunk in response.split(" "):
-                    part = chunk + " "
-                    full_tokens.append(part)
-                    yield part
-                    time.sleep(0.01)
+                full_tokens.append(response)
             else:
                 raise AIProviderError(
                     f"The configured AI provider '{self.provider}' is not available."
@@ -206,7 +203,11 @@ class AIService:
             ) from e
 
         if full_tokens:
-            final_resp = "".join(full_tokens)
+            final_resp = OutputGuardrail.validate_and_sanitize("".join(full_tokens))
+            if not final_resp.strip():
+                raise AIProviderError("The AI service returned an empty response.")
+            for start in range(0, len(final_resp), 80):
+                yield final_resp[start:start + 80]
             if user_id not in _conversation_memory:
                 _conversation_memory[user_id] = []
             _conversation_memory[user_id].append({
@@ -665,7 +666,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
         # Use prompt content to select varied response
         import hashlib
         hash_val = int(hashlib.md5(prompt.encode()).hexdigest(), 16) % len(responses)
-        return responses[hash_val]
+        return OutputGuardrail.validate_and_sanitize(responses[hash_val])
     
     def _extract_topic(self, prompt: str) -> str:
         """Extract the main topic from user prompt"""
@@ -709,7 +710,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
         # Vary responses based on prompt content
         import hashlib
         hash_val = int(hashlib.md5(prompt.encode()).hexdigest(), 16) % len(response_templates)
-        return response_templates[hash_val]
+        return OutputGuardrail.validate_and_sanitize(response_templates[hash_val])
     
     def _generate_openai(self, prompt: str, system: str, max_output_tokens: int = 1000) -> str:
         """Generate using OpenAI API"""

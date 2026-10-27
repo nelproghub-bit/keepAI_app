@@ -5,6 +5,7 @@ import hashlib
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field, model_validator
+from app.core.ai_guardrails import PromptGuardrail
 from app.core.security import get_current_student_user
 from app.core.database import get_connection
 from app.services.user_service import user_service
@@ -202,7 +203,10 @@ def generate_grounded_quiz_questions(
                 if seen_questions:
                     exclusions = (
                         "Do not repeat or closely paraphrase these already accepted questions: "
-                        + json.dumps(sorted(seen_questions)[-30:], ensure_ascii=False)
+                        + PromptGuardrail.contain_untrusted_input(
+                            json.dumps(sorted(seen_questions)[-30:], ensure_ascii=False),
+                            "student_query",
+                        )
                         + "\n"
                     )
                 prompt = (
@@ -220,7 +224,8 @@ def generate_grounded_quiz_questions(
                     "support it. Return a JSON array only; each object must contain question, choices, "
                     "correct_answer, explanation, evidence.\n"
                     f"{exclusions}"
-                    f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n{source_chunk}"
+                    f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n"
+                    f"{PromptGuardrail.contain_untrusted_input(source_chunk, 'lesson_document_excerpt')}"
                 )
                 raw = generate(
                     prompt,
@@ -461,9 +466,12 @@ def create_summary(
     user_service.increment_stat(current_user["id"], "summaries_generated", 1)
 
     result = generate(
-        f"Summarize the following lesson about {request.topic} using simple, clear, and easy-to-understand words. "
+        "Summarize the following lesson about "
+        f"{PromptGuardrail.contain_untrusted_input(request.topic, 'student_query')} "
+        "using simple, clear, and easy-to-understand words. "
         "Use short headings, bullet points, and plain definitions so any student can understand quickly. Do not add "
-        f"unsupported facts.\n\nLESSON:\n{context}",
+        "unsupported facts.\n\nLESSON:\n"
+        f"{PromptGuardrail.contain_untrusted_input(context, 'lesson_document_excerpt')}",
         system="You are KeepAI, a helpful study assistant. Explain concepts in simple, clear, everyday words."
     )
     record_activity(
@@ -698,7 +706,9 @@ def generate_flashcards_from_document(
             "verbatim from the supplied excerpt, and back must be an exact continuous quote contained "
             "in source_excerpt. Do not invent, infer, add examples, combine concepts, or return duplicates. "
             "Skip unsupported concepts rather than guessing. Return [] if the excerpt has no suitable content.\n"
-            f"FOCUS TOPIC: {topic}\nLECTURE EXCERPT:\n{section}"
+            f"FOCUS TOPIC:\n{PromptGuardrail.contain_untrusted_input(topic, 'student_query')}\n"
+            "LECTURE EXCERPT:\n"
+            f"{PromptGuardrail.contain_untrusted_input(section, 'lesson_document_excerpt')}"
         )
         try:
             raw = generate(

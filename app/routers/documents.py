@@ -2,8 +2,9 @@ import uuid
 from typing import Dict, Any, Optional
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Depends
 from app.core.config import MAX_UPLOAD_BYTES
-from app.core.security import get_current_student_user, get_current_user
+from app.core.security import get_current_student_user
 from app.core.database import get_connection
+from app.core.ai_guardrails import sanitize_filename, verify_file_content
 from app.services.document_service import extract_document_structured, split_text
 from app.services.rag_service import index_chunks, delete_file_chunks, get_user_document_stats
 from app.services.progress_service import record_activity
@@ -45,11 +46,11 @@ def list_documents(current_user: Dict[str, Any] = Depends(get_current_student_us
 async def upload_document(
     file: UploadFile = File(...),
     workspace_id: Optional[str] = Form(None),
-    current_user: Dict[str, Any] = Depends(get_current_user)
+    current_user: Dict[str, Any] = Depends(get_current_student_user)
 ):
     """Upload a document and associate it with the authenticated student."""
     uid = current_user["id"]
-    fn = file.filename or ""
+    fn = sanitize_filename(file.filename or "")
     fn_lower = fn.lower()
     allowed_exts = (".pdf", ".docx", ".doc", ".txt", ".md", ".csv")
     if not any(fn_lower.endswith(ext) for ext in allowed_exts):
@@ -91,6 +92,10 @@ async def upload_document(
     data = await file.read()
     if len(data) > MAX_UPLOAD_BYTES:
         raise HTTPException(413, f"File exceeds the {MAX_UPLOAD_BYTES // (1024*1024)}MB upload limit.")
+
+    is_valid, content_err = verify_file_content(data, fn)
+    if not is_valid:
+        raise HTTPException(400, content_err)
 
     try:
         doc_info = extract_document_structured(data, fn)
