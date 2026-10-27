@@ -373,11 +373,12 @@
         }
 
         /* Sidebar collapsed state styling for Desktop */
+        @media (min-width: 993px) {
         .app.sidebar-collapsed .brand-text,
         .app.sidebar-collapsed .nav-label,
         .app.sidebar-collapsed .nav-item span,
         .app.sidebar-collapsed .nav-item .nav-badge,
-        .app.sidebar-collapsed .sidebar-bottom p span,
+        .app.sidebar-collapsed .pwa-sidebar-btn span,
         .app.sidebar-collapsed .sidebar-bottom .mini-pill {
             display: none !important;
         }
@@ -400,9 +401,56 @@
         }
 
         .app.sidebar-collapsed .sidebar-bottom {
-            padding: 10px 4px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 5px 5px;
             text-align: center;
+            width: 56px;
+            flex-shrink: 0;
+        }
+
+        .app.sidebar-collapsed .sidebar-status-line {
+            width: 44px;
+            min-height: 12px;
+            margin: 0;
+        }
+
+        .app.sidebar-collapsed .sidebar-header {
+            justify-content: center;
+            padding: 0;
             width: 100%;
+        }
+
+        .app.sidebar-collapsed .sidebar-status-line,
+        .app.sidebar-collapsed .status-indicator {
+            justify-content: center;
+            gap: 0;
+        }
+
+        /* Keep the live status available to assistive technology in icon mode. */
+        .app.sidebar-collapsed #sidebar-status-text {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            overflow: hidden;
+            clip-path: inset(50%);
+            white-space: nowrap;
+        }
+
+        .app.sidebar-collapsed .pwa-sidebar-btn {
+            width: 44px;
+            height: 44px;
+            padding: 0;
+            margin: 0;
+            gap: 0;
+            flex-shrink: 0;
+            font-size: 17px;
+        }
+
+        .app.sidebar-collapsed .nav-item { min-height: 44px; }
         }
 
         .sidebar-bottom {
@@ -423,6 +471,7 @@
 
         .status-indicator {
             display: flex;
+            white-space: nowrap;
             align-items: center;
             gap: 7px;
             color: #cbd5e1;
@@ -433,6 +482,7 @@
         .status-dot {
             width: 8px;
             height: 8px;
+            flex-shrink: 0;
             background: #10b981;
             border-radius: 50%;
             box-shadow: 0 0 8px #10b981;
@@ -455,6 +505,7 @@
 
         .pwa-sidebar-btn {
             width: 100%;
+            white-space: nowrap;
             margin-top: 10px;
             background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.12);
@@ -2012,29 +2063,29 @@
 
             <div class="nav-label">Main Menu</div>
             <nav class="nav">
-                <button class="nav-item active" onclick="showSection('workspaces')" data-section="workspaces">
+                <button class="nav-item active" onclick="showSection('workspaces')" data-section="workspaces" aria-label="My Workspaces" title="My Workspaces">
                     <i class="fas fa-folder"></i>
                     <span>My Workspaces</span>
                     <span class="nav-badge" id="workspaces-badge">1</span>
                 </button>
-                <button class="nav-item" onclick="showSection('documents')" data-section="documents">
+                <button class="nav-item" onclick="showSection('documents')" data-section="documents" aria-label="Documents" title="Documents">
                     <i class="fas fa-file-alt"></i>
                     <span>Documents</span>
                     <span class="nav-badge" id="docs-badge">0</span>
                 </button>
-                <button class="nav-item" onclick="showSection('tutor')" data-section="tutor">
+                <button class="nav-item" onclick="showSection('tutor')" data-section="tutor" aria-label="AI Tutor" title="AI Tutor">
                     <i class="fas fa-graduation-cap"></i>
                     <span>AI Tutor</span>
                 </button>
-                <button class="nav-item" onclick="showSection('learning')" data-section="learning">
+                <button class="nav-item" onclick="showSection('learning')" data-section="learning" aria-label="Learning Tools" title="Learning Tools">
                     <i class="fas fa-book-open"></i>
                     <span>Learning Tools</span>
                 </button>
-                <button class="nav-item" onclick="showSection('progress')" data-section="progress">
+                <button class="nav-item" onclick="showSection('progress')" data-section="progress" aria-label="Progress" title="Progress">
                     <i class="fas fa-chart-line"></i>
                     <span>Progress</span>
                 </button>
-                <button class="nav-item" onclick="showSection('settings')" data-section="settings">
+                <button class="nav-item" onclick="showSection('settings')" data-section="settings" aria-label="Settings" title="Settings">
                     <i class="fas fa-cog"></i>
                     <span>Settings</span>
                 </button>
@@ -2042,13 +2093,13 @@
 
             <div class="sidebar-bottom">
                 <div class="sidebar-status-line">
-                    <div class="status-indicator">
+                    <div class="status-indicator" role="status" title="System Online">
                         <div class="status-dot" id="sidebar-status-dot"></div>
                         <span id="sidebar-status-text">System Online</span>
                     </div>
                     <span class="mini-pill">v1.0.0</span>
                 </div>
-                <button class="pwa-sidebar-btn" id="pwa-sidebar-install" onclick="openAppDownloadModal()">
+                <button class="pwa-sidebar-btn" id="pwa-sidebar-install" onclick="openAppDownloadModal()" aria-label="Install Web App" title="Install Web App">
                     <i class="fas fa-mobile-screen-button"></i>
                     <span>Install Web App</span>
                 </button>
@@ -3339,6 +3390,7 @@
                 const dot = document.getElementById('sidebar-status-dot');
                 const text = document.getElementById('sidebar-status-text');
                 const bar = document.getElementById('offline-bar');
+                if (text) text.parentElement.title = isOnline ? 'System Online' : 'Offline Mode';
 
                 if (isOnline) {
                     if (dot) { dot.classList.remove('offline'); }
