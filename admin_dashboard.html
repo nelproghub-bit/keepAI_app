@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <title>KeepAI — Your Simple AI Study Assistant | Admin Dashboard</title>
 <link rel="manifest" href="admin-manifest.json">
-<meta name="theme-color" content="#7D1D1D">
+<meta name="theme-color" content="#0F766E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,11 +24,11 @@
 <script src="assets/js/account-password.js" defer></script>
 <style>
 :root {
-  --primary: #7D1D1D;
-  --primary-hover: #651818;
-  --primary-light: #FFF5F5;
-  --primary-border: #f8d7da;
-  --primary-gradient: linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-light: #E8F5F2;
+  --primary-border: #B7DDD6;
+  --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
   --emerald: #059669;
   --emerald-light: #ecfdf5;
   --emerald-border: #a7f3d0;
@@ -40,13 +40,13 @@
   --rose-border: #fecdd3;
   --sky: #0284c7;
   --sky-light: #f0f9ff;
-  --bg-app: #f8fafc;
+  --bg-app: #F4F7FA;
   --bg-surface: #ffffff;
   --bg-subtle: #f1f5f9;
-  --border: #e2e8f0;
+  --border: #DCE4EC;
   --text-main: #0f172a;
   --text-body: #334155;
-  --text-muted: #64748b;
+  --text-muted: #52647A;
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 18px;
@@ -54,7 +54,7 @@
   --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
   --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
   --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
-  --shadow-xl: 0 20px 50px -12px rgba(125, 29, 29, 0.25);
+  --shadow-xl: 0 20px 50px -12px rgba(15, 118, 110, 0.25);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -88,7 +88,7 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
 }
 
 #session-restore-container {
@@ -97,7 +97,7 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
 }
 
 #session-restore-container.active {
@@ -160,7 +160,7 @@ button { cursor: pointer; }
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.15);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
   padding: 3px;
   overflow: hidden;
 }
@@ -175,7 +175,7 @@ button { cursor: pointer; }
 .auth-school {
   font-size: 11px;
   font-weight: 700;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
@@ -213,7 +213,7 @@ button { cursor: pointer; }
 
 .auth-tab.active {
   background: white;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-bottom-color: var(--primary);
 }
 
@@ -268,7 +268,7 @@ button { cursor: pointer; }
 
 .form-group input:focus, .form-group textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 
 .btn {
@@ -289,7 +289,7 @@ button { cursor: pointer; }
   width: 100%;
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
 }
 
 .btn-primary:hover:not(:disabled) {
@@ -325,7 +325,7 @@ button { cursor: pointer; }
 }
 
 .btn-secondary:hover {
-  background: #e2e8f0;
+  background: #DCE4EC;
 }
 
 .alert-box {
@@ -380,7 +380,7 @@ button { cursor: pointer; }
 
 /* Sidebar */
 .dash-sidebar {
-  background: #1c0606;
+  background: #142D4E;
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
@@ -498,7 +498,7 @@ button { cursor: pointer; }
   font-size: 10px;
   line-height: 1.4;
   letter-spacing: 0.2px;
-  color: #fecaca;
+  color: #B8CAE0;
   font-weight: 600;
 }
 
@@ -535,7 +535,7 @@ button { cursor: pointer; }
   background: var(--primary);
   color: white;
   font-weight: 600;
-  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.4);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.4);
 }
 
 .nav-link svg {
@@ -645,7 +645,7 @@ button { cursor: pointer; }
   width: 42px;
   height: 42px;
   flex: 0 0 42px;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   background: var(--primary-light);
   border: 1px solid var(--primary-border);
   border-radius: 10px;
@@ -660,7 +660,7 @@ button { cursor: pointer; }
 .mobile-dashboard-menu:focus-visible,
 .nav-link:focus-visible,
 .action-btn-circle:focus-visible {
-  outline: 3px solid rgba(125, 29, 29, 0.35);
+  outline: 3px solid rgba(15, 118, 110, 0.35);
   outline-offset: 2px;
 }
 
@@ -725,7 +725,7 @@ button { cursor: pointer; }
 .stat-card-val {
   font-size: 28px;
   font-weight: 800;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-family: 'Plus Jakarta Sans', sans-serif;
   line-height: 1.1;
 }
@@ -787,7 +787,7 @@ table.data-table {
 }
 
 table.data-table th {
-  background: #f8fafc;
+  background: #F4F7FA;
   color: var(--text-muted);
   font-weight: 700;
   font-size: 11px;
@@ -817,8 +817,8 @@ table.data-table td {
 
 #users-table th {
   padding: 14px 16px;
-  background: #f8fafc;
-  color: #64748b;
+  background: #F4F7FA;
+  color: #52647A;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.05em;
@@ -865,7 +865,7 @@ table.data-table td {
 #users-table td:nth-child(6),
 #users-table td:nth-child(7) {
   white-space: nowrap;
-  color: #64748b;
+  color: #52647A;
   font-size: 12.5px;
   font-variant-numeric: tabular-nums;
 }
@@ -876,7 +876,7 @@ table.data-table td {
 }
 
 #users-table tr:hover td {
-  background: #f8fafc;
+  background: #F4F7FA;
 }
 
 .user-action-buttons {
@@ -910,7 +910,7 @@ table.data-table tr:last-child td {
 }
 
 table.data-table tr:hover {
-  background: #fdf2f2;
+  background: #E8F5F2;
 }
 
 .tag-pill {
@@ -922,7 +922,7 @@ table.data-table tr:hover {
 }
 
 .tag-pill.success { background: var(--emerald-light); color: var(--emerald); }
-.tag-pill.primary { background: var(--primary-light); color: var(--primary); }
+.tag-pill.primary { background: var(--primary-light); color: var(--primary-text, var(--primary)); }
 .tag-pill.neutral { background: var(--bg-subtle); color: var(--text-muted); }
 
 /* User Management Specific Styles */
@@ -970,8 +970,8 @@ table.data-table tr:hover {
   border: 1px solid transparent;
   cursor: pointer;
   transition: all 0.18s ease-in-out;
-  background: #f8fafc;
-  color: #64748b;
+  background: #F4F7FA;
+  color: #52647A;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
 }
 
@@ -983,16 +983,16 @@ table.data-table tr:hover {
 }
 
 .action-btn-circle.edit {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: #F4F7FA;
+  border-color: #DCE4EC;
   color: #475569;
 }
 .action-btn-circle.edit:hover {
-  background: #fff5f5;
-  border-color: #fca5a5;
-  color: #7D1D1D;
+  background: #E8F5F2;
+  border-color: #B7DDD6;
+  color: #0F766E;
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(125, 29, 29, 0.15);
+  box-shadow: 0 3px 8px rgba(15, 118, 110, 0.15);
 }
 
 .action-btn-circle.delete {
@@ -1033,13 +1033,13 @@ table.data-table tr:hover {
   font-weight: 600;
   font-size: 13px;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
   transition: all 0.2s;
   text-decoration: none;
 }
 .btn-purple:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1056,7 +1056,7 @@ table.data-table tr:hover {
   font-size: 13px;
   border: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 2px 8px rgba(15, 118, 110, 0.25);
   transition: all 0.2s;
   white-space: nowrap;
   height: 38px;
@@ -1065,7 +1065,7 @@ table.data-table tr:hover {
 .btn-admin-add:hover,
 .btn-green-add:hover {
   background: var(--primary-hover);
-  box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
   transform: translateY(-1px);
 }
 
@@ -1099,18 +1099,18 @@ table.data-table tr:hover {
 }
 
 .mode-chip:hover {
-  border-color: #fca5a5;
-  background: #fff5f5;
-  color: #7D1D1D;
+  border-color: #B7DDD6;
+  background: #E8F5F2;
+  color: #0F766E;
   transform: translateY(-1px);
 }
 
 .mode-chip.active {
   background: var(--primary-gradient);
-  border-color: #7D1D1D;
+  border-color: #0F766E;
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
   transform: translateY(-1px);
 }
 
@@ -1134,7 +1134,7 @@ table.data-table tr:hover {
 }
 
 .quick-prompt-btn {
-  background: #f8fafc;
+  background: #F4F7FA;
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px 10px;
@@ -1146,9 +1146,9 @@ table.data-table tr:hover {
 }
 
 .quick-prompt-btn:hover {
-  background: #fff5f5;
-  border-color: #fca5a5;
-  color: #7D1D1D;
+  background: #E8F5F2;
+  border-color: #B7DDD6;
+  color: #0F766E;
 }
 
 .ai-response-wrapper {
@@ -1161,11 +1161,11 @@ table.data-table tr:hover {
 }
 
 .ai-response-wrapper:focus-within {
-  border-color: #7D1D1D;
+  border-color: #0F766E;
 }
 
 .ai-response-toolbar {
-  background: #f8fafc;
+  background: #F4F7FA;
   padding: 10px 16px;
   border-bottom: 1px solid var(--border);
   display: flex;
@@ -1195,7 +1195,7 @@ table.data-table tr:hover {
 .ai-model-tag {
   font-family: 'JetBrains Mono', monospace, sans-serif;
   font-size: 11px;
-  background: #e2e8f0;
+  background: #DCE4EC;
   color: #334155;
   padding: 2px 7px;
   border-radius: 4px;
@@ -1224,9 +1224,9 @@ table.data-table tr:hover {
 }
 
 .btn-copy-response:hover {
-  background: #fff5f5;
-  border-color: #fca5a5;
-  color: #7D1D1D;
+  background: #E8F5F2;
+  border-color: #B7DDD6;
+  color: #0F766E;
 }
 
 .ai-response-body {
@@ -1249,8 +1249,8 @@ table.data-table tr:hover {
   height: 48px;
   margin: 0 auto 12px;
   border-radius: 50%;
-  background: #fff5f5;
-  color: #7D1D1D;
+  background: #E8F5F2;
+  color: #0F766E;
   display: grid;
   place-items: center;
   font-size: 22px;
@@ -1276,7 +1276,7 @@ table.data-table tr:hover {
   align-items: center;
   gap: 12px;
   padding: 16px 0;
-  color: #7D1D1D;
+  color: #0F766E;
   font-weight: 600;
   font-size: 13.5px;
 }
@@ -1314,7 +1314,7 @@ table.data-table tr:hover {
 
 .ai-markdown-output pre {
   background: #0f172a;
-  color: #f8fafc;
+  color: #F4F7FA;
   padding: 14px 16px;
   border-radius: 8px;
   overflow-x: auto;
@@ -1571,7 +1571,7 @@ table.data-table tr:hover {
 
 .pwa-option-card:hover {
   border-color: var(--primary);
-  background: #fffafa;
+  background: #F4FAF8;
   transform: translateY(-2px);
 }
 
@@ -1593,8 +1593,8 @@ table.data-table tr:hover {
 }
 
 .pwa-tips-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #F4F7FA;
+  border: 1px solid #DCE4EC;
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 11.5px;
@@ -1725,7 +1725,7 @@ table.data-table tr:hover {
     display: grid;
     gap: 12px;
     padding: 12px;
-    background: #f8fafc;
+    background: #F4F7FA;
   }
   #users-table tbody tr {
     overflow: hidden;
@@ -1878,7 +1878,7 @@ table.data-table tr:hover {
   place-items: center;
   border-radius: 12px;
   background: #fff1ef;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   font-size: 16px;
 }
 
@@ -1944,7 +1944,7 @@ table.data-table tr:hover {
 .settings-checkbox:disabled { cursor: wait; opacity: .55; }
 .settings-feedback { margin-top: 14px; padding: 11px 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-subtle); color: var(--text-muted); font-size: 11.5px; line-height: 1.5; }
 .settings-feedback[data-state="success"] { border-color: #a7f3d0; background: #ecfdf5; color: #166534; }
-.settings-feedback[data-state="error"] { border-color: #fecaca; background: #fef2f2; color: #991b1b; }
+.settings-feedback[data-state="error"] { border-color: #B8CAE0; background: #fef2f2; color: #991b1b; }
 .settings-actions { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
 .settings-meta { color: var(--text-muted); font-size: 10px; }
 .notification-setting-row { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 13px; padding: 14px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg-subtle); }
@@ -2040,7 +2040,7 @@ body.admin-theme-dark {
 #dashboard-app.admin-theme-dark .settings-feedback[data-state="error"] {
   border-color: #783a43;
   background: #3b2228;
-  color: #fecaca;
+  color: #B8CAE0;
 }
 
 #dashboard-app.admin-theme-dark .settings-note {
@@ -2081,8 +2081,8 @@ body.admin-theme-dark {
 #dashboard-app.admin-theme-dark .dash-main [style*="color:#334155"],
 #dashboard-app.admin-theme-dark .dash-main [style*="color: #475569"],
 #dashboard-app.admin-theme-dark .dash-main [style*="color:#475569"],
-#dashboard-app.admin-theme-dark .dash-main [style*="color: #64748b"],
-#dashboard-app.admin-theme-dark .dash-main [style*="color:#64748b"] {
+#dashboard-app.admin-theme-dark .dash-main [style*="color: #52647A"],
+#dashboard-app.admin-theme-dark .dash-main [style*="color:#52647A"] {
   color: var(--text-body) !important;
 }
 
@@ -2092,8 +2092,8 @@ body.admin-theme-dark {
 #dashboard-app.admin-theme-dark .dash-main [style*="background:#fff"],
 #dashboard-app.admin-theme-dark .dash-main [style*="background: white"],
 #dashboard-app.admin-theme-dark .dash-main [style*="background:white"],
-#dashboard-app.admin-theme-dark .dash-main [style*="background: #f8fafc"],
-#dashboard-app.admin-theme-dark .dash-main [style*="background:#f8fafc"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background: #F4F7FA"],
+#dashboard-app.admin-theme-dark .dash-main [style*="background:#F4F7FA"],
 #dashboard-app.admin-theme-dark .dash-main [style*="background: #f1f5f9"],
 #dashboard-app.admin-theme-dark .dash-main [style*="background:#f1f5f9"] {
   background-color: var(--bg-subtle) !important;
@@ -2152,6 +2152,7 @@ body.admin-theme-dark .modal-card textarea {
   }
 }
 </style>
+<link rel="stylesheet" href="assets/css/brand-theme.css">
 </head>
 <body>
 
@@ -2218,7 +2219,7 @@ body.admin-theme-dark .modal-card textarea {
               Sign In as Administrator ✦
             </button>
             <p class="auth-desc" style="margin-top: 14px; text-align: center; font-size: 12px;">
-              <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary); font-weight: 600; text-decoration: none;">
+              <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary-text, var(--primary)); font-weight: 600; text-decoration: none;">
                 📱 Install KeepAI Web App
               </a>
             </p>
@@ -2264,7 +2265,7 @@ body.admin-theme-dark .modal-card textarea {
         </div>
 
         <div style="margin-top: 24px; text-align: center; border-top: 1px solid var(--border); padding-top: 16px; font-size: 12.5px; color: var(--text-muted);">
-          Are you a student? <a href="student_login.html" style="color: var(--primary); font-weight: 600; text-decoration: none;">Go to Student Login →</a>
+          Are you a student? <a href="student_login.html" style="color: var(--primary-text, var(--primary)); font-weight: 600; text-decoration: none;">Go to Student Login →</a>
         </div>
 
       </div>
@@ -2489,7 +2490,7 @@ body.admin-theme-dark .modal-card textarea {
         <div class="data-table-wrapper users-table-wrapper" style="border-radius: var(--radius-sm); border: 1px solid var(--border);">
           <table class="data-table" id="users-table">
             <thead>
-              <tr style="background: #f8fafc;">
+              <tr style="background: #F4F7FA;">
                 <th>USERNAME</th>
                 <th>STUDENT NUMBER</th>
                 <th>FULL NAME</th>
@@ -3083,7 +3084,7 @@ body.admin-theme-dark .modal-card textarea {
 <!-- WEB APP INSTALL MODAL -->
 <div id="pwa-download-modal" class="modal-overlay" onclick="handlePwaOverlayClick(event)">
   <div class="modal-card" style="max-width: 530px; padding: 0; overflow: hidden; border-radius: 20px;">
-    <div style="background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
+    <div style="background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
       <button type="button" class="action-btn-circle" onclick="closeAppDownloadModal()" style="position: absolute; top: 12px; right: 12px; color: white; background: rgba(255,255,255,0.15);">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; height: 14px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
@@ -3100,7 +3101,7 @@ body.admin-theme-dark .modal-card textarea {
         <div class="pwa-option-card">
           <div>
             <span class="pwa-badge pwa">Web App</span>
-            <div style="font-size: 36px; color: var(--primary); margin-bottom: 8px;">
+            <div style="font-size: 36px; color: var(--primary-text, var(--primary)); margin-bottom: 8px;">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 40px; height: 40px; display: inline-block;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
             <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Install Web App</div>
@@ -3870,7 +3871,7 @@ async function loadAdminAnnouncements() {
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
           <div>
             <h3>${escapeHtml(item.title)}</h3>
-            <span style="font-size:10px;font-weight:800;color:var(--primary);text-transform:uppercase;">${escapeHtml(item.kind)}</span>
+            <span style="font-size:10px;font-weight:800;color: var(--primary-text, var(--primary));text-transform:uppercase;">${escapeHtml(item.kind)}</span>
           </div>
           <button type="button" class="btn btn-secondary" style="color:var(--rose);padding:6px 10px;" onclick="deactivateAdminAnnouncement('${escapeHtml(item.id)}')">Remove</button>
         </div>
@@ -4509,7 +4510,7 @@ async function runAITest() {
 
   outputBox.innerHTML = `
     <div class="ai-loading-box">
-      <div class="spinner" style="border-color: rgba(125,29,29,0.25); border-top-color: #7D1D1D;"></div>
+      <div class="spinner" style="border-color: rgba(15, 118, 110,0.25); border-top-color: #0F766E;"></div>
       <span>Contacting Google Gemini AI study engine...</span>
     </div>
   `;

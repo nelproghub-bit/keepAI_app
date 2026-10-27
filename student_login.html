@@ -9,7 +9,7 @@
 <script src="assets/js/maintenance-guard.js"></script>
 <meta name="description" content="KeepAI — Your Simple AI Study Assistant. Sign in or create an account to study with your AI assistant.">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#7D1D1D">
+<meta name="theme-color" content="#0F766E">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -28,19 +28,19 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
 :root {
-  --primary: #7D1D1D;
-  --primary-hover: #651818;
-  --primary-light: #FFF5F5;
-  --primary-gradient: linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-light: #E8F5F2;
+  --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
   --emerald: #059669;
   --emerald-light: #ecfdf5;
   --rose: #e11d48;
   --rose-light: #fff1f2;
-  --bg-app: #2D0A0A;
+  --bg-app: #1C3A5C;
   --bg-card: #ffffff;
   --text-main: #0f172a;
-  --text-muted: #64748b;
-  --border: #e2e8f0;
+  --text-muted: #52647A;
+  --border: #DCE4EC;
   --radius-md: 14px;
   --radius-lg: 18px;
   --radius-xl: 24px;
@@ -52,7 +52,7 @@
 body {
   margin: 0;
   font-family: 'Inter', sans-serif;
-  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -121,7 +121,7 @@ body {
 .value-prop {
   font-size: 11px;
   font-weight: 600;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   letter-spacing: 1px;
   text-transform: uppercase;
 }
@@ -164,12 +164,12 @@ body {
 
 .auth-tab:hover {
   background: #f5f5f5;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 .auth-tab.active {
   background: white;
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-bottom-color: var(--primary);
 }
 
@@ -220,7 +220,7 @@ body {
 .form-field input:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 
 .form-row {
@@ -285,12 +285,12 @@ body {
 .btn-primary {
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+  box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(125, 29, 29, 0.45);
+  box-shadow: 0 6px 18px rgba(15, 118, 110, 0.45);
 }
 
 .btn-primary:active {
@@ -325,7 +325,7 @@ body {
 }
 
 .footer-text a {
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   text-decoration: none;
   font-weight: 600;
 }
@@ -402,7 +402,7 @@ body {
 
 .btn-secondary {
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border: 1px solid var(--primary);
 }
 
@@ -490,7 +490,7 @@ body {
 }
 
 .pwa-modal-header {
-  background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%);
+  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
   color: white;
   padding: 28px 24px 20px;
   text-align: center;
@@ -545,9 +545,9 @@ body {
 
 .pwa-option-card:hover {
   border-color: var(--primary);
-  background: #fffafa;
+  background: #F4FAF8;
   transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(125, 29, 29, 0.12);
+  box-shadow: 0 10px 24px rgba(15, 118, 110, 0.12);
 }
 
 .pwa-badge {
@@ -605,7 +605,7 @@ body {
 .btn-web-action {
   background: var(--primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(125, 29, 29, 0.25);
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
 }
 
 .btn-web-action:hover {
@@ -614,8 +614,8 @@ body {
 }
 
 .pwa-tips-box {
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  background: #F4F7FA;
+  border: 1px solid #DCE4EC;
   border-radius: 12px;
   padding: 12px 14px;
   font-size: 11.5px;
@@ -669,6 +669,7 @@ body {
 }
 </style>
 <link rel="stylesheet" href="assets/css/responsive-layouts.css">
+<link rel="stylesheet" href="assets/css/brand-theme.css">
 </head>
 <body>
 
@@ -726,10 +727,10 @@ body {
           <span id="student-registration-paused-note" hidden>Student registration is currently paused.</span>
         </p>
         <p id="admin-portal-link" class="footer-text" style="margin-top: 6px; font-size: 11.5px; display: none;">
-          Administrator? <a href="admin_dashboard.html" style="color: var(--primary); font-weight: 600;">Go to Admin Portal →</a>
+          Administrator? <a href="admin_dashboard.html" style="color: var(--primary-text, var(--primary)); font-weight: 600;">Go to Admin Portal →</a>
         </p>
         <p class="footer-text" style="margin-top: 10px; font-size: 12px;">
-          <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary); font-weight: 600;">
+          <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary-text, var(--primary)); font-weight: 600;">
             <i class="fa-solid fa-mobile-screen"></i> Install KeepAI Web App
           </a>
         </p>
@@ -739,7 +740,7 @@ body {
       <div id="register-section" class="form-section">
         <h2 class="title">Register Student Account</h2>
         <p class="subtitle">Create your student account to save notes and study your lessons.</p>
-        <p id="student-registration-closed" hidden style="padding: 12px; margin-bottom: 16px; border: 1px solid #f5b5b5; border-radius: 8px; background: #fff5f5; color: #7d1d1d; font-size: 12px; line-height: 1.5;">Student registration is currently paused. Please contact your administrator.</p>
+        <p id="student-registration-closed" hidden style="padding: 12px; margin-bottom: 16px; border: 1px solid #B7DDD6; border-radius: 8px; background: #E8F5F2; color: #0F766E; font-size: 12px; line-height: 1.5;">Student registration is currently paused. Please contact your administrator.</p>
 
         <div id="register-alert" class="alert">
           <span class="alert-icon"></span>
@@ -801,7 +802,7 @@ body {
           Already have an account? <a href="#" onclick="switchTab('signin'); return false;">Sign in here</a>
         </p>
         <p class="footer-text" style="margin-top: 10px; font-size: 12px;">
-          <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary); font-weight: 600;">
+          <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary-text, var(--primary)); font-weight: 600;">
             <i class="fa-solid fa-mobile-screen"></i> Install KeepAI Web App
           </a>
         </p>
@@ -830,7 +831,7 @@ body {
         <div class="pwa-option-card">
           <div>
             <span class="pwa-badge pwa"><i class="fa-solid fa-bolt"></i> Instant Web App</span>
-            <div class="pwa-icon-large" style="color: var(--primary);">
+            <div class="pwa-icon-large" style="color: var(--primary-text, var(--primary));">
               <i class="fa-solid fa-laptop-code"></i>
             </div>
             <h4 class="pwa-option-title">Install Web App</h4>
@@ -844,7 +845,7 @@ body {
 
       <div class="pwa-tips-box">
         <div style="font-weight: 700; margin-bottom: 4px; color: var(--text-main);">
-          <i class="fa-solid fa-circle-info" style="color: var(--primary);"></i> Installation Guide:
+          <i class="fa-solid fa-circle-info" style="color: var(--primary-text, var(--primary));"></i> Installation Guide:
         </div>
         <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
           <li><strong>Android (Chrome / Edge):</strong> Open the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</li>

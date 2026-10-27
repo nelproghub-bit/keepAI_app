@@ -1,11 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>KeepAI - Admin Panel</title>
     <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#7D1D1D">
+    <meta name="theme-color" content="#0F766E">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
     <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
@@ -13,16 +13,16 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #7D1D1D;
+            --primary: #0F766E;
             --success: #059669;
             --danger: #e11d48;
             --warning: #d97706;
-            --bg-app: #f8fafc;
+            --bg-app: #F4F7FA;
             --bg-surface: #ffffff;
-            --border: #e2e8f0;
+            --border: #DCE4EC;
             --text-main: #0f172a;
             --text-body: #334155;
-            --text-muted: #64748b;
+            --text-muted: #52647A;
             --shadow: 0 1px 3px rgba(15, 23, 42, 0.1);
             --shadow-lg: 0 10px 25px rgba(15, 23, 42, 0.1);
         }
@@ -86,7 +86,7 @@
 
         /* Status Display */
         .status-box {
-            background: #f8fafc;
+            background: #F4F7FA;
             border: 1px solid var(--border);
             border-radius: 10px;
             padding: 20px;
@@ -189,12 +189,12 @@
         .btn-primary {
             background: var(--primary);
             color: white;
-            box-shadow: 0 4px 12px rgba(125, 29, 29, 0.28);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.28);
         }
 
         .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(125, 29, 29, 0.40);
+            box-shadow: 0 6px 16px rgba(15, 118, 110, 0.40);
         }
 
         .btn-success {
@@ -312,7 +312,7 @@
 
         .alert.info {
             background: #eef2ff;
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             border: 1px solid #c7d2fe;
         }
 
@@ -345,7 +345,7 @@
             display: grid;
             place-items: center;
             font-size: 24px;
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             margin-bottom: 12px;
         }
 
@@ -396,9 +396,10 @@
     </style>
     <link href="assets/css/responsive-layouts.css" rel="stylesheet">
     <link href="assets/css/design-system.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/brand-theme.css">
 </head>
 <body>
-    <!-- Branded Maroon Header Bar -->
+    <!-- Branded Teal Header Bar -->
     <div class="page-header-ds" style="margin-bottom:0;border-radius:0;position:sticky;top:0;z-index:1000;">
         <a href="admin_dashboard.html" style="color:#fff;text-decoration:none;display:flex;align-items:center;gap:12px;font-family:'Plus Jakarta Sans',sans-serif;font-weight:800;font-size:20px;">
             <img src="icons/icon-192.png" alt="KeepAI Logo" style="width:36px;height:36px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
@@ -414,7 +415,7 @@
 
     <div class="container" id="admin-panel-content" style="visibility:hidden;padding-top:24px;">
         <!-- Header -->
-        <div class="header" style="background:linear-gradient(135deg,#7D1D1D 0%,#9B2424 100%);color:#fff;border-radius:14px;margin-bottom:24px;">
+        <div class="header" style="background:linear-gradient(135deg,#0F766E 0%,#115E59 100%);color:#fff;border-radius:14px;margin-bottom:24px;">
             <h1><i class="fas fa-sliders-h"></i> KeepAI Admin Panel</h1>
             <p>Server management and system control</p>
         </div>
@@ -559,7 +560,7 @@
             notice = document.createElement('div');
             notice.id = 'admin-panel-session-error';
             notice.setAttribute('role', 'alert');
-            notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:#f8fafc;color:#172033;text-align:center;font:500 15px system-ui,sans-serif;';
+            notice.style.cssText = 'position:fixed;inset:0;z-index:10000;display:grid;place-content:center;gap:14px;padding:24px;background:#F4F7FA;color:#172033;text-align:center;font:500 15px system-ui,sans-serif;';
             notice.innerHTML = '<strong>We could not verify your administrator session.</strong><span>Check your connection and retry.</span><button type="button" style="justify-self:center;padding:10px 18px;border:0;border-radius:10px;background:#4f46e5;color:#fff;font-weight:700;cursor:pointer;">Retry</button><a href="admin_dashboard.html" style="color:#4f46e5;">Back to Admin Dashboard</a>';
             notice.querySelector('button').addEventListener('click', async event => {
                 const button = event.currentTarget;
@@ -649,7 +650,7 @@
                 if (statUptime) statUptime.textContent = '--:--:--';
                 if (statDb) {
                     statDb.textContent = 'Offline';
-                    statDb.style.color = '#64748b';
+                    statDb.style.color = '#52647A';
                 }
             }
         }

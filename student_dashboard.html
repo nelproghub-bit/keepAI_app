@@ -9,7 +9,7 @@
     <script src="assets/js/maintenance-guard.js"></script>
 
     <!-- PWA & Mobile Web App Meta Tags -->
-    <meta name="theme-color" content="#7D1D1D">
+    <meta name="theme-color" content="#0F766E">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -38,15 +38,15 @@
 
     <style>
         :root {
-            /* Brand primary palette - maroon and burgundy */
-            --primary: #7D1D1D;
-            --primary-hover: #651818;
-            --primary-dark: #4A0E0E;
-            --primary-light: #FFF5F5;
-            --primary-border: #F5B5B5;
-            --primary-glow: rgba(125, 29, 29, 0.22);
-            --primary-gradient: linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
-            --brand-gradient: linear-gradient(135deg, #7D1D1D 0%, #A52A2A 50%, #5E1414 100%);
+            /* Brand primary palette - navy and teal */
+            --primary: #0F766E;
+            --primary-hover: #115E59;
+            --primary-dark: #142D4E;
+            --primary-light: #E8F5F2;
+            --primary-border: #B7DDD6;
+            --primary-glow: rgba(15, 118, 110, 0.22);
+            --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+            --brand-gradient: linear-gradient(135deg, #0F766E 0%, #0F766E 50%, #142D4E 100%);
             --gold: #D97706;
             --gold-light: #FEF3C7;
 
@@ -65,28 +65,28 @@
             --sky-border: #bae6fd;
 
             /* Neutral Surfaces & Canvas */
-            --bg-app: #f8fafc;
+            --bg-app: #F4F7FA;
             --bg-surface: #ffffff;
             --bg-subtle: #f1f5f9;
-            --bg-hover: #f8fafc;
-            --border: #e2e8f0;
+            --bg-hover: #F4F7FA;
+            --border: #DCE4EC;
             --border-light: #edf2f7;
-            --border-focus: #7D1D1D;
+            --border-focus: #0F766E;
 
             /* Typography Colors */
             --text-main: #0f172a;
             --text-body: #334155;
-            --text-muted: #64748b;
+            --text-muted: #52647A;
             --text-subtle: #94a3b8;
 
-            /* Dark Theme Sidebar (Matches Screenshot exact dark burgundy) */
-            --sidebar-bg: #1A0606;
-            --sidebar-surface: #2D0A0A;
+            /* Dark Theme Sidebar (Navy navigation) */
+            --sidebar-bg: #142D4E;
+            --sidebar-surface: #1C3A5C;
             --sidebar-border: rgba(255, 255, 255, 0.08);
             --sidebar-text: #94a3b8;
             --sidebar-text-hover: #f1f5f9;
             --sidebar-text-active: #ffffff;
-            --sidebar-active-bg: #7D1D1D;
+            --sidebar-active-bg: #0F766E;
             --sidebar-width: 260px;
             --sidebar-collapsed-width: 74px;
 
@@ -99,8 +99,8 @@
             --shadow-sm: 0 1px 2px 0 rgba(15, 23, 42, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07), 0 2px 4px -2px rgba(15, 23, 42, 0.04);
             --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-            --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 20px -5px rgba(125, 29, 29, 0.04);
-            --shadow-glow: 0 0 20px rgba(125, 29, 29, 0.28);
+            --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.05), 0 10px 20px -5px rgba(15, 118, 110, 0.04);
+            --shadow-glow: 0 0 20px rgba(15, 118, 110, 0.28);
             --transition-smooth: all 0.24s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
@@ -112,11 +112,11 @@
             --bg-hover: #1e293b;
             --border: #334155;
             --border-light: #475569;
-            --text-main: #f8fafc;
+            --text-main: #F4F7FA;
             --text-body: #cbd5e1;
             --text-muted: #94a3b8;
-            --primary-light: rgba(125, 29, 29, 0.25);
-            --primary-border: #7D1D1D;
+            --primary-light: rgba(15, 118, 110, 0.25);
+            --primary-border: #0F766E;
             color-scheme: dark;
         }
 
@@ -266,7 +266,7 @@
             border-radius: 8px;
             display: grid;
             place-items: center;
-            box-shadow: 0 4px 14px rgba(125, 29, 29, 0.35);
+            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
             overflow: hidden;
             padding: 4px;
             flex-shrink: 0;
@@ -298,7 +298,7 @@
             font-size: 10px;
             letter-spacing: 1.4px;
             text-transform: uppercase;
-            color: #64748b;
+            color: #52647A;
             padding: 0 10px;
             margin: 6px 0 4px;
             font-weight: 700;
@@ -365,7 +365,7 @@
         .nav-item.active {
             background: var(--sidebar-active-bg);
             color: #ffffff;
-            box-shadow: 0 4px 14px rgba(125, 29, 29, 0.45);
+            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.45);
         }
 
         .nav-item.active i {
@@ -599,7 +599,7 @@
             font-size: 16px;
         }
 
-        .notification-button:hover { color: var(--primary); border-color: var(--primary-border); }
+        .notification-button:hover { color: var(--primary-text, var(--primary)); border-color: var(--primary-border); }
 
         .notification-count {
             position: absolute;
@@ -656,7 +656,7 @@
 
         .profile-btn:hover {
             border-color: var(--primary-border);
-            box-shadow: 0 2px 10px rgba(125, 29, 29, 0.08);
+            box-shadow: 0 2px 10px rgba(15, 118, 110, 0.08);
         }
 
         .avatar {
@@ -669,7 +669,7 @@
             place-items: center;
             font-weight: 800;
             font-size: 13px;
-            box-shadow: 0 2px 8px rgba(125, 29, 29, 0.3);
+            box-shadow: 0 2px 8px rgba(15, 118, 110, 0.3);
             flex-shrink: 0;
         }
 
@@ -798,20 +798,20 @@
         .btn-primary {
             background: var(--primary-gradient);
             color: white;
-            box-shadow: 0 4px 14px rgba(125, 29, 29, 0.32);
+            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.32);
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .btn-primary:hover {
-            background: linear-gradient(135deg, #651818 0%, #831b1b 100%);
+            background: linear-gradient(135deg, #115E59 0%, #115E59 100%);
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(125, 29, 29, 0.42);
+            box-shadow: 0 6px 18px rgba(15, 118, 110, 0.42);
             color: white;
         }
 
         .btn-soft {
             background: var(--primary-light);
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             border: 1px solid var(--primary-border);
         }
 
@@ -902,7 +902,7 @@
 
         .search-box input:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
         }
 
         .view-toggles {
@@ -924,7 +924,7 @@
         }
         .view-btn.active {
             background: var(--primary-light);
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             font-weight: 700;
         }
 
@@ -952,7 +952,7 @@
         .workspace-card:hover {
             transform: translateY(-3px);
             border-color: var(--primary-border);
-            box-shadow: 0 10px 24px -6px rgba(125, 29, 29, 0.12);
+            box-shadow: 0 10px 24px -6px rgba(15, 118, 110, 0.12);
         }
 
         .workspace-card-top {
@@ -970,9 +970,9 @@
             place-items: center;
             font-size: 20px;
             background: var(--primary-light);
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             border: 1px solid var(--primary-border);
-            box-shadow: 0 2px 6px rgba(125, 29, 29, 0.1);
+            box-shadow: 0 2px 6px rgba(15, 118, 110, 0.1);
             flex-shrink: 0;
         }
 
@@ -1053,7 +1053,7 @@
             height: 64px;
             border-radius: 50%;
             background: var(--primary-light);
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             display: grid;
             place-items: center;
             margin: 0 auto 16px;
@@ -1175,7 +1175,7 @@
         }
 
         .message.ai .msg-avatar {
-            background: #1A0606;
+            background: #142D4E;
             color: #fca5a5;
             border: 1px solid var(--primary-border);
         }
@@ -1230,7 +1230,7 @@
         .chat-input input:focus {
             background: white;
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
         }
 
         .chat-input input::placeholder {
@@ -1275,7 +1275,7 @@
             font-size: 22px;
             margin-bottom: 6px;
         }
-        .tool-icon.primary { background: var(--primary-light); color: var(--primary); }
+        .tool-icon.primary { background: var(--primary-light); color: var(--primary-text, var(--primary)); }
         .tool-icon.success { background: var(--emerald-light); color: var(--emerald); }
         .tool-icon.info { background: var(--sky-light); color: var(--sky); }
 
@@ -1377,15 +1377,15 @@
         }
 
         .flashcard-front {
-            background: linear-gradient(135deg, #ffffff 0%, #fdf2f2 100%);
+            background: linear-gradient(135deg, #ffffff 0%, #E8F5F2 100%);
             border-color: var(--primary-border);
         }
 
         .flashcard-back {
-            background: linear-gradient(135deg, #1A0606 0%, #3D0E0E 100%);
+            background: linear-gradient(135deg, #142D4E 0%, #3D0E0E 100%);
             color: white;
             transform: rotateY(180deg);
-            border-color: #7D1D1D;
+            border-color: #0F766E;
         }
 
         /* ==================== FLASHCARD LAUNCH MODAL CSS ==================== */
@@ -1407,7 +1407,7 @@
         }
 
         .fc-launch-modal-content::-webkit-scrollbar-thumb {
-            background: rgba(125, 29, 29, 0.4);
+            background: rgba(15, 118, 110, 0.4);
             border-radius: 999px;
         }
 
@@ -1419,12 +1419,12 @@
             width: 42px;
             height: 42px;
             border-radius: 12px;
-            background: linear-gradient(135deg, var(--primary), #A03535);
+            background: linear-gradient(135deg, var(--primary), #115E59);
             color: white;
             display: grid;
             place-items: center;
             font-size: 18px;
-            box-shadow: 0 4px 12px rgba(125, 29, 29, 0.35);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.35);
             flex-shrink: 0;
         }
 
@@ -1460,7 +1460,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, rgba(125,29,29,0.06) 0%, rgba(125,29,29,0) 100%);
+            background: linear-gradient(135deg, rgba(15, 118, 110,0.06) 0%, rgba(15, 118, 110,0) 100%);
             opacity: 0;
             transition: opacity 0.18s ease;
         }
@@ -1469,7 +1469,7 @@
             border-color: var(--primary-border, #e8c0c0);
             background: var(--bg-surface);
             transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(125, 29, 29, 0.1);
+            box-shadow: 0 4px 12px rgba(15, 118, 110, 0.1);
         }
 
         .fc-type-card:hover::before { opacity: 1; }
@@ -1477,15 +1477,15 @@
         .fc-type-card.selected {
             border-color: var(--primary);
             background: var(--bg-surface);
-            box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12), 0 4px 12px rgba(125, 29, 29, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12), 0 4px 12px rgba(15, 118, 110, 0.12);
         }
 
         .fc-type-card.selected::before { opacity: 1; }
 
         .fc-type-card.selected .fc-type-icon {
-            background: linear-gradient(135deg, var(--primary), #A03535);
+            background: linear-gradient(135deg, var(--primary), #115E59);
             color: white;
-            box-shadow: 0 3px 8px rgba(125, 29, 29, 0.3);
+            box-shadow: 0 3px 8px rgba(15, 118, 110, 0.3);
         }
 
         .fc-type-icon {
@@ -1493,7 +1493,7 @@
             height: 38px;
             border-radius: 10px;
             background: var(--bg-subtle, #f3f4f6);
-            color: var(--primary);
+            color: var(--primary-text, var(--primary));
             display: grid;
             place-items: center;
             margin: 0 auto 8px;
@@ -1536,7 +1536,7 @@
             border-radius: 50%;
             background: var(--primary);
             border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(125, 29, 29, 0.35);
+            box-shadow: 0 2px 8px rgba(15, 118, 110, 0.35);
             cursor: pointer;
             transition: transform 0.15s ease;
         }
@@ -1548,7 +1548,7 @@
             border-radius: 50%;
             background: var(--primary);
             border: 3px solid white;
-            box-shadow: 0 2px 8px rgba(125, 29, 29, 0.35);
+            box-shadow: 0 2px 8px rgba(15, 118, 110, 0.35);
             cursor: pointer;
         }
 
@@ -1837,7 +1837,7 @@
         .form-field input:focus, .form-field select:focus, .form-field textarea:focus {
             background: var(--bg-surface);
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+            box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
         }
 
         /* Toast Container */
@@ -1981,6 +1981,7 @@
         }
     </style>
     <link href="assets/css/responsive-layouts.css" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/brand-theme.css">
 </head>
 <body>
     <!-- Offline Alert Banner -->
@@ -2218,8 +2219,8 @@
                     <!-- Active Document Chip -->
                     <div id="active-document-indicator" style="display: none; margin-bottom: 16px; padding: 12px 18px; background: var(--primary-light); border: 1px solid var(--primary-border); border-radius: var(--radius-sm); align-items: center; justify-content: space-between; gap: 10px;">
                         <div style="display: flex; align-items: center; gap: 10px;">
-                            <i class="fas fa-file-pdf" style="color: var(--primary); font-size: 16px;"></i>
-                            <span style="font-size: 13.5px; font-weight: 700; color: var(--primary);">
+                            <i class="fas fa-file-pdf" style="color: var(--primary-text, var(--primary)); font-size: 16px;"></i>
+                            <span style="font-size: 13.5px; font-weight: 700; color: var(--primary-text, var(--primary));">
                                 Active Document: <span id="active-doc-name" style="font-weight: 500;">None</span>
                             </span>
                         </div>
@@ -2236,7 +2237,7 @@
                                 <strong style="font-size: 13px; color: var(--text-main);">KeepAI Study Assistant</strong>
                             </div>
                             <div id="tutor-active-preferences-chip" style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; background: var(--bg-subtle); padding: 4px 12px; border-radius: 999px; border: 1px solid var(--border);" title="Active Teaching Style &amp; Course Level. Change in Settings.">
-                                <i class="fas fa-sliders-h" style="color: var(--primary); font-size: 11px;"></i>
+                                <i class="fas fa-sliders-h" style="color: var(--primary-text, var(--primary)); font-size: 11px;"></i>
                                 <span id="tutor-style-chip-text" style="font-weight: 700; color: var(--text-main);">Simple &amp; Clear</span>
                                 <span style="color: var(--text-muted);">&bull;</span>
                                 <span id="tutor-level-chip-text" style="color: var(--text-muted);">Undergraduate</span>
@@ -2245,7 +2246,7 @@
 
                         <div class="chat-history" id="chat-messages">
                             <div class="text-center py-5" style="color: var(--text-muted); margin: auto;">
-                                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
+                                <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                                     <i class="fas fa-graduation-cap"></i>
                                 </div>
                                 <h4 style="color: var(--text-main); font-weight: 800;">Your AI Study Assistant is ready</h4>
@@ -2353,7 +2354,7 @@
                         <div class="flashcard-container" onclick="flipFlashcard()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlashcard();}">
                             <div class="flashcard" id="active-flashcard">
                                 <div class="flashcard-face flashcard-front">
-                                    <span class="mini-pill" style="margin-bottom: 12px; color: var(--primary);">TERM / CONCEPT</span>
+                                    <span class="mini-pill" style="margin-bottom: 12px; color: var(--primary-text, var(--primary));">TERM / CONCEPT</span>
                                     <h3 id="card-term" class="flashcard-copy" style="font-size: clamp(19px, 3vw, 27px); font-weight: 800; color: var(--text-main); margin-bottom: 10px;"></h3>
                                     <p style="font-size: 12px; color: var(--text-muted); margin: 0;"><i class="fas fa-sync-alt me-1"></i> Tap or click card to reveal explanation</p>
                                 </div>
@@ -2417,7 +2418,7 @@
                     <div class="grid two-col">
                         <div class="panel">
                             <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--text-main);">
-                                <i class="fas fa-chart-bar me-2" style="color: var(--primary);"></i>Recent Subject Activity
+                                <i class="fas fa-chart-bar me-2" style="color: var(--primary-text, var(--primary));"></i>Recent Subject Activity
                             </h4>
                             <div id="progress-subject-list" style="display: flex; flex-direction: column; gap: 14px;" aria-live="polite">
                                 <div style="color: var(--text-muted); font-size: 13px;">Loading your activity…</div>
@@ -2643,8 +2644,8 @@
             <!-- Step 1: Source Document -->
             <div class="form-field">
                 <label for="fc-lesson-select">
-                    <i class="fas fa-file-alt me-1" style="color: var(--primary);"></i>
-                    Source Lesson / Document <span style="color: var(--primary);">*</span>
+                    <i class="fas fa-file-alt me-1" style="color: var(--primary-text, var(--primary));"></i>
+                    Source Lesson / Document <span style="color: var(--primary-text, var(--primary));">*</span>
                 </label>
                 <select id="fc-lesson-select" class="fc-select">
                     <!-- Populated dynamically -->
@@ -2656,7 +2657,7 @@
 
             <!-- Step 2: Flashcard Type -->
             <div class="form-field">
-                <label><i class="fas fa-th-large me-1" style="color: var(--primary);"></i> Flashcard Type</label>
+                <label><i class="fas fa-th-large me-1" style="color: var(--primary-text, var(--primary));"></i> Flashcard Type</label>
                 <div class="fc-type-grid" id="fc-type-grid">
                     <div class="fc-type-card selected" data-type="term-definition" onclick="selectFlashcardType(this, 'term-definition')">
                         <div class="fc-type-icon"><i class="fas fa-book-open"></i></div>
@@ -2684,7 +2685,7 @@
             <!-- Step 3: Number of Cards -->
             <div class="form-field">
                 <label for="fc-count-slider">
-                    <i class="fas fa-layer-group me-1" style="color: var(--primary);"></i>
+                    <i class="fas fa-layer-group me-1" style="color: var(--primary-text, var(--primary));"></i>
                     Number of Flashcards
                     <span id="fc-count-badge" class="fc-count-badge">10</span>
                 </label>
@@ -2702,7 +2703,7 @@
             <!-- Optional Focus Topic -->
             <div class="form-field" style="margin-bottom: 24px;">
                 <label for="fc-topic-input">
-                    <i class="fas fa-crosshairs me-1" style="color: var(--primary);"></i>
+                    <i class="fas fa-crosshairs me-1" style="color: var(--primary-text, var(--primary));"></i>
                     Focus Topic <span style="color: var(--text-muted); font-weight: 400;">(Optional)</span>
                 </label>
                 <input type="text" id="fc-topic-input" placeholder="e.g., MQTT Protocol, IoT Layers, Machine Learning… or leave blank for the full document">
@@ -2732,7 +2733,7 @@
             </div>
             <div class="learning-tool-modal-body">
                 <div class="form-field">
-                    <label for="lesson-select">Source Document <span style="color: var(--primary);">*</span></label>
+                    <label for="lesson-select">Source Document <span style="color: var(--primary-text, var(--primary));">*</span></label>
                     <select id="lesson-select" onchange="updateQuizTypeSelection()">
                         <option value="">Select a document</option>
                     </select>
@@ -2816,7 +2817,7 @@
             <div id="quiz-stats-banner" style="display: none; background: var(--bg-subtle); padding: 12px 18px; border-radius: var(--radius-sm); margin: 12px 0 6px; border: 1px solid var(--border); align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                 <div style="display: flex; align-items: center; gap: 14px;">
                     <span style="font-size: 12.5px; font-weight: 700; color: var(--text-main);" id="quiz-score-badge">
-                        <i class="fas fa-chart-pie me-1" style="color: var(--primary);"></i> Score: <span id="quiz-score-val">0</span> / <span id="quiz-total-val">0</span> (<span id="quiz-score-pct">0%</span>)
+                        <i class="fas fa-chart-pie me-1" style="color: var(--primary-text, var(--primary));"></i> Score: <span id="quiz-score-val">0</span> / <span id="quiz-total-val">0</span> (<span id="quiz-score-pct">0%</span>)
                     </span>
                     <span style="font-size: 12px; color: var(--text-muted);" id="quiz-answered-count">Answered: 0</span>
                 </div>
@@ -2908,7 +2909,7 @@
     <!-- App Download & PWA Install Modal -->
     <div class="modal-overlay" id="pwa-download-modal" onclick="handlePwaOverlayClick(event)">
         <div class="modal-content" style="max-width: 540px; padding: 0; overflow: hidden; border-radius: 20px;">
-            <div style="background: linear-gradient(135deg, #2D0A0A 0%, #4A0E0E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
+            <div style="background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
                 <button type="button" class="btn-icon" onclick="closeAppDownloadModal()" style="position: absolute; top: 12px; right: 12px; color: white; background: rgba(255,255,255,0.15); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
                     <i class="fas fa-times"></i>
                 </button>
@@ -2926,7 +2927,7 @@
                             <span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;">
                                 <i class="fas fa-bolt"></i> Instant Web App
                             </span>
-                            <div style="font-size: 36px; color: var(--primary); margin-bottom: 8px;">
+                            <div style="font-size: 36px; color: var(--primary-text, var(--primary)); margin-bottom: 8px;">
                                 <i class="fas fa-laptop-code"></i>
                             </div>
                             <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--text-main);">Install Web App</h4>
@@ -2939,7 +2940,7 @@
                 </div>
 
                 <div style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
-                    <strong style="color: var(--text-main);"><i class="fas fa-info-circle" style="color: var(--primary);"></i> Install Tips:</strong>
+                    <strong style="color: var(--text-main);"><i class="fas fa-info-circle" style="color: var(--primary-text, var(--primary));"></i> Install Tips:</strong>
                     <ul style="padding-left: 18px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px;">
                         <li><strong>Android Chrome / Edge:</strong> Use the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home screen"</strong>.</li>
                         <li><strong>iOS Safari:</strong> Tap Share (<i class="fas fa-share-square"></i>), then tap <strong>"Add to Home Screen"</strong>.</li>
@@ -3222,7 +3223,7 @@
                     <article class="announcement-card ${escapeHTML(item.kind)} ${item.is_read ? '' : 'unread'}">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;">
                             <h4>${escapeHTML(item.title)}</h4>
-                            <span style="font-size:10px;font-weight:800;color:var(--primary);">${kindLabel}</span>
+                            <span style="font-size:10px;font-weight:800;color: var(--primary-text, var(--primary));">${kindLabel}</span>
                         </div>
                         <p>${escapeHTML(item.message)}</p>
                         <time>${escapeHTML(date)}</time>
@@ -3849,7 +3850,7 @@
                         </div>
                         <div class="workspace-title-area">
                             <div class="workspace-name">${escapeHTML(ws.name)}</div>
-                            ${ws.category ? `<div style="font-size: 11px; font-weight: 700; color: var(--primary); margin-top: 3px;">${escapeHTML(ws.category)}</div>` : ''}
+                            ${ws.category ? `<div style="font-size: 11px; font-weight: 700; color: var(--primary-text, var(--primary)); margin-top: 3px;">${escapeHTML(ws.category)}</div>` : ''}
                             <div class="workspace-desc">${escapeHTML(ws.description || 'No description')}</div>
                         </div>
                     </div>
@@ -3983,7 +3984,7 @@
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ name, category, description: desc, color: '#7D1D1D', icon })
+                        body: JSON.stringify({ name, category, description: desc, color: '#0F766E', icon })
                     });
                     if (!response.ok) {
                         throw new Error('The workspace could not be saved. Please try again.');
@@ -4060,7 +4061,7 @@
             } else {
                 docListEl.innerHTML = wsDocs.map(d => `
                     <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: var(--bg-subtle); border-radius: var(--radius-sm); font-size: 13px;">
-                        <span style="font-weight: 600; color: var(--text-main);"><i class="fas fa-file-pdf me-2" style="color: var(--primary);"></i>${escapeHTML(d.filename)}</span>
+                        <span style="font-weight: 600; color: var(--text-main);"><i class="fas fa-file-pdf me-2" style="color: var(--primary-text, var(--primary));"></i>${escapeHTML(d.filename)}</span>
                         <button class="btn btn-plain btn-sm" onclick="openDocumentInTutor('${d.file_id || d.id}', '${escapeHTML(d.filename)}')">
                             <i class="fas fa-comment-dots"></i> Ask Tutor
                         </button>
@@ -4091,7 +4092,7 @@
                 tableBody.innerHTML = `
                     <tr>
                         <td colspan="5" class="text-center py-5" style="color: var(--text-muted);">
-                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 10px; font-size: 20px;">
+                            <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 10px; font-size: 20px;">
                                 <i class="fas fa-file-upload"></i>
                             </div>
                             <strong style="display: block; color: var(--text-main); font-size: 14px;">No documents uploaded yet</strong>
@@ -4108,12 +4109,12 @@
                     <tr>
                         <td>
                             <div style="display: flex; align-items: center; gap: 10px;">
-                                <i class="fas fa-file-pdf" style="color: var(--primary); font-size: 17px;"></i>
+                                <i class="fas fa-file-pdf" style="color: var(--primary-text, var(--primary)); font-size: 17px;"></i>
                                 <span style="font-weight: 700; color: var(--text-main);">${escapeHTML(doc.filename)}</span>
                             </div>
                         </td>
                         <td>
-                            <span class="mini-pill" style="color: var(--primary); background: var(--primary-light);">
+                            <span class="mini-pill" style="color: var(--primary-text, var(--primary)); background: var(--primary-light);">
                                 ${escapeHTML(ws ? ws.name : 'General')}
                             </span>
                         </td>
@@ -4431,7 +4432,7 @@
             const chatMessages = document.getElementById('chat-messages');
             chatMessages.innerHTML = `
                 <div class="text-center py-5" style="color: var(--text-muted); margin: auto;">
-                    <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
+                    <div style="width: 56px; height: 56px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 14px; font-size: 24px;">
                         <i class="fas fa-graduation-cap"></i>
                     </div>
                     <h4 style="color: var(--text-main); font-weight: 800;">Your AI Study Assistant is ready</h4>
@@ -5175,7 +5176,7 @@
 
             quizContent.innerHTML = `
                 <div role="status" aria-live="polite" style="text-align: center; padding: 60px 20px;">
-                    <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; margin: 0 auto 16px; font-size: 24px;">
+                    <div style="width: 58px; height: 58px; border-radius: 50%; background: var(--primary-light); color: var(--primary-text, var(--primary)); display: grid; place-items: center; margin: 0 auto 16px; font-size: 24px;">
                         <i class="fas fa-spinner fa-spin"></i>
                     </div>
                     <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Building your ${qCount}-question ${difficultyLabel.toLowerCase()} assessment</h4>
@@ -5269,7 +5270,7 @@
                 <div style="background: var(--primary-light); padding: 14px 18px; border-radius: var(--radius-sm); border-left: 4px solid var(--primary); margin-bottom: 14px;">
                     <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
                         <div>
-                            <strong style="color: var(--primary); font-size: 14px;"><i class="fas fa-file-alt me-2"></i>Assessment: ${escapeHTML(data.topic)}</strong>
+                            <strong style="color: var(--primary-text, var(--primary)); font-size: 14px;"><i class="fas fa-file-alt me-2"></i>Assessment: ${escapeHTML(data.topic)}</strong>
                             <p style="margin: 4px 0 0; font-size: 12px; color: var(--text-muted);">
                                 Based on <strong>${escapeHTML(data.document_name || 'Uploaded Document')}</strong> • Select an answer for each question below.
                             </p>
@@ -5348,7 +5349,7 @@
                         ${interaction}
                         ${q.source_excerpt ? `
                             <details style="margin: 12px 0 0 40px; color: var(--text-muted); font-size: 12px;">
-                                <summary style="cursor: pointer; font-weight: 700; color: var(--primary);">View source evidence</summary>
+                                <summary style="cursor: pointer; font-weight: 700; color: var(--primary-text, var(--primary));">View source evidence</summary>
                                 <p style="margin: 8px 0 0; padding: 10px 12px; border-left: 3px solid var(--primary); background: var(--bg-subtle); border-radius: var(--radius-sm); color: var(--text-body); line-height: 1.5;">${escapeHTML(q.source_excerpt)}</p>
                             </details>
                         ` : ''}
@@ -5618,7 +5619,7 @@
             // Also update any indicator in tutor panel subtitle
             const tutorSub = document.querySelector('#tutor-section .panel-head .sub');
             if (tutorSub) {
-                tutorSub.innerHTML = `Your friendly study mentor configured in <strong style="color: var(--primary);">${styleLabels[style] || 'Simple & Clear'}</strong> style for <strong style="color: var(--primary);">${levelLabels[level] || 'Undergraduate'}</strong> level.`;
+                tutorSub.innerHTML = `Your friendly study mentor configured in <strong style="color: var(--primary-text, var(--primary));">${styleLabels[style] || 'Simple & Clear'}</strong> style for <strong style="color: var(--primary-text, var(--primary));">${levelLabels[level] || 'Undergraduate'}</strong> level.`;
             }
         }
 

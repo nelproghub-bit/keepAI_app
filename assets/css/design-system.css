@@ -1,6 +1,6 @@
 /**
  * KeepAI Design System — Shared CSS Tokens & Components
- * Brand: Maroon #7D1D1D | Hover: #651818
+ * Brand: Teal #0F766E | Hover: #115E59
  * Fonts: Inter (body) | Plus Jakarta Sans (headings/buttons)
  * FontAwesome 6.4.0 loaded via CDN on all pages
  */
@@ -10,14 +10,14 @@
    ============================================================ */
 :root {
   /* ── Brand Colors ── */
-  --primary:            #7D1D1D;
-  --primary-hover:      #651818;
-  --primary-dark:       #4A0E0E;
-  --primary-light:      #FFF5F5;
-  --primary-border:     #F5B5B5;
-  --primary-glow:       rgba(125, 29, 29, 0.22);
-  --primary-gradient:   linear-gradient(135deg, #7D1D1D 0%, #9B2424 100%);
-  --brand-gradient:     linear-gradient(135deg, #7D1D1D 0%, #A52A2A 50%, #5E1414 100%);
+  --primary:            #0F766E;
+  --primary-hover:      #115E59;
+  --primary-dark:       #142D4E;
+  --primary-light:      #E8F5F2;
+  --primary-border:     #B7DDD6;
+  --primary-glow:       rgba(15, 118, 110, 0.22);
+  --primary-gradient:   linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+  --brand-gradient:     linear-gradient(135deg, #0F766E 0%, #0F766E 50%, #142D4E 100%);
 
   /* ── Semantic Colors ── */
   --success:            #059669;
@@ -34,14 +34,14 @@
   --info-border:        #bfdbfe;
 
   /* ── Neutral / Surface ── */
-  --bg-app:             #f8fafc;
+  --bg-app:             #F4F7FA;
   --bg-surface:         #ffffff;
   --bg-subtle:          #f1f5f9;
-  --border:             #e2e8f0;
+  --border:             #DCE4EC;
   --border-strong:      #cbd5e1;
   --text-main:          #0f172a;
   --text-body:          #334155;
-  --text-muted:         #64748b;
+  --text-muted:         #52647A;
   --text-placeholder:   #94a3b8;
 
   /* ── Spacing ── */
@@ -70,8 +70,8 @@
   --shadow-md:  0 8px 20px rgba(15, 23, 42, 0.12);
   --shadow-lg:  0 10px 25px rgba(15, 23, 42, 0.12);
   --shadow-xl:  0 20px 50px -12px rgba(15, 23, 42, 0.25);
-  --shadow-primary: 0 4px 14px rgba(125, 29, 29, 0.35);
-  --shadow-primary-hover: 0 6px 18px rgba(125, 29, 29, 0.45);
+  --shadow-primary: 0 4px 14px rgba(15, 118, 110, 0.35);
+  --shadow-primary-hover: 0 6px 18px rgba(15, 118, 110, 0.45);
 
   /* ── Transitions ── */
   --transition-fast:   all 0.15s ease;
@@ -96,7 +96,7 @@ body.dark-mode {
   --text-main:     #f1f5f9;
   --text-body:     #cbd5e1;
   --text-muted:    #94a3b8;
-  --text-placeholder: #64748b;
+  --text-placeholder: #52647A;
   --shadow-sm:     0 1px 3px rgba(0, 0, 0, 0.3);
   --shadow:        0 4px 12px rgba(0, 0, 0, 0.3);
   --shadow-lg:     0 10px 25px rgba(0, 0, 0, 0.4);
@@ -109,8 +109,8 @@ body.dark-mode .btn-secondary {
 }
 
 body.dark-mode .btn-soft {
-  background: rgba(125, 29, 29, 0.25);
-  color: #f87171;
+  background: rgba(15, 118, 110, 0.25);
+  color: #74D9CD;
 }
 
 body.dark-mode .btn-plain {
@@ -179,7 +179,7 @@ body.dark-mode .btn-plain:hover {
   box-shadow: none !important;
 }
 
-/* Primary — maroon gradient */
+/* Primary — teal gradient */
 .btn-primary {
   background: var(--primary-gradient);
   color: #fff;
@@ -188,7 +188,7 @@ body.dark-mode .btn-plain:hover {
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: linear-gradient(135deg, #651818 0%, #8A2020 100%);
+  background: linear-gradient(135deg, #115E59 0%, #115E59 100%);
   transform: translateY(-1px);
   box-shadow: var(--shadow-primary-hover);
 }
@@ -218,18 +218,18 @@ body.dark-mode .btn-plain:hover {
   box-shadow: var(--shadow-xs);
 }
 
-/* Soft — light maroon tint */
+/* Soft — light teal tint */
 .btn-soft {
   background: var(--primary-light);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
   border-color: var(--primary-border);
 }
 
 .btn-soft:hover:not(:disabled) {
-  background: #FFE8E8;
+  background: #D5EEE8;
   border-color: var(--primary);
   transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(125, 29, 29, 0.18);
+  box-shadow: 0 4px 10px rgba(15, 118, 110, 0.18);
 }
 
 .btn-soft:active:not(:disabled) {
@@ -389,7 +389,7 @@ body.dark-mode .btn-plain:hover {
 .form-textarea:focus {
   outline: none;
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(125, 29, 29, 0.12);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
 }
 
 .form-textarea {
@@ -463,7 +463,7 @@ body.dark-mode .btn-plain:hover {
 .alert-ds-primary {
   background: var(--primary-light);
   border-color: var(--primary-border);
-  color: var(--primary);
+  color: var(--primary-text, var(--primary));
 }
 
 /* Toast notification (fixed position) */
@@ -570,7 +570,7 @@ body.dark-mode .btn-plain:hover {
 }
 
 .spinner-ds-dark {
-  border-color: rgba(125, 29, 29, 0.2);
+  border-color: rgba(15, 118, 110, 0.2);
   border-top-color: var(--primary);
 }
 
@@ -579,7 +579,7 @@ body.dark-mode .btn-plain:hover {
 }
 
 /* ============================================================
-   9. Page Header — Maroon Gradient
+   9. Page Header — Teal Gradient
    ============================================================ */
 .page-header-ds {
   background: var(--primary-gradient);
@@ -589,7 +589,7 @@ body.dark-mode .btn-plain:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  box-shadow: 0 2px 12px rgba(125, 29, 29, 0.35);
+  box-shadow: 0 2px 12px rgba(15, 118, 110, 0.35);
 }
 
 .page-header-ds .brand-logo {
@@ -663,7 +663,7 @@ body.dark-mode .btn-plain:hover {
   letter-spacing: 0.4px;
 }
 
-.badge-ds-primary  { background: var(--primary-light);  color: var(--primary);  border: 1px solid var(--primary-border); }
+.badge-ds-primary  { background: var(--primary-light);  color: var(--primary-text, var(--primary));  border: 1px solid var(--primary-border); }
 .badge-ds-success  { background: var(--success-light);  color: var(--success);  border: 1px solid var(--success-border); }
 .badge-ds-warning  { background: var(--warning-light);  color: var(--warning);  border: 1px solid var(--warning-border); }
 .badge-ds-danger   { background: var(--danger-light);   color: var(--danger);   border: 1px solid var(--danger-border); }
@@ -690,7 +690,7 @@ body.dark-mode .btn-plain:hover {
 /* ============================================================
    12. Utility Classes
    ============================================================ */
-.text-primary  { color: var(--primary); }
+.text-primary  { color: var(--primary-text, var(--primary)); }
 .text-success  { color: var(--success); }
 .text-danger   { color: var(--danger); }
 .text-warning  { color: var(--warning); }

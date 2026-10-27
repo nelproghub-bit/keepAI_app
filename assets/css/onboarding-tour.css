@@ -26,7 +26,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 24px 26px 20px;
-  background: linear-gradient(135deg, #fff8f8, #fff);
+  background: linear-gradient(135deg, #E8F5F2, #fff);
 }
 
 .keepai-tour-brand {
@@ -42,16 +42,16 @@
   flex: 0 0 42px;
   place-items: center;
   border-radius: 14px;
-  background: linear-gradient(135deg, #7d1d1d, #a52a2a);
+  background: linear-gradient(135deg, #0F766E, #0F766E);
   color: white;
   font-size: 20px;
   font-weight: 800;
-  box-shadow: 0 6px 16px rgba(125, 29, 29, 0.22);
+  box-shadow: 0 6px 16px rgba(15, 118, 110, 0.22);
 }
 
 .keepai-tour-eyebrow {
   margin: 0 0 2px;
-  color: #7d1d1d;
+  color: #0F766E;
   font-size: 11px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -59,7 +59,7 @@
 }
 
 .keepai-tour-counter {
-  color: #64748b;
+  color: #52647A;
   font-size: 12px;
   font-weight: 700;
   white-space: nowrap;
@@ -67,13 +67,13 @@
 
 .keepai-tour-progress {
   height: 4px;
-  background: #f1e5e5;
+  background: #DCE4EC;
 }
 
 .keepai-tour-progress span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, #7d1d1d, #c44b4b);
+  background: linear-gradient(90deg, #0F766E, #238B80);
   transition: width 180ms ease;
 }
 
@@ -104,8 +104,8 @@
   padding: 13px 15px;
   border: 1px solid #f2d5d5;
   border-radius: 12px;
-  background: #fff8f8;
-  color: #6b2525;
+  background: #E8F5F2;
+  color: #115E59;
   font-size: 13px;
   line-height: 1.55;
 }
@@ -132,7 +132,7 @@
 .keepai-tour-button {
   min-height: 40px;
   padding: 0 15px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid #DCE4EC;
   border-radius: 10px;
   background: #fff;
   color: #334155;
@@ -145,7 +145,7 @@
 
 .keepai-tour-button:hover {
   border-color: #cbd5e1;
-  background: #f8fafc;
+  background: #F4F7FA;
 }
 
 .keepai-tour-button:active {
@@ -154,24 +154,24 @@
 
 .keepai-tour-button:focus-visible,
 .keepai-tour-replay:focus-visible {
-  outline: 3px solid rgba(125, 29, 29, 0.32);
+  outline: 3px solid rgba(15, 118, 110, 0.32);
   outline-offset: 2px;
 }
 
 .keepai-tour-button-primary {
-  border-color: #7d1d1d;
-  background: #7d1d1d;
+  border-color: #0F766E;
+  background: #0F766E;
   color: #fff;
 }
 
 .keepai-tour-button-primary:hover {
-  border-color: #651818;
-  background: #651818;
+  border-color: #115E59;
+  background: #115E59;
 }
 
 .keepai-tour-button-quiet {
   border-color: transparent;
-  color: #64748b;
+  color: #52647A;
 }
 
 .keepai-tour-replay {
@@ -183,8 +183,8 @@
   padding: 0 14px;
   border: 1px solid rgba(255, 255, 255, 0.24);
   border-radius: 999px;
-  background: #7d1d1d;
-  box-shadow: 0 4px 16px rgba(125, 29, 29, 0.25);
+  background: #0F766E;
+  box-shadow: 0 4px 16px rgba(15, 118, 110, 0.25);
   color: #fff;
   font: 600 12px Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   cursor: pointer;
@@ -192,7 +192,7 @@
 }
 .keepai-tour-replay:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(125, 29, 29, 0.35);
+  box-shadow: 0 6px 20px rgba(15, 118, 110, 0.35);
 }
 
 .keepai-tour-highlight {

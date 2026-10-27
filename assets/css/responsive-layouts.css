@@ -48,8 +48,8 @@ textarea {
   display: grid;
   place-items: center;
   border-radius: 13px;
-  background: rgba(125, 29, 29, 0.09);
-  color: #7d1d1d;
+  background: rgba(15, 118, 110, 0.09);
+  color: #0F766E;
 }
 
 .push-settings-heading h3 {
@@ -61,7 +61,7 @@ textarea {
 
 .push-settings-heading p {
   margin: 0;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #52647A);
   font-size: 12.5px;
   line-height: 1.55;
 }
@@ -81,7 +81,7 @@ textarea {
 
 .push-settings-status {
   flex: 1 1 220px;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #52647A);
   font-size: 12px;
   line-height: 1.5;
 }
@@ -103,16 +103,16 @@ textarea {
 }
 
 .push-settings-toggle:not(:disabled) {
-  border: 1px solid #7d1d1d;
-  background: #7d1d1d;
+  border: 1px solid #0F766E;
+  background: #0F766E;
   color: #fff;
   cursor: pointer;
 }
 
 .push-settings-toggle:not(:disabled):hover {
-  border-color: #5f1515;
-  background: #5f1515;
-  box-shadow: 0 4px 12px rgba(95, 21, 21, 0.2);
+  border-color: #115E59;
+  background: #115E59;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.2);
 }
 
 .push-settings-toggle.is-enabled:not(:disabled) {
@@ -128,7 +128,7 @@ textarea {
 }
 
 .push-settings-toggle:focus-visible {
-  outline: 3px solid rgba(125, 29, 29, 0.28);
+  outline: 3px solid rgba(15, 118, 110, 0.28);
   outline-offset: 2px;
 }
 

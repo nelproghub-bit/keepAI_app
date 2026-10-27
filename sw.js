@@ -1,5 +1,5 @@
 // KeepAI service worker for Progressive Web App (PWA)
-const CACHE_NAME = 'keepai-pwa-__APP_VERSION__';
+const CACHE_NAME = 'keepai-pwa-navy-teal-__APP_VERSION__';
 
 const STATIC_ASSETS = [
   './',
@@ -18,6 +18,8 @@ const STATIC_ASSETS = [
   './icons/apple-touch-icon.png',
   './assets/css/responsive-layouts.css',
   './assets/css/landing.css',
+  './assets/css/brand-theme.css',
+  './assets/css/design-system.css',
   './assets/css/onboarding-tour.css',
   './assets/js/landing.js',
   './assets/js/push-notifications.js',

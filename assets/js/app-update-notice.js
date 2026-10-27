@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         notice.id = 'keepai-release-notice';
         notice.className = 'toast';
         notice.setAttribute('role', 'status');
-        notice.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;max-width:380px;padding:14px 18px;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #7d1d1d;border-radius:12px;box-shadow:0 8px 24px rgba(10,15,30,.2);color:#0f172a;font:600 13px Inter,sans-serif;';
+        notice.style.cssText = 'display:flex;flex-wrap:wrap;gap:10px;max-width:380px;padding:14px 18px;background:#fff;border:1px solid #e2e8f0;border-left:4px solid #0F766E;border-radius:12px;box-shadow:0 8px 24px rgba(10,15,30,.2);color:#0f172a;font:600 13px Inter,sans-serif;';
 
         const message = document.createElement('span');
         message.textContent = 'KeepAI has been updated. Reload to use the latest version.';
@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const updateButton = document.createElement('button');
         updateButton.type = 'button';
         updateButton.textContent = 'Update now';
-        updateButton.style.cssText = 'padding:8px 14px;border:0;border-radius:8px;background:#7d1d1d;color:#fff;font:600 13px Inter,sans-serif;cursor:pointer;';
+        updateButton.style.cssText = 'padding:8px 14px;border:0;border-radius:8px;background:#0F766E;color:#fff;font:600 13px Inter,sans-serif;cursor:pointer;';
         updateButton.addEventListener('click', async () => {
             updateButton.disabled = true;
             updateButton.textContent = 'Updating…';

@@ -1,0 +1,58 @@
+/* Approved KeepAI palette: navy navigation, teal actions, cool neutral surfaces.
+   Loaded after page styles so both dashboards share the same theme tokens. */
+:root {
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-dark: #142D4E;
+  --primary-text: #0F766E;
+  --primary-light: #E8F5F2;
+  --primary-border: #B7DDD6;
+  --primary-gradient: linear-gradient(135deg, #0F766E, #115E59);
+  --brand-gradient: linear-gradient(135deg, #142D4E, #1C3A5C 50%, #0F766E);
+  --bg-app: #F4F7FA;
+  --bg-surface: #FFFFFF;
+  --bg-subtle: #EDF2F7;
+  --bg-hover: #EDF2F7;
+  --border: #DCE4EC;
+  --text-main: #172B45;
+  --text-body: #334155;
+  --text-muted: #52647A;
+  --sidebar-bg: #142D4E;
+  --sidebar-surface: #1C3A5C;
+  --sidebar-text: #B8CAE0;
+  --sidebar-active-bg: #245071;
+}
+
+body.dark-mode,
+body.admin-theme-dark,
+#dashboard-app.admin-theme-dark {
+  color-scheme: dark;
+  --bg-app: #0D1726;
+  --bg-surface: #172538;
+  --bg-subtle: #203348;
+  --bg-hover: #203348;
+  --border: #34465B;
+  --border-light: #34465B;
+  --border-strong: #52647A;
+  --text-main: #E7EEF7;
+  --text-body: #CBD5E1;
+  --text-muted: #AABBD0;
+  --primary-text: #74D9CD;
+  --primary-light: #163C3D;
+  --primary-border: #337D78;
+}
+
+.sidebar .nav-label { color: #B8CAE0; }
+.sidebar .nav-item.active { box-shadow: inset 3px 0 #74D9CD; }
+.dash-sidebar { background: #142D4E; }
+.dash-sidebar .nav-link.active { background: #245071; box-shadow: inset 3px 0 #74D9CD; }
+.admin-role { color: #74D9CD; }
+.message.ai .msg-avatar { color: #74D9CD; }
+body.dark-mode .btn-soft { background: var(--primary-light); color: var(--primary-text); }
+body.dark-mode .flashcard-front { background: var(--bg-surface); }
+body.dark-mode .topbar { background: rgba(23, 37, 56, .96); }
+
+/* The landing-page illustration uses the same navigation colors as the app. */
+.workspace-sidebar { background: #142D4E; border-color: #1C3A5C; }
+.sidebar-item { color: #B8CAE0; }
+.sidebar-item.active { background: #245071; color: #FFFFFF; }
