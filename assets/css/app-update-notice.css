@@ -10,7 +10,7 @@ dialog#keepai-release-notice {
   padding: 26px 28px 22px;
   overflow-y: auto;
   border: 1px solid rgba(148, 163, 184, 0.45);
-  border-top: 5px solid #9f1d1d;
+  border-top: 5px solid #0f766e;
   border-radius: 18px;
   background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   color: #172033;
@@ -27,8 +27,8 @@ dialog#keepai-release-notice .keepai-update-badge {
   padding: 6px 10px;
   margin-bottom: 18px;
   border-radius: 999px;
-  background: rgba(159, 29, 29, 0.08);
-  color: #8d1f1f;
+  background: rgba(15, 118, 110, 0.1);
+  color: #0f766e;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -70,16 +70,16 @@ dialog#keepai-release-notice button:hover {
   transform: translateY(-1px);
 }
 dialog#keepai-release-notice .keepai-update-primary {
-  background: linear-gradient(180deg, #b3261e 0%, #8f1d1d 100%);
-  border-color: #8f1d1d;
+  background: linear-gradient(135deg, #0f766e 0%, #115e59 100%);
+  border-color: #0f766e;
   color: #ffffff;
-  box-shadow: 0 10px 18px rgba(143, 29, 29, 0.24);
+  box-shadow: 0 10px 18px rgba(15, 118, 110, 0.24);
 }
 dialog#keepai-release-notice .keepai-update-primary:hover {
-  background: linear-gradient(180deg, #9f1d1d 0%, #7d1717 100%);
+  background: linear-gradient(135deg, #115e59 0%, #142d4e 100%);
 }
 dialog#keepai-release-notice button:focus-visible {
-  outline: 3px solid rgba(30, 64, 175, 0.22);
+  outline: 3px solid rgba(15, 118, 110, 0.28);
   outline-offset: 3px;
 }
 dialog#keepai-release-notice button:disabled {
