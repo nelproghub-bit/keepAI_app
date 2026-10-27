@@ -124,6 +124,9 @@
   let arrowPath = null;
   let currentTarget = null;
   let resizeObserver = null;
+  let mutationObserver = null;
+  let flowPlaceholder = null;
+  let flowViewport = null;
   let animationFrame = 0;
 
   function userKey() {
@@ -293,11 +296,111 @@
       activeStep === TOUR_STEPS[activeRole].length - 1 ? 'Finish' : 'Next';
   }
 
+  function getObstructionRects(target, viewportWidth, viewportHeight) {
+    const selector = [
+      'button', 'input', 'select', 'textarea', 'a', 'label', 'nav', 'header',
+      '[role="button"]', '[role="link"]', '[role="tab"]', '[tabindex]',
+      'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'p', 'li', 'th', 'td', 'summary',
+      '.nav-link', '.panel-head', '.tool-card', '.stat-card', '.dash-card',
+      '.form-field', '.form-group', '.settings-card'
+    ].join(',');
+    const rects = [];
+
+    document.querySelectorAll(selector).forEach(element => {
+      if (tourRoot.contains(element) || element.closest('.keepai-tour-guidance, [aria-hidden="true"]')) return;
+      const style = window.getComputedStyle(element);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) return;
+
+      const rect = element.getBoundingClientRect();
+      const left = Math.max(0, rect.left);
+      const top = Math.max(0, rect.top);
+      const right = Math.min(viewportWidth, rect.right);
+      const bottom = Math.min(viewportHeight, rect.bottom);
+      if (right <= left || bottom <= top) return;
+
+      let weight = 5;
+      if (element === target) weight = 1000;
+      else if (element.matches('button, input, select, textarea, a, label, [role="button"], [role="link"], [role="tab"], [tabindex]')) weight = 24;
+      else if (element.matches('nav, header, .nav-link, .panel-head')) weight = 10;
+      else if (element.matches('.tool-card, .stat-card, .dash-card, .form-field, .form-group, .settings-card')) weight = 3;
+
+      rects.push({ left, top, right, bottom, weight });
+    });
+
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    let textNode;
+    while ((textNode = walker.nextNode())) {
+      if (!textNode.textContent.trim()) continue;
+      const parent = textNode.parentElement;
+      if (!parent || tourRoot.contains(parent)
+        || parent.closest('.keepai-tour-guidance, [aria-hidden="true"], script, style, noscript')) continue;
+      const style = window.getComputedStyle(parent);
+      if (style.display === 'none' || style.visibility === 'hidden' || Number(style.opacity) === 0) continue;
+
+      const weight = target && (parent === target || target.contains(parent)) ? 1000 : 12;
+      const range = document.createRange();
+      range.selectNodeContents(textNode);
+      Array.from(range.getClientRects()).forEach(rect => {
+        const left = Math.max(0, rect.left);
+        const top = Math.max(0, rect.top);
+        const right = Math.min(viewportWidth, rect.right);
+        const bottom = Math.min(viewportHeight, rect.bottom);
+        if (right > left && bottom > top) rects.push({ left, top, right, bottom, weight });
+      });
+    }
+
+    if (target) {
+      const rect = target.getBoundingClientRect();
+      const left = Math.max(0, rect.left);
+      const top = Math.max(0, rect.top);
+      const right = Math.min(viewportWidth, rect.right);
+      const bottom = Math.min(viewportHeight, rect.bottom);
+      if (right > left && bottom > top) rects.push({ left, top, right, bottom, weight: 1000 });
+    }
+
+    return rects;
+  }
+
+  function enableFlowPlacement(target) {
+    if (flowPlaceholder || !guidance || !tourRoot) return;
+    const anchor = target
+      ? target.closest('#settings-section, #learning-section, #progress-section, [data-section], .content-section, .panel, .dash-card')
+        || target
+      : document.querySelector('#app-root, #dashboard-app');
+    const slot = document.createElement('div');
+    slot.className = 'keepai-tour-flow-slot';
+    slot.setAttribute('data-tour-flow-slot', 'true');
+    if (anchor && anchor.parentElement) {
+      anchor.parentElement.insertBefore(slot, anchor);
+    } else {
+      document.querySelector('#app-root, #dashboard-app')?.prepend(slot);
+    }
+    if (!slot.isConnected) return;
+    slot.appendChild(guidance);
+    guidance.classList.add('keepai-tour-guidance-flow');
+    flowPlaceholder = slot;
+    flowViewport = { width: window.innerWidth, height: window.innerHeight };
+  }
+
+  function disableFlowPlacement() {
+    if (!flowPlaceholder) return;
+    if (tourRoot && guidance) tourRoot.appendChild(guidance);
+    guidance?.classList.remove('keepai-tour-guidance-flow');
+    flowPlaceholder.remove();
+    flowPlaceholder = null;
+    flowViewport = null;
+  }
+
   function positionGuidance(target) {
     if (!guidance || !tourRoot) return;
+    if (flowPlaceholder && (!flowPlaceholder.isConnected
+      || flowViewport.width !== window.innerWidth
+      || flowViewport.height !== window.innerHeight)) {
+      disableFlowPlacement();
+    }
 
     const margin = 16;
-    const gap = 20;
+    const gap = 18;
     const viewportWidth = document.documentElement.clientWidth;
     const viewportHeight = document.documentElement.clientHeight;
     const width = Math.max(0, Math.min(380, viewportWidth - margin * 2));
@@ -307,45 +410,119 @@
     let left = Math.max(margin, (viewportWidth - width) / 2);
     let top = Math.max(margin, (viewportHeight - boxHeight) / 2);
     let side = 'none';
+    const obstructionRects = getObstructionRects(target, viewportWidth, viewportHeight);
 
-    if (target) {
-      const rect = target.getBoundingClientRect();
-      const candidates = [
-        { side: 'right', left: rect.right + gap, top: rect.top + rect.height / 2 - boxHeight / 2 },
-        { side: 'left', left: rect.left - width - gap, top: rect.top + rect.height / 2 - boxHeight / 2 },
-        { side: 'bottom', left: rect.left + rect.width / 2 - width / 2, top: rect.bottom + gap },
-        { side: 'top', left: rect.left + rect.width / 2 - width / 2, top: rect.top - boxHeight - gap }
-      ];
-      const rankedCandidates = candidates.map(candidate => {
-        const candidateLeft = Math.min(Math.max(margin, candidate.left), viewportWidth - width - margin);
-        const candidateTop = Math.min(Math.max(margin, candidate.top), viewportHeight - boxHeight - margin);
-        const overlapWidth = Math.max(
-          0,
-          Math.min(candidateLeft + width, rect.right) - Math.max(candidateLeft, rect.left)
-        );
-        const overlapHeight = Math.max(
-          0,
-          Math.min(candidateTop + boxHeight, rect.bottom) - Math.max(candidateTop, rect.top)
-        );
-        const overflow = Math.max(0, margin - candidate.left)
-          + Math.max(0, candidate.left + width - viewportWidth + margin)
-          + Math.max(0, margin - candidate.top)
-          + Math.max(0, candidate.top + boxHeight - viewportHeight + margin);
-        return {
-          ...candidate,
-          left: candidateLeft,
-          top: candidateTop,
-          score: overflow * 10000 + overlapWidth * overlapHeight
+    {
+      const rect = target
+        ? target.getBoundingClientRect()
+        : {
+          left: viewportWidth / 2,
+          top: viewportHeight / 2,
+          right: viewportWidth / 2,
+          bottom: viewportHeight / 2,
+          width: 0,
+          height: 0
         };
-      }).sort((first, second) => first.score - second.score);
-      const candidate = rankedCandidates[0];
-      left = candidate.left;
-      top = candidate.top;
-      side = candidate.side;
+      const xPositions = [
+        margin,
+        rect.left - width - gap,
+        rect.left + rect.width / 2 - width / 2,
+        rect.right + gap,
+        viewportWidth - width - margin
+      ];
+      const yPositions = [
+        margin,
+        rect.top - boxHeight - gap,
+        rect.top + rect.height / 2 - boxHeight / 2,
+        rect.bottom + gap,
+        viewportHeight - boxHeight - margin
+      ];
+      obstructionRects.forEach(obstruction => {
+        xPositions.push(obstruction.left - width - gap, obstruction.right + gap);
+        yPositions.push(obstruction.top - boxHeight - gap, obstruction.bottom + gap);
+      });
+      const targetX = rect.left + rect.width / 2;
+      const targetY = rect.top + rect.height / 2;
+      const uniquePositions = positions => [...new Set(positions.map(position =>
+        Math.min(Math.max(margin, position), viewportWidth - width - margin)
+      ))];
+      const candidateLefts = uniquePositions(xPositions)
+        .sort((first, second) =>
+          Math.abs(first + width / 2 - targetX) - Math.abs(second + width / 2 - targetX)
+        )
+        .slice(0, 18);
+      [
+        margin,
+        viewportWidth - width - margin,
+        rect.left - width - gap,
+        rect.right + gap,
+        rect.left + rect.width / 2 - width / 2
+      ].forEach(position => {
+        const clamped = Math.min(Math.max(margin, position), viewportWidth - width - margin);
+        if (!candidateLefts.some(candidate => Math.abs(candidate - clamped) < 1)) candidateLefts.push(clamped);
+      });
+      const candidateTops = [...new Set(yPositions.map(position =>
+        Math.min(Math.max(margin, position), viewportHeight - boxHeight - margin)
+      ))]
+        .sort((first, second) =>
+          Math.abs(first + boxHeight / 2 - targetY) - Math.abs(second + boxHeight / 2 - targetY)
+        )
+        .slice(0, 18);
+      [
+        margin,
+        viewportHeight - boxHeight - margin,
+        rect.top - boxHeight - gap,
+        rect.bottom + gap,
+        rect.top + rect.height / 2 - boxHeight / 2
+      ].forEach(position => {
+        const clamped = Math.min(Math.max(margin, position), viewportHeight - boxHeight - margin);
+        if (!candidateTops.some(candidate => Math.abs(candidate - clamped) < 1)) candidateTops.push(clamped);
+      });
+      const candidates = [];
+      candidateLefts.forEach(clampedLeft => {
+        candidateTops.forEach(clampedTop => {
+          if (candidates.some(candidate =>
+            Math.abs(candidate.left - clampedLeft) < 1 && Math.abs(candidate.top - clampedTop) < 1
+          )) return;
+
+          let overlapCost = 0;
+          obstructionRects.forEach(obstruction => {
+            const overlapWidth = Math.max(
+              0,
+              Math.min(clampedLeft + width, obstruction.right) - Math.max(clampedLeft, obstruction.left)
+            );
+            const overlapHeight = Math.max(
+              0,
+              Math.min(clampedTop + boxHeight, obstruction.bottom) - Math.max(clampedTop, obstruction.top)
+            );
+            overlapCost += overlapWidth * overlapHeight * obstruction.weight;
+          });
+          const distance = Math.hypot(
+            clampedLeft + width / 2 - (rect.left + rect.width / 2),
+            clampedTop + boxHeight / 2 - (rect.top + rect.height / 2)
+          );
+          candidates.push({
+            left: clampedLeft,
+            top: clampedTop,
+            overlapCost,
+            score: overlapCost + distance * 0.25
+          });
+        });
+      });
+      candidates.sort((first, second) => first.score - second.score);
+      const candidate = candidates[0];
+      if (candidate.overlapCost > 0) {
+        enableFlowPlacement(target);
+      } else {
+        left = candidate.left;
+        top = candidate.top;
+      }
     }
 
-    guidance.style.left = `${left}px`;
-    guidance.style.top = `${top}px`;
+    if (!flowPlaceholder) {
+      guidance.style.left = `${left}px`;
+      guidance.style.top = `${top}px`;
+    }
     guidance.dataset.side = side;
 
     if (!target || !arrowPath) {
@@ -355,36 +532,41 @@
 
     const guidanceRect = guidance.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
-    const intersects = guidanceRect.left < targetRect.right
-      && guidanceRect.right > targetRect.left
-      && guidanceRect.top < targetRect.bottom
-      && guidanceRect.bottom > targetRect.top;
-    if (intersects) {
-      arrowPath.setAttribute('d', '');
-      return;
-    }
-
+    const deltaX = targetRect.left + targetRect.width / 2
+      - (guidanceRect.left + guidanceRect.width / 2);
+    const deltaY = targetRect.top + targetRect.height / 2
+      - (guidanceRect.top + guidanceRect.height / 2);
+    side = Math.abs(deltaX) > Math.abs(deltaY)
+      ? (deltaX < 0 ? 'left' : 'right')
+      : (deltaY < 0 ? 'top' : 'bottom');
+    guidance.dataset.side = side;
     const targetX = targetRect.left + targetRect.width / 2;
     const targetY = targetRect.top + targetRect.height / 2;
+    const targetScale = Math.min(
+      deltaX ? Math.max(0, targetRect.width / 2 - 3) / Math.abs(deltaX) : Infinity,
+      deltaY ? Math.max(0, targetRect.height / 2 - 3) / Math.abs(deltaY) : Infinity
+    );
+    const targetEdgeX = targetX - deltaX * targetScale;
+    const targetEdgeY = targetY - deltaY * targetScale;
     let startX = guidanceRect.left + guidanceRect.width / 2;
     let startY = guidanceRect.top + guidanceRect.height / 2;
 
-    if (side === 'right') {
+    if (side === 'left') {
       startX = guidanceRect.left;
       startY = Math.min(Math.max(targetY, guidanceRect.top + 10), guidanceRect.bottom - 10);
-    } else if (side === 'left') {
+    } else if (side === 'right') {
       startX = guidanceRect.right;
       startY = Math.min(Math.max(targetY, guidanceRect.top + 10), guidanceRect.bottom - 10);
-    } else if (side === 'bottom') {
+    } else if (side === 'top') {
       startX = Math.min(Math.max(targetX, guidanceRect.left + 12), guidanceRect.right - 12);
       startY = guidanceRect.top;
-    } else if (side === 'top') {
+    } else if (side === 'bottom') {
       startX = Math.min(Math.max(targetX, guidanceRect.left + 12), guidanceRect.right - 12);
       startY = guidanceRect.bottom;
     }
 
     tourRoot.querySelector('.keepai-tour-arrow').setAttribute('viewBox', `0 0 ${viewportWidth} ${viewportHeight}`);
-    arrowPath.setAttribute('d', `M ${startX} ${startY} L ${targetX} ${targetY}`);
+    arrowPath.setAttribute('d', `M ${startX} ${startY} L ${targetEdgeX} ${targetEdgeY}`);
   }
 
   function refreshPosition() {
@@ -406,12 +588,26 @@
     if (resizeObserver && target) resizeObserver.observe(target);
   }
 
+  function observePageContent() {
+    if (typeof MutationObserver !== 'function') return;
+    const appRoot = document.querySelector('#app-root, #dashboard-app');
+    if (!appRoot) return;
+    mutationObserver = new MutationObserver(refreshPosition);
+    mutationObserver.observe(appRoot, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'hidden']
+    });
+  }
+
   function moveToStep(stepIndex) {
     const steps = TOUR_STEPS[activeRole];
     if (!steps || stepIndex < 0 || stepIndex >= steps.length || !tourRoot) return;
 
     activeStep = stepIndex;
     const step = steps[activeStep];
+    disableFlowPlacement();
     navigateToStep(step);
     setText(step);
     saveActiveStep();
@@ -445,6 +641,7 @@
       resizeObserver = new ResizeObserver(refreshPosition);
       resizeObserver.observe(guidance);
     }
+    observePageContent();
     moveToStep(force ? 0 : restoreActiveStep());
     guidance.querySelector('[data-tour-next]').focus({ preventScroll: true });
   }
@@ -459,6 +656,11 @@
     }
     if (resizeObserver) resizeObserver.disconnect();
     resizeObserver = null;
+    if (mutationObserver) mutationObserver.disconnect();
+    mutationObserver = null;
+    flowPlaceholder?.remove();
+    flowPlaceholder = null;
+    flowViewport = null;
     tourRoot.remove();
     tourRoot = null;
     guidance = null;

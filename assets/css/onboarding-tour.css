@@ -48,6 +48,25 @@
   pointer-events: auto;
 }
 
+.keepai-tour-flow-slot {
+  position: relative;
+  z-index: 10001;
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  padding: 12px 16px;
+}
+
+.keepai-tour-guidance.keepai-tour-guidance-flow {
+  position: relative !important;
+  inset: auto !important;
+  width: min(380px, 100%) !important;
+  max-height: none;
+  margin: 0;
+  transform: none;
+  opacity: 1;
+}
+
 body.dark-mode .keepai-tour-guidance,
 body.admin-theme-dark .keepai-tour-guidance,
 #dashboard-app.admin-theme-dark ~ .keepai-tour-layer .keepai-tour-guidance {
