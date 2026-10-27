@@ -1,4 +1,7 @@
 import unittest
+import sqlite3
+import tempfile
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from app.core.ai_guardrails import (
@@ -10,9 +13,46 @@ from app.core.ai_guardrails import (
 )
 from app.services import gemini_service
 from app.services.gemini_service import AIProviderError, AIService
+from app.routers import tutor
+from app.routers.tutor import AskRequest
 
 
 class AIGuardrailTests(unittest.TestCase):
+    def setUp(self):
+        self.temp_dir = tempfile.TemporaryDirectory()
+        self.database_path = Path(self.temp_dir.name) / "tutor-greeting.db"
+        connection = sqlite3.connect(self.database_path)
+        try:
+            connection.execute(
+                """
+                CREATE TABLE tutor_greeting_state (
+                    user_id TEXT PRIMARY KEY,
+                    shown_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            connection.execute(
+                "CREATE TABLE tutor_conversations (id TEXT PRIMARY KEY, user_id TEXT NOT NULL)"
+            )
+            connection.commit()
+        finally:
+            connection.close()
+        self.connection_patch = patch.object(
+            tutor,
+            "get_connection",
+            side_effect=self.open_database,
+        )
+        self.connection_patch.start()
+
+    def tearDown(self):
+        self.connection_patch.stop()
+        self.temp_dir.cleanup()
+
+    def open_database(self):
+        connection = sqlite3.connect(self.database_path)
+        connection.row_factory = sqlite3.Row
+        return connection
+
     def test_feature_instructions_include_shared_policy_once(self):
         composed = compose_ai_system_prompt("Return valid JSON only.")
 
@@ -48,6 +88,52 @@ class AIGuardrailTests(unittest.TestCase):
         api_key = "AIza" + ("A" * 35)
 
         self.assertNotIn(api_key, OutputGuardrail.validate_and_sanitize(api_key))
+
+    def test_first_greeting_is_persisted_once_per_account(self):
+        self.assertTrue(tutor.claim_first_tutor_greeting("first-student"))
+        self.assertFalse(tutor.claim_first_tutor_greeting("first-student"))
+        self.assertTrue(tutor.claim_first_tutor_greeting("another-student"))
+
+    def test_existing_chat_history_prevents_retroactive_greeting(self):
+        connection = self.open_database()
+        try:
+            connection.execute(
+                "INSERT INTO tutor_conversations (id, user_id) VALUES (?, ?)",
+                ("existing-chat", "returning-student"),
+            )
+            connection.commit()
+        finally:
+            connection.close()
+
+        self.assertFalse(tutor.claim_first_tutor_greeting("returning-student"))
+        self.assertFalse(tutor.claim_first_tutor_greeting("returning-student"))
+
+    @patch.object(tutor, "record_activity")
+    @patch.object(tutor, "generate", return_value="Here is the answer.")
+    @patch.object(
+        tutor,
+        "get_tutor_context",
+        return_value={"context": "", "sources": [], "has_materials": False, "read_mode": "none"},
+    )
+    @patch.object(tutor.user_service, "increment_stat")
+    @patch.object(tutor, "get_owned_document_name", return_value=None)
+    def test_greeting_is_added_only_to_first_ai_answer(
+        self,
+        get_document,
+        increment_stat,
+        get_context,
+        generate,
+        record_activity,
+    ):
+        user = {"id": "greeting-student"}
+        request = AskRequest(question="Can you help me study?")
+
+        first_answer = tutor.ask_keepai(request, user)
+        next_answer = tutor.ask_keepai(request, user)
+
+        self.assertTrue(first_answer["answer"].startswith(tutor.FIRST_TUTOR_GREETING))
+        self.assertTrue(first_answer["answer"].endswith("Here is the answer."))
+        self.assertEqual(next_answer["answer"], "Here is the answer.")
 
     @patch("app.services.gemini_service.GEMINI_API_KEY", "configured-test-key")
     @patch("app.services.gemini_service.requests.post")

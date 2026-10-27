@@ -16,6 +16,47 @@ from app.core.ai_guardrails import build_guarded_tutor_prompt
 router = APIRouter(tags=["AI Tutor"])
 logger = logging.getLogger(__name__)
 
+FIRST_TUTOR_GREETING = "Hello! I am KeepAI, your academic tutor and study assistant."
+
+
+def claim_first_tutor_greeting(user_id: str) -> bool:
+    """Atomically persist whether this account has received its first-chat greeting."""
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute(
+            "SELECT user_id FROM tutor_greeting_state WHERE user_id = ?",
+            (user_id,),
+        )
+        if cursor.fetchone():
+            return False
+
+        cursor.execute(
+            "SELECT id FROM tutor_conversations WHERE user_id = ? LIMIT 1",
+            (user_id,),
+        )
+        has_prior_chat = cursor.fetchone() is not None
+
+        try:
+            cursor.execute(
+                "INSERT INTO tutor_greeting_state (user_id) VALUES (?)",
+                (user_id,),
+            )
+            conn.commit()
+            return not has_prior_chat
+        except Exception:
+            conn.rollback()
+            cursor.execute(
+                "SELECT user_id FROM tutor_greeting_state WHERE user_id = ?",
+                (user_id,),
+            )
+            if cursor.fetchone():
+                return False
+            raise
+    finally:
+        conn.close()
+
+
 class AskRequest(BaseModel):
     question: str = Field(min_length=1, max_length=4000)
     teaching_style: str = "simple"
@@ -192,6 +233,8 @@ def ask_keepai(
         "Asked the AI tutor a study question",
         document_name or "AI Tutor",
     )
+    if claim_first_tutor_greeting(uid):
+        answer = f"{FIRST_TUTOR_GREETING}\n\n{answer}"
     
     return {
         "answer": answer,

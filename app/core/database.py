@@ -204,6 +204,12 @@ def init_db():
     conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""
+        CREATE TABLE IF NOT EXISTS tutor_greeting_state (
+            user_id VARCHAR(64) PRIMARY KEY,
+            shown_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    cursor.execute("""
         CREATE TABLE IF NOT EXISTS flashcard_progress (
             id VARCHAR(64) PRIMARY KEY,
             user_id VARCHAR(64) NOT NULL,
