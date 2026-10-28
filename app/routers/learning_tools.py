@@ -1028,6 +1028,45 @@ def _clean_flashcard_term(term: str) -> str:
     return cleaned
 
 
+def _flashcard_statement_lines(section: str) -> List[str]:
+    text = re.sub(r"\[Page\s*\d+\]", "", section, flags=re.IGNORECASE)
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    statements: List[str] = []
+    current = ""
+    for line in lines:
+        is_list_item = re.match(r"^(?:[-*\u2022]|\d+[.)])\s+", line) is not None
+        is_short_heading = (
+            len(current) < 45
+            and re.fullmatch(
+                r"[A-Z][A-Za-z0-9/&+_-]*(?:\s+[A-Za-z0-9/&+_-]+){0,7}",
+                current,
+            )
+            and not re.search(
+                r"\b(?:is|are|means|refers to|defined as|consists of|includes)\b",
+                current,
+                re.IGNORECASE,
+            )
+        )
+        if not current:
+            current = line
+        elif current.endswith((".", "!", "?", ";")) or is_list_item or is_short_heading:
+            statements.append(current)
+            current = line
+        else:
+            current = f"{current} {line}"
+    if current:
+        statements.append(current)
+
+    split_statements: List[str] = []
+    for statement in statements:
+        split_statements.extend(
+            part.strip()
+            for part in re.split(r"(?<=[.!?])\s+|(?<=;)\s+", statement)
+            if part.strip()
+        )
+    return split_statements
+
+
 def _definition_pair_supported(front: str, back: str, evidence: str) -> bool:
     normalized_front = _normalize_flashcard_text(front)
     normalized_back = _normalize_flashcard_text(back)
@@ -1043,7 +1082,9 @@ def _definition_pair_supported(front: str, back: str, evidence: str) -> bool:
             continue
         suffix = sentence[term_match.end():]
         connector = re.match(
-            r"\s*(?::|(?:is defined as|refers to|means|is|are|represents|consists of|includes)\b)\s*",
+            r"\s*(?::|,\s*(?:which|meaning|defined as)\b|"
+            r"(?:is defined as|is described as|refers to|means|denotes|"
+            r"describes|involves|is called|is|are|represents|consists of|includes)\b)\s*",
             suffix,
         )
         if connector:
@@ -1100,11 +1141,9 @@ def build_extractive_flashcards(
     )
 
     for section in _flashcard_source_sections(document_text):
-        clean_section = re.sub(r"\[Page\s*\d+\]", "", section, flags=re.IGNORECASE)
-        statements = re.split(r"(?<=[.!?])\s+|(?<=;)\s+|\n+", clean_section)
         cleaned_statements = [
-            re.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s*", "", raw_statement).strip()
-            for raw_statement in statements
+            re.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s*", "", statement).strip()
+            for statement in _flashcard_statement_lines(section)
         ]
         for statement_index, evidence in enumerate(cleaned_statements):
             if not 30 <= len(evidence) <= 500:
@@ -1123,8 +1162,14 @@ def build_extractive_flashcards(
                 previous = cleaned_statements[statement_index - 1]
                 question_match = question_pattern.match(previous)
                 pronoun_match = pronoun_definition_pattern.match(evidence)
-                if question_match and pronoun_match:
-                    term = _clean_flashcard_term(question_match.group("term"))
+                heading_match = re.fullmatch(
+                    r"(?P<term>[A-Z][A-Za-z0-9()&+_/-]*(?:\s+[A-Za-z0-9()&+_/-]+){0,7})",
+                    previous,
+                )
+                if pronoun_match and (question_match or heading_match):
+                    term = _clean_flashcard_term(
+                        (question_match or heading_match).group("term")
+                    )
                     answer = pronoun_match.group("answer").strip()
                     source_evidence = f"{previous} {evidence}"
 

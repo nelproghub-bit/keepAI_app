@@ -290,6 +290,41 @@ class FlashcardFeatureTests(unittest.TestCase):
                     )
                 )
 
+    @patch.object(learning_tools, "generate", return_value="[]")
+    def test_extractive_fallback_rejoins_pdf_line_wrapped_definitions(self, generate):
+        source = (
+            "[Page 3]\n"
+            "Computer networking is the exchange of\n"
+            "data between connected devices across a communication channel."
+        )
+
+        cards = generate_flashcards_from_document(
+            source,
+            "",
+            1,
+            "term-definition",
+        )
+
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["front"], "Computer networking")
+        self.assertIn("exchange of data between connected devices", cards[0]["back"])
+        self.assertEqual(cards[0]["source_page"], 3)
+        self.assertEqual(cards[0]["generation_method"], "document_extract")
+
+    def test_extractive_fallback_uses_a_lesson_heading_for_pronoun_definition(self):
+        source = (
+            "[Page 5]\n"
+            "Computer Networking\n"
+            "It is the exchange of data between connected devices."
+        )
+
+        cards = build_extractive_flashcards(source, "term-definition")
+
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["front"], "Computer Networking")
+        self.assertIn("exchange of data between connected devices", cards[0]["back"])
+        self.assertEqual(cards[0]["source_page"], 5)
+
     def test_structured_candidate_parser_and_semantic_validation(self):
         parsed = _parse_flashcard_response(
             '```json\n{"cards":['
