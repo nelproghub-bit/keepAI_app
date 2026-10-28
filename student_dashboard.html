@@ -1377,6 +1377,7 @@
             width: 100%;
             height: 100%;
             min-height: 260px;
+            box-sizing: border-box;
             backface-visibility: hidden;
             border-radius: var(--radius-lg);
             padding: clamp(18px, 4vw, 36px);
@@ -1387,6 +1388,7 @@
             text-align: center;
             border: 2px solid var(--border);
             overflow-y: auto;
+            overscroll-behavior: contain;
             overflow-wrap: anywhere;
             word-break: normal;
         }
@@ -1402,10 +1404,13 @@
 
         .flashcard-source {
             width: min(100%, 760px);
+            max-height: 28%;
             margin: 12px 0 0;
             color: rgba(255, 255, 255, 0.82);
             font-size: 12px;
             text-align: left;
+            overflow-y: auto;
+            overflow-wrap: anywhere;
         }
 
         .flashcard-player-controls {
@@ -1553,6 +1558,26 @@
             background: linear-gradient(135deg, var(--primary), #115E59);
             color: white;
             box-shadow: 0 3px 8px rgba(15, 118, 110, 0.3);
+        }
+
+        .fc-type-selected {
+            display: none;
+            position: absolute;
+            top: 7px;
+            right: 7px;
+            padding: 2px 6px;
+            border-radius: 999px;
+            background: var(--primary);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 800;
+            line-height: 1.4;
+        }
+
+        .fc-type-card.selected .fc-type-selected {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
         }
 
         .fc-type-icon {
@@ -2964,28 +2989,33 @@
             <!-- Step 2: Flashcard Type -->
             <div class="form-field">
                 <label><i class="fas fa-th-large me-1" style="color: var(--primary-text, var(--primary));"></i> Flashcard Type</label>
-                <div class="fc-type-grid" id="fc-type-grid">
+                <div class="fc-type-grid" id="fc-type-grid" aria-label="Select one or more flashcard types">
                     <button type="button" class="fc-type-card selected" data-type="term-definition" aria-pressed="true" onclick="selectFlashcardType(this, 'term-definition')">
+                        <span class="fc-type-selected" aria-hidden="true"><i class="fas fa-check"></i> Selected</span>
                         <span class="fc-type-icon"><i class="fas fa-book-open"></i></span>
                         <span class="fc-type-label">Term &amp; Definition</span>
                         <span class="fc-type-desc">Key vocabulary with clear explanations</span>
                     </button>
                     <button type="button" class="fc-type-card" data-type="question-answer" aria-pressed="false" onclick="selectFlashcardType(this, 'question-answer')">
+                        <span class="fc-type-selected" aria-hidden="true"><i class="fas fa-check"></i> Selected</span>
                         <span class="fc-type-icon"><i class="fas fa-question-circle"></i></span>
                         <span class="fc-type-label">Q &amp; A</span>
                         <span class="fc-type-desc">Questions with detailed answers</span>
                     </button>
                     <button type="button" class="fc-type-card" data-type="concept-example" aria-pressed="false" onclick="selectFlashcardType(this, 'concept-example')">
+                        <span class="fc-type-selected" aria-hidden="true"><i class="fas fa-check"></i> Selected</span>
                         <span class="fc-type-icon"><i class="fas fa-lightbulb"></i></span>
                         <span class="fc-type-label">Concept &amp; Example</span>
                         <span class="fc-type-desc">Core ideas paired with real-world examples</span>
                     </button>
                     <button type="button" class="fc-type-card" data-type="fill-blank" aria-pressed="false" onclick="selectFlashcardType(this, 'fill-blank')">
+                        <span class="fc-type-selected" aria-hidden="true"><i class="fas fa-check"></i> Selected</span>
                         <span class="fc-type-icon"><i class="fas fa-pen-nib"></i></span>
                         <span class="fc-type-label">Fill in the Blank</span>
                         <span class="fc-type-desc">Sentence completion style recall cards</span>
                     </button>
                 </div>
+                <div id="fc-type-summary" role="status" aria-live="polite" style="font-size: 11.5px; color: var(--text-muted); margin-top: 8px;"></div>
             </div>
 
             <!-- Step 3: Number of Cards -->
@@ -2995,10 +3025,10 @@
                     Number of Flashcards
                     <span id="fc-count-badge" class="fc-count-badge">10</span>
                 </label>
-                <input type="range" id="fc-count-slider" class="fc-slider" min="5" max="100" step="5" value="10"
+                <input type="range" id="fc-count-slider" class="fc-slider" min="1" max="100" step="1" value="10"
                        oninput="updateFCCountDisplay(this.value)">
                 <div class="fc-slider-labels">
-                    <span>5 (Quick)</span>
+                    <span>1 (Quick)</span>
                     <span>25</span>
                     <span>50</span>
                     <span>75</span>
@@ -3297,7 +3327,7 @@
         let masteredFlashcardKeys = new Set();
         let visibleFlashcardIndexes = [];
         let showUnmasteredFlashcards = false;
-        let selectedFlashcardType = 'term-definition'; // Currently selected card type in modal
+        let isGeneratingFlashcards = false;
 
         // ==================== INITIALIZATION ====================
         document.addEventListener('DOMContentLoaded', () => {
@@ -5116,10 +5146,10 @@
                 defaultCard.classList.add('selected');
                 defaultCard.setAttribute('aria-pressed', 'true');
             }
-            selectedFlashcardType = 'term-definition';
+            updateFCTypeSummary();
             document.getElementById('fc-topic-input').value = '';
             const generateButton = document.getElementById('fc-generate-btn');
-            if (generateButton) generateButton.disabled = !documents?.length;
+            if (generateButton) generateButton.disabled = !documents?.length || isGeneratingFlashcards;
             const status = document.getElementById('fc-generation-status');
             if (status) {
                 status.style.display = 'none';
@@ -5135,13 +5165,44 @@
         }
 
         function selectFlashcardType(el, type) {
-            document.querySelectorAll('.fc-type-card').forEach(c => {
-                c.classList.remove('selected');
-                c.setAttribute('aria-pressed', 'false');
-            });
-            el.classList.add('selected');
-            el.setAttribute('aria-pressed', 'true');
-            selectedFlashcardType = type;
+            const isSelected = el.classList.contains('selected');
+            const selectedCount = document.querySelectorAll('.fc-type-card.selected').length;
+            if (isSelected && selectedCount === 1) {
+                showToast('Choose at least one flashcard type.', 'info');
+                return;
+            }
+            el.classList.toggle('selected', !isSelected);
+            el.setAttribute('aria-pressed', String(!isSelected));
+            updateFCTypeSummary();
+        }
+
+        function getSelectedFlashcardTypes() {
+            return Array.from(document.querySelectorAll('.fc-type-card.selected'))
+                .map(card => card.dataset.type)
+                .filter(Boolean);
+        }
+
+        function updateFCTypeSummary() {
+            const summary = document.getElementById('fc-type-summary');
+            if (!summary) return;
+            const typeNames = {
+                'term-definition': 'Term & Definition',
+                'question-answer': 'Q & A',
+                'concept-example': 'Concept & Example',
+                'fill-blank': 'Fill in the Blank'
+            };
+            const types = getSelectedFlashcardTypes();
+            const total = parseInt(document.getElementById('fc-count-slider')?.value || '10', 10);
+            if (!types.length) {
+                summary.textContent = 'Select at least one type.';
+                return;
+            }
+            const quotient = Math.floor(total / types.length);
+            const remainder = total % types.length;
+            const distribution = types.map((type, index) =>
+                `${typeNames[type] || type}: ${quotient + (index < remainder ? 1 : 0)}`
+            );
+            summary.textContent = `${total} total cards · ${distribution.join(' · ')}`;
         }
 
         function updateFCCountDisplay(val) {
@@ -5153,29 +5214,45 @@
                 const pct = ((val - slider.min) / (slider.max - slider.min)) * 100;
                 slider.style.background = `linear-gradient(to right, var(--primary) 0%, var(--primary) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
             }
+            updateFCTypeSummary();
         }
 
-        async function processFlashcardAction(forcedCount = null) {
+        async function processFlashcardAction() {
+            if (isGeneratingFlashcards) return;
             const selectDoc = document.getElementById('fc-lesson-select').value;
             const topic = document.getElementById('fc-topic-input').value.trim();
             const slider = document.getElementById('fc-count-slider');
-            const cardCount = (typeof forcedCount === 'number' && forcedCount > 0) ? forcedCount : (parseInt(slider ? slider.value : 10) || 10);
-            const cardType = selectedFlashcardType || 'term-definition';
+            const cardCount = parseInt(slider ? slider.value : 10, 10) || 10;
+            const cardTypes = getSelectedFlashcardTypes();
 
             if (!selectDoc) {
                 showToast('Please select a source document first.', 'warning');
                 return;
             }
+            if (!cardTypes.length) {
+                showToast('Choose at least one flashcard type.', 'warning');
+                return;
+            }
 
             const genBtn = document.getElementById('fc-generate-btn');
             const status = document.getElementById('fc-generation-status');
+            const progressMessages = [
+                `Generating ${cardCount} cards from "${selectDoc}" using the selected types…`,
+                'Checking source passages, duplicate content, and the requested card count…'
+            ];
+            let progressIndex = 0;
+            isGeneratingFlashcards = true;
             genBtn.disabled = true;
             genBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating…';
             genBtn.setAttribute('aria-busy', 'true');
             if (status) {
                 status.style.display = 'block';
-                status.textContent = `Reading "${selectDoc}", identifying focused concepts, and checking answers against their source passages…`;
+                status.textContent = progressMessages[progressIndex];
             }
+            const progressTimer = window.setInterval(() => {
+                progressIndex = (progressIndex + 1) % progressMessages.length;
+                if (status) status.textContent = progressMessages[progressIndex];
+            }, 3500);
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -5189,17 +5266,33 @@
                         topic: topic,
                         document_name: selectDoc,
                         card_count: cardCount,
-                        card_type: cardType
+                        card_type: cardTypes[0],
+                        card_types: cardTypes
                     })
                 });
 
                 if (res.ok) {
                     const data = await res.json();
-                    if (!Array.isArray(data.cards) || data.cards.length === 0) {
-                        throw new Error('No source-supported flashcards could be created from this document.');
+                    if (!Array.isArray(data.cards) || data.cards.length !== cardCount) {
+                        throw new Error(`The server returned ${data.cards?.length || 0} cards instead of the ${cardCount} requested.`);
+                    }
+                    const quotient = Math.floor(cardCount / cardTypes.length);
+                    const remainder = cardCount % cardTypes.length;
+                    const actualCounts = new Map(cardTypes.map(type => [type, 0]));
+                    data.cards.forEach(card => {
+                        const type = card.card_type || (cardTypes.length === 1 ? cardTypes[0] : '');
+                        if (!actualCounts.has(type)) {
+                            throw new Error('The server returned a card with an unexpected flashcard type.');
+                        }
+                        actualCounts.set(type, actualCounts.get(type) + 1);
+                    });
+                    if (cardTypes.some((type, index) =>
+                        actualCounts.get(type) !== quotient + (index < remainder ? 1 : 0)
+                    )) {
+                        throw new Error('The returned deck did not match the requested type distribution.');
                     }
                     closeModal('flashcard-launch-modal');
-                    await loadFlashcardDeck(data.cards, selectDoc, cardType, data.generation_mode);
+                    await loadFlashcardDeck(data.cards, selectDoc, cardTypes, data.generation_mode);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     const errMsg = errData.detail || `Server responded with status ${res.status}`;

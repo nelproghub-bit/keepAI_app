@@ -101,6 +101,79 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
+    def test_invalid_response_is_retried_and_wrapped_json_is_parsed(self, generate):
+        evidence = "Usability is the ease with which users can complete tasks."
+        card = {
+            "front": "Usability",
+            "back": "the ease with which users can complete tasks",
+            "source_excerpt": evidence,
+        }
+        generate.side_effect = [
+            "not JSON",
+            f'```json\n{{"flashcards": [{json.dumps(card)}]}}\n```',
+        ]
+
+        cards = generate_flashcards_from_document(
+            evidence,
+            "",
+            1,
+            "term-definition",
+        )
+
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(generate.call_count, 2)
+        self.assertIn("focused retry", generate.call_args_list[1].args[0])
+        self.assertGreaterEqual(
+            generate.call_args_list[0].kwargs["max_output_tokens"],
+            450,
+        )
+
+    @patch.object(learning_tools, "generate")
+    def test_generation_distributes_cards_across_the_selected_document(self, generate):
+        parts = []
+        expected = {}
+        for index in range(3):
+            term = f"Topic{index}"
+            evidence = f"{term} is the important concept for subject {index}."
+            expected[term] = evidence
+            parts.append(evidence + " " + (f"Additional material for subject {index}. " * 220))
+        document = "\n\n".join(parts)
+
+        def generate_for_section(prompt, **kwargs):
+            matches = [
+                (term, evidence)
+                for term, evidence in expected.items()
+                if evidence in prompt
+            ]
+            term, evidence = matches[-1]
+            return json.dumps(
+                [
+                    {
+                        "front": term,
+                        "back": f"the important concept for subject {term[-1]}",
+                        "source_excerpt": evidence,
+                    }
+                ]
+            )
+
+        generate.side_effect = generate_for_section
+
+        cards = generate_flashcards_from_document(
+            document,
+            "",
+            3,
+            "term-definition",
+        )
+
+        self.assertEqual(len(cards), 3)
+        self.assertEqual({card["front"] for card in cards}, set(expected))
+        self.assertEqual(generate.call_count, 3)
+        self.assertEqual(
+            {card["card_type"] for card in cards},
+            {"term-definition"},
+        )
+
+    @patch.object(learning_tools, "generate")
     def test_invalid_ai_content_is_discarded_and_only_source_definitions_fallback(self, generate):
         generate.return_value = json.dumps(
             [
@@ -280,28 +353,17 @@ class FlashcardFeatureTests(unittest.TestCase):
 
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
-    @patch.object(learning_tools, "_load_user_files_meta")
-    @patch.object(learning_tools, "get_all_document_chunks")
     @patch.object(learning_tools, "get_lesson_context")
     def test_endpoint_generates_exact_count_from_only_the_selected_document(
         self,
         get_lesson_context,
-        get_all_document_chunks,
-        load_user_files_meta,
         generate_cards,
         increment_stat,
     ):
-        get_lesson_context.return_value = ("selected context", ["selected.docx"])
-        get_all_document_chunks.return_value = [
-            {"chunk_index": 0, "text": "Selected chunk content"}
-        ]
-        load_user_files_meta.return_value = {
-            "selected.docx": {"full_text": "SELECTED DOCUMENT ONLY"},
-            "other.docx": {"full_text": "CONTENT FROM ANOTHER DOCUMENT"},
-        }
+        get_lesson_context.return_value = ("SELECTED DOCUMENT ONLY", ["selected.docx"])
         generate_cards.return_value = [
-            {"front": "Term 1", "back": "Definition 1", "source_excerpt": "Evidence 1"},
-            {"front": "Term 2", "back": "Definition 2", "source_excerpt": "Evidence 2"},
+            {"front": "Term 1", "back": "Definition 1", "source_excerpt": "Evidence 1", "card_type": "term-definition"},
+            {"front": "Term 2", "back": "Definition 2", "source_excerpt": "Evidence 2", "card_type": "term-definition"},
         ]
 
         response = self.client.post(
@@ -321,9 +383,69 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertEqual(generate_cards.call_args.args[2:], (2, "term-definition"))
         increment_stat.assert_called_once()
 
+    @patch.object(learning_tools.user_service, "increment_stat")
+    @patch.object(learning_tools, "generate_flashcards_from_document")
+    @patch.object(learning_tools, "get_lesson_context")
+    def test_endpoint_splits_total_evenly_across_selected_types(
+        self,
+        get_lesson_context,
+        generate_cards,
+        increment_stat,
+    ):
+        selected_types = ["term-definition", "question-answer", "fill-blank"]
+        get_lesson_context.return_value = ("selected source", ["selected.docx"])
+
+        def make_cards(_, __, count, card_type):
+            return [
+                {
+                    "front": f"{card_type} {index}",
+                    "back": f"Answer {index}",
+                    "source_excerpt": f"Evidence {index}",
+                    "card_type": card_type,
+                }
+                for index in range(count)
+            ]
+
+        generate_cards.side_effect = make_cards
+        response = self.client.post(
+            "/api/learning/flashcards",
+            json={
+                "document_name": "selected.docx",
+                "card_count": 10,
+                "card_types": selected_types,
+            },
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["total_cards"], 10)
+        self.assertEqual(
+            [call.args[2] for call in generate_cards.call_args_list],
+            [4, 3, 3],
+        )
+        self.assertEqual(response.json()["card_types"], selected_types)
+        self.assertEqual(
+            {card["card_type"] for card in response.json()["cards"]},
+            set(selected_types),
+        )
+        increment_stat.assert_called_once()
+
     def test_invalid_flashcard_type_is_rejected(self):
         with self.assertRaises(Exception):
             FlashcardRequest(card_type="unsupported")
+
+    def test_request_supports_unique_selected_types_and_one_card_per_type(self):
+        request = FlashcardRequest(
+            card_count=3,
+            card_types=["term-definition", "question-answer", "fill-blank"],
+        )
+
+        self.assertEqual(len(request.card_types), 3)
+        with self.assertRaises(Exception):
+            FlashcardRequest(card_count=1, card_types=["term-definition", "question-answer"])
+        with self.assertRaises(Exception):
+            FlashcardRequest(card_types=["term-definition", "term-definition"])
+        with self.assertRaises(Exception):
+            FlashcardRequest(card_types=["unsupported"])
 
     def test_mastery_progress_persists_per_user_and_document(self):
         first = self.client.put(
