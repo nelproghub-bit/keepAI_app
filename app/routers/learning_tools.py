@@ -2,6 +2,7 @@ import json
 import re
 import random
 import hashlib
+import unicodedata
 from typing import Optional, Dict, Any, List
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field, model_validator
@@ -138,7 +139,9 @@ def generate_grounded_quiz_questions(
         raise HTTPException(404, "No readable content was found in the selected document.")
 
     def normalize(value: str) -> str:
-        return re.sub(r"\s+", " ", value).strip().casefold()
+        normalized_value = unicodedata.normalize("NFKC", value).casefold()
+        normalized_value = re.sub(r"[\u2010-\u2015-]", " ", normalized_value)
+        return " ".join(re.findall(r"\w+", normalized_value))
 
     def split_source(text: str, max_chars: int = 10000) -> List[str]:
         parts = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
@@ -214,7 +217,7 @@ def generate_grounded_quiz_questions(
                     retry_guidance = (
                         "Your previous response did not pass source validation. Return only complete "
                         "questions whose answer appears in an exact evidence excerpt from this section. "
-                        "Keep evidence at or below 500 characters, and include four distinct choices "
+                        "Keep evidence at or below 1000 characters, and include four distinct choices "
                         "that each appear in the selected document. Do not return an explanation that "
                         "adds facts beyond the evidence.\n"
                     )
@@ -228,7 +231,7 @@ def generate_grounded_quiz_questions(
                     "correct choice. Each question must have four distinct choices, and every choice must be "
                     "a phrase copied verbatim from this excerpt. The correct_answer must be copied verbatim "
                     "from the evidence excerpt. The evidence must be an exact excerpt of no more than "
-                    "500 characters from this text and contain the correct answer. Keep evidence concise "
+                    "1000 characters from this text and contain the correct answer. Keep evidence concise "
                     "and use the shortest complete sentence or passage that supports the answer. The "
                     "evidence excerpt will also be shown as the explanation. Do not create a question "
                     "if the excerpt cannot support it. Return a JSON array only; each object must contain "
@@ -289,7 +292,7 @@ def generate_grounded_quiz_questions(
                         or len(answer.strip()) > 200
                         or not isinstance(evidence, str)
                         or not evidence.strip()
-                        or len(evidence) > 500
+                        or len(evidence) > 1000
                     ):
                         continue
                     normalized_evidence = normalize(evidence)

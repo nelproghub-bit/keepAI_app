@@ -245,6 +245,74 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
     @patch.object(learning_tools, "generate")
+    def test_grounded_generator_accepts_pdf_line_wrap_and_punctuation_variations(self, generate):
+        source = (
+            "Data-loss prevention protects sensitive data. "
+            "Access control limits resource use. "
+            "Encryption protects stored information. "
+            "Audit logging records user actions."
+        )
+        generate.return_value = json.dumps(
+            [
+                {
+                    "question": "What does data loss prevention protect?",
+                    "choices": [
+                        "sensitive data",
+                        "resource use",
+                        "stored information",
+                        "user actions",
+                    ],
+                    "correct_answer": "sensitive data",
+                    "evidence": "Data loss prevention protects sensitive data",
+                }
+            ]
+        )
+
+        questions = generate_grounded_quiz_questions(
+            context=source,
+            target_count=1,
+            difficulty="medium",
+        )
+
+        self.assertEqual(len(questions), 1)
+        self.assertEqual(questions[0]["correct_answer"], "sensitive data")
+
+    @patch.object(learning_tools, "generate")
+    def test_evidence_longer_than_legacy_limit_can_be_validated(self, generate):
+        evidence = (
+            "Security architecture coordinates access control and "
+            + "monitoring capabilities across enterprise systems " * 12
+            + "to support risk management"
+        )
+        source = (
+            f"{evidence}. Monitoring supports operational visibility. "
+            "Incident response coordinates recovery. Risk assessment identifies exposure."
+        )
+        generate.return_value = json.dumps(
+            [
+                {
+                    "question": "What does security architecture coordinate?",
+                    "choices": [
+                        "access control",
+                        "monitoring",
+                        "incident response",
+                        "risk assessment",
+                    ],
+                    "correct_answer": "access control",
+                    "evidence": evidence,
+                }
+            ]
+        )
+
+        questions = generate_grounded_quiz_questions(
+            context=source,
+            target_count=1,
+            difficulty="medium",
+        )
+
+        self.assertEqual(questions[0]["source_excerpt"], evidence)
+
+    @patch.object(learning_tools, "generate")
     def test_generator_uses_verified_evidence_without_requiring_ai_explanation(self, generate):
         evidence = "Usability is the ease with which users can complete tasks."
         generate.return_value = json.dumps(
@@ -320,7 +388,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
 
         self.assertEqual(len(questions), 1)
         self.assertEqual(generate.call_count, 2)
-        self.assertIn("no more than 500 characters", generate.call_args_list[0].args[0])
+        self.assertIn("no more than 1000 characters", generate.call_args_list[0].args[0])
         self.assertIn("previous response did not pass source validation", generate.call_args_list[1].args[0])
 
     @patch.object(learning_tools, "generate")
