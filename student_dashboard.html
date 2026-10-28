@@ -1502,15 +1502,25 @@
         }
 
         .fc-type-card {
+            width: 100%;
+            appearance: none;
             border: 2px solid var(--border);
             border-radius: var(--radius-md, 12px);
             padding: 14px 12px;
+            color: var(--text-body);
+            font: inherit;
+            line-height: 1.4;
             cursor: pointer;
             transition: all 0.18s ease;
             background: var(--bg-subtle);
             text-align: center;
             position: relative;
             overflow: hidden;
+        }
+
+        .fc-type-card:focus-visible {
+            outline: 3px solid var(--primary-glow);
+            outline-offset: 3px;
         }
 
         .fc-type-card::before {
@@ -1559,6 +1569,7 @@
         }
 
         .fc-type-label {
+            display: block;
             font-size: 12.5px;
             font-weight: 700;
             color: var(--text-main);
@@ -1566,6 +1577,7 @@
         }
 
         .fc-type-desc {
+            display: block;
             font-size: 10.5px;
             color: var(--text-muted);
             line-height: 1.4;
@@ -2953,26 +2965,26 @@
             <div class="form-field">
                 <label><i class="fas fa-th-large me-1" style="color: var(--primary-text, var(--primary));"></i> Flashcard Type</label>
                 <div class="fc-type-grid" id="fc-type-grid">
-                    <div class="fc-type-card selected" data-type="term-definition" onclick="selectFlashcardType(this, 'term-definition')">
-                        <div class="fc-type-icon"><i class="fas fa-book-open"></i></div>
-                        <div class="fc-type-label">Term &amp; Definition</div>
-                        <div class="fc-type-desc">Key vocabulary with clear explanations</div>
-                    </div>
-                    <div class="fc-type-card" data-type="question-answer" onclick="selectFlashcardType(this, 'question-answer')">
-                        <div class="fc-type-icon"><i class="fas fa-question-circle"></i></div>
-                        <div class="fc-type-label">Q &amp; A</div>
-                        <div class="fc-type-desc">Questions with detailed answers</div>
-                    </div>
-                    <div class="fc-type-card" data-type="concept-example" onclick="selectFlashcardType(this, 'concept-example')">
-                        <div class="fc-type-icon"><i class="fas fa-lightbulb"></i></div>
-                        <div class="fc-type-label">Concept &amp; Example</div>
-                        <div class="fc-type-desc">Core ideas paired with real-world examples</div>
-                    </div>
-                    <div class="fc-type-card" data-type="fill-blank" onclick="selectFlashcardType(this, 'fill-blank')">
-                        <div class="fc-type-icon"><i class="fas fa-pen-nib"></i></div>
-                        <div class="fc-type-label">Fill in the Blank</div>
-                        <div class="fc-type-desc">Sentence completion style recall cards</div>
-                    </div>
+                    <button type="button" class="fc-type-card selected" data-type="term-definition" aria-pressed="true" onclick="selectFlashcardType(this, 'term-definition')">
+                        <span class="fc-type-icon"><i class="fas fa-book-open"></i></span>
+                        <span class="fc-type-label">Term &amp; Definition</span>
+                        <span class="fc-type-desc">Key vocabulary with clear explanations</span>
+                    </button>
+                    <button type="button" class="fc-type-card" data-type="question-answer" aria-pressed="false" onclick="selectFlashcardType(this, 'question-answer')">
+                        <span class="fc-type-icon"><i class="fas fa-question-circle"></i></span>
+                        <span class="fc-type-label">Q &amp; A</span>
+                        <span class="fc-type-desc">Questions with detailed answers</span>
+                    </button>
+                    <button type="button" class="fc-type-card" data-type="concept-example" aria-pressed="false" onclick="selectFlashcardType(this, 'concept-example')">
+                        <span class="fc-type-icon"><i class="fas fa-lightbulb"></i></span>
+                        <span class="fc-type-label">Concept &amp; Example</span>
+                        <span class="fc-type-desc">Core ideas paired with real-world examples</span>
+                    </button>
+                    <button type="button" class="fc-type-card" data-type="fill-blank" aria-pressed="false" onclick="selectFlashcardType(this, 'fill-blank')">
+                        <span class="fc-type-icon"><i class="fas fa-pen-nib"></i></span>
+                        <span class="fc-type-label">Fill in the Blank</span>
+                        <span class="fc-type-desc">Sentence completion style recall cards</span>
+                    </button>
                 </div>
             </div>
 
@@ -5095,9 +5107,15 @@
             }
             document.getElementById('fc-count-slider').value = 10;
             updateFCCountDisplay(10);
-            document.querySelectorAll('.fc-type-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.fc-type-card').forEach(c => {
+                c.classList.remove('selected');
+                c.setAttribute('aria-pressed', 'false');
+            });
             const defaultCard = document.querySelector('.fc-type-card[data-type="term-definition"]');
-            if (defaultCard) defaultCard.classList.add('selected');
+            if (defaultCard) {
+                defaultCard.classList.add('selected');
+                defaultCard.setAttribute('aria-pressed', 'true');
+            }
             selectedFlashcardType = 'term-definition';
             document.getElementById('fc-topic-input').value = '';
             const generateButton = document.getElementById('fc-generate-btn');
@@ -5117,8 +5135,12 @@
         }
 
         function selectFlashcardType(el, type) {
-            document.querySelectorAll('.fc-type-card').forEach(c => c.classList.remove('selected'));
+            document.querySelectorAll('.fc-type-card').forEach(c => {
+                c.classList.remove('selected');
+                c.setAttribute('aria-pressed', 'false');
+            });
             el.classList.add('selected');
+            el.setAttribute('aria-pressed', 'true');
             selectedFlashcardType = type;
         }
 
@@ -5135,7 +5157,7 @@
 
         async function processFlashcardAction() {
             const selectDoc = document.getElementById('fc-lesson-select').value;
-            const topic = document.getElementById('fc-topic-input').value.trim() || selectDoc.replace(/\.[^/.]+$/, '');
+            const topic = document.getElementById('fc-topic-input').value.trim();
             const cardCount = parseInt(document.getElementById('fc-count-slider').value) || 10;
             const cardType = selectedFlashcardType || 'term-definition';
 
@@ -5172,11 +5194,17 @@
 
                 if (res.ok) {
                     const data = await res.json();
-                    closeModal('flashcard-launch-modal');
-                    await loadFlashcardDeck(data.cards || [], selectDoc, cardType, data.generation_mode);
-                    if (data.total_cards < cardCount) {
-                        showToast(`Created ${data.total_cards} source-supported cards. The document did not contain enough distinct material for ${cardCount}.`, 'info');
+                    if (
+                        !Array.isArray(data.cards)
+                        || data.cards.length !== cardCount
+                        || data.total_cards !== cardCount
+                    ) {
+                        throw new Error(
+                            `The server returned ${Array.isArray(data.cards) ? data.cards.length : 0} cards instead of the ${cardCount} requested. No incomplete deck was opened.`
+                        );
                     }
+                    closeModal('flashcard-launch-modal');
+                    await loadFlashcardDeck(data.cards, selectDoc, cardType, data.generation_mode);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     const errMsg = errData.detail || `Server responded with status ${res.status}`;
@@ -5206,7 +5234,7 @@
             const typeLabels = {
                 'term-definition': ['TERM / CONCEPT', 'DEFINITION'],
                 'question-answer': ['QUESTION', 'ANSWER'],
-                'concept-example': ['CONCEPT / EXAMPLE', 'SOURCE DETAIL'],
+                'concept-example': ['CONCEPT', 'EXPLICIT EXAMPLE'],
                 'fill-blank': ['COMPLETE THE SENTENCE', 'ANSWER']
             };
             const [frontLabel, backLabel] = typeLabels[cardType] || ['FRONT', 'BACK'];
