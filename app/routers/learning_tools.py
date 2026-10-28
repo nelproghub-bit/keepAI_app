@@ -190,7 +190,7 @@ def generate_grounded_quiz_questions(
             round_question_count = len(questions)
             for index, source_chunk in enumerate(chunks):
                 remaining = target_count - len(questions)
-                if round_index and not remaining:
+                if not remaining:
                     break
                 normalized_chunk = normalize(source_chunk)
                 proportional_target = max(
@@ -198,7 +198,7 @@ def generate_grounded_quiz_questions(
                     (target_count * len(source_chunk) + len(context) - 1)
                     // max(len(context), 1),
                 )
-                chunk_target = min(5, proportional_target, remaining) if remaining else 1
+                chunk_target = min(5, proportional_target, remaining)
                 exclusions = ""
                 if seen_questions:
                     exclusions = (
@@ -320,6 +320,8 @@ def generate_grounded_quiz_questions(
                             "generation_method": "ai",
                         }
                     )
+                    if len(questions) == target_count:
+                        break
 
             if len(questions) == target_count:
                 break
@@ -347,25 +349,54 @@ def build_typed_quiz_questions(
     source_questions: List[Dict[str, Any]],
     question_counts: Dict[str, int],
 ) -> List[Dict[str, Any]]:
-    """Format grounded multiple-choice source items into requested assessment types."""
+    """Format grounded source items without reusing facts across requested questions."""
     result: List[Dict[str, Any]] = []
     source_index = 0
+    supported_types = {
+        "identification",
+        "multiple_choice",
+        "true_false",
+        "fill_blank",
+        "matching",
+    }
+    if any(
+        question_type not in supported_types
+        or not isinstance(count, int)
+        or count < 0
+        for question_type, count in question_counts.items()
+    ):
+        raise HTTPException(422, "One or more quiz format counts are invalid.")
+    expected_source_count = sum(
+        count * (3 if question_type == "matching" else 1)
+        for question_type, count in question_counts.items()
+    )
+    if expected_source_count > len(source_questions):
+        raise HTTPException(
+            502,
+            "The selected document did not provide enough unique source questions for the requested formats. Try fewer questions.",
+        )
+
+    def normalized(value: str) -> str:
+        return re.sub(r"\s+", " ", value).strip().casefold()
 
     for question_type, count in question_counts.items():
         if question_type == "matching":
             for _ in range(count):
-                pair_sources = [
-                    source_questions[(source_index + offset) % len(source_questions)]
-                    for offset in range(min(3, len(source_questions)))
-                ]
-                source_index += len(pair_sources)
+                pair_sources = source_questions[source_index:source_index + 3]
+                source_index += 3
                 pairs = [
-                    {
-                        "left": item["question"],
-                        "right": item["correct_answer"],
-                    }
+                    {"left": item["question"], "right": item["correct_answer"]}
                     for item in pair_sources
                 ]
+                if (
+                    len(pairs) != 3
+                    or len({normalized(pair["left"]) for pair in pairs}) != 3
+                    or len({normalized(pair["right"]) for pair in pairs}) != 3
+                ):
+                    raise HTTPException(
+                        502,
+                        "The generated matching activity contains repeated or incomplete pairs. Please try again.",
+                    )
                 choices = [pair["right"] for pair in pairs]
                 random.shuffle(choices)
                 result.append(
@@ -385,7 +416,7 @@ def build_typed_quiz_questions(
             continue
 
         for question_number in range(count):
-            source = source_questions[source_index % len(source_questions)]
+            source = source_questions[source_index]
             source_index += 1
             correct_answer = source["correct_answer"]
             question = source["question"]
@@ -424,6 +455,7 @@ def build_typed_quiz_questions(
                         ),
                         "choices": ["True", "False"],
                         "correct_answer": "True" if is_true else "False",
+                        "_source_answer": correct_answer,
                         "explanation": (
                             explanation if is_true
                             else f"The correct answer is: {correct_answer}. {explanation}"
@@ -433,12 +465,19 @@ def build_typed_quiz_questions(
                 )
             elif question_type == "fill_blank":
                 evidence = source.get("source_excerpt", "")
-                blanked_statement = re.sub(
+                answer_matches = list(re.finditer(
                     re.escape(correct_answer),
-                    "____",
                     evidence,
-                    count=1,
                     flags=re.IGNORECASE,
+                ))
+                if len(answer_matches) != 1:
+                    raise HTTPException(
+                        502,
+                        "The generated fill-in-the-blank item could not be tied to one clear answer in the source. Please try again.",
+                    )
+                match = answer_matches[0]
+                blanked_statement = (
+                    evidence[:match.start()] + "____" + evidence[match.end():]
                 )
                 result.append(
                     {
@@ -451,6 +490,93 @@ def build_typed_quiz_questions(
                     }
                 )
 
+    actual_counts: Dict[str, int] = {}
+    seen_items = set()
+    for item in result:
+        item_type = item.get("question_type")
+        actual_counts[item_type] = actual_counts.get(item_type, 0) + 1
+
+        if item_type == "matching":
+            pairs = item.get("pairs", [])
+            choices = item.get("choices", [])
+            evidence = normalized(item.get("source_excerpt", ""))
+            item_key = (
+                item_type,
+                tuple(sorted(
+                    (normalized(pair["left"]), normalized(pair["right"]))
+                    for pair in pairs
+                )),
+            )
+            if (
+                len(pairs) != 3
+                or len(choices) != 3
+                or {normalized(choice) for choice in choices}
+                != {normalized(pair["right"]) for pair in pairs}
+                or any(
+                    normalized(pair["right"]) not in evidence
+                    for pair in pairs
+                )
+            ):
+                raise HTTPException(
+                    502,
+                    "The generated matching activity failed format validation. Please try again.",
+                )
+        else:
+            question = item.get("question")
+            answer = item.get("correct_answer")
+            evidence = item.get("source_excerpt")
+            evidence_answer = item.get("_source_answer", answer)
+            if not all(
+                isinstance(value, str) and value.strip()
+                for value in (question, answer, evidence, evidence_answer)
+            ):
+                raise HTTPException(
+                    502,
+                    "A generated quiz item is missing its question, answer, or source evidence. Please try again.",
+                )
+            item_key = (item_type, normalized(question))
+            if normalized(evidence_answer) not in normalized(evidence):
+                raise HTTPException(
+                    502,
+                    "A generated quiz answer could not be verified against its source evidence. Please try again.",
+                )
+            if item_type in {"multiple_choice", "true_false"}:
+                choices = item.get("choices", [])
+                expected_choice_count = 4 if item_type == "multiple_choice" else 2
+                if (
+                    not isinstance(choices, list)
+                    or len(choices) != expected_choice_count
+                    or len({normalized(choice) for choice in choices}) != len(choices)
+                    or normalized(answer) not in {normalized(choice) for choice in choices}
+                ):
+                    raise HTTPException(
+                        502,
+                        "A generated quiz item does not meet its selected answer format. Please try again.",
+                    )
+            elif item_type == "fill_blank" and "____" not in question:
+                raise HTTPException(
+                    502,
+                    "A generated fill-in-the-blank item is missing its blank. Please try again.",
+                )
+
+        if item_key in seen_items:
+            raise HTTPException(
+                502,
+                "The generated quiz contains duplicate questions or matching pairs. Please try again.",
+            )
+        seen_items.add(item_key)
+        item.pop("_source_answer", None)
+
+    expected_counts = {
+        question_type: count
+        for question_type, count in question_counts.items()
+        if count > 0
+    }
+    if actual_counts != expected_counts:
+        raise HTTPException(
+            502,
+            "Quiz generation did not produce the exact number of questions requested for each format. Please try again.",
+        )
     return result
 
 

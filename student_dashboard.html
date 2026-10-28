@@ -5576,13 +5576,26 @@
                         <i class="fas fa-spinner fa-spin"></i>
                     </div>
                     <h4 style="font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Building your ${qCount}-question ${difficultyLabel.toLowerCase()} assessment</h4>
-                    <p style="color: var(--text-muted); font-size: 13.5px; max-width: 480px; margin: 0 auto;">
-                        AI is analyzing the entire selected document, <strong>${escapeHTML(selectDoc)}</strong>, and preparing ${escapeHTML(formatSummary)} with source-checked answers and explanations...
+                    <p id="quiz-generation-status" style="color: var(--text-muted); font-size: 13.5px; max-width: 480px; margin: 0 auto;">
+                        KeepAI is generating ${escapeHTML(formatSummary)} and checking the questions against <strong>${escapeHTML(selectDoc)}</strong>.
                     </p>
                 </div>
             `;
             quizModal.classList.add('show');
 
+            const progressStatus = document.getElementById('quiz-generation-status');
+            const progressTimers = [
+                setTimeout(() => {
+                    if (progressStatus) {
+                        progressStatus.textContent = 'Still working: the selected source and generated answers are being checked.';
+                    }
+                }, 8000),
+                setTimeout(() => {
+                    if (progressStatus) {
+                        progressStatus.textContent = 'Larger documents and quizzes may take longer. Keep this window open while generation finishes.';
+                    }
+                }, 24000)
+            ];
             try {
                 const token = localStorage.getItem('access_token');
                 const res = await fetch(`${API_BASE}/learning/quiz`, {
@@ -5602,6 +5615,10 @@
 
                 if (res.ok) {
                     const data = await res.json();
+                    if (!quizResponseMatchesRequest(data, questionCounts)) {
+                        showQuizGenerationError('The quiz service returned an incomplete or incorrectly formatted assessment. Please try again with the same settings.');
+                        return;
+                    }
                     activeQuizData = data;
                     renderFullQuizQuestions(data);
                 } else {
@@ -5617,7 +5634,35 @@
             } catch (err) {
                 console.error('Quiz generation request failed:', err);
                 showQuizGenerationError('KeepAI could not reach the quiz service. Check your connection and try again.');
+            } finally {
+                progressTimers.forEach(timer => clearTimeout(timer));
             }
+        }
+
+        function quizResponseMatchesRequest(data, requestedCounts) {
+            if (!data || !Array.isArray(data.questions)) return false;
+
+            const actualCounts = data.questions.reduce((counts, question) => {
+                const type = question?.question_type;
+                if (typeof type !== 'string') return counts;
+                counts[type] = (counts[type] || 0) + 1;
+                return counts;
+            }, {});
+            const requestedTypes = Object.keys(requestedCounts);
+            const countMatches = requestedTypes.every(type =>
+                actualCounts[type] === requestedCounts[type]
+                && data.question_counts?.[type] === requestedCounts[type]
+            );
+            const hasUnexpectedTypes = Object.keys(actualCounts).some(
+                type => !Object.prototype.hasOwnProperty.call(requestedCounts, type)
+            );
+            const expectedTotal = Object.values(requestedCounts)
+                .reduce((sum, count) => sum + count, 0);
+
+            return countMatches
+                && !hasUnexpectedTypes
+                && data.questions.length === expectedTotal
+                && data.total_questions === expectedTotal;
         }
 
         function showQuizGenerationError(message) {

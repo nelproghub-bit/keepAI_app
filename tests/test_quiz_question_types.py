@@ -67,6 +67,52 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertIn("____", questions[3]["question"])
         self.assertNotIn("Correct concept 4", questions[3]["question"])
 
+    def test_builds_balanced_true_false_questions_with_source_support(self):
+        questions = build_typed_quiz_questions(
+            self.source_questions,
+            {"true_false": 2},
+        )
+
+        self.assertEqual([question["correct_answer"] for question in questions], ["True", "False"])
+        self.assertTrue(all("_source_answer" not in question for question in questions))
+        self.assertIn("Correct concept 2", questions[1]["explanation"])
+        self.assertIn("Correct concept 2", questions[1]["source_excerpt"])
+
+    def test_builder_rejects_insufficient_source_items_instead_of_reusing_them(self):
+        with self.assertRaises(HTTPException) as error:
+            build_typed_quiz_questions(
+                self.source_questions[:1],
+                {"multiple_choice": 2},
+            )
+
+        self.assertEqual(error.exception.status_code, 502)
+        self.assertIn("enough unique source questions", error.exception.detail)
+
+    def test_fill_blank_requires_one_unambiguous_answer_occurrence(self):
+        source = self.source_questions[0].copy()
+        source["source_excerpt"] = (
+            "Correct concept 1 is correct. Correct concept 1 is important."
+        )
+
+        with self.assertRaises(HTTPException) as error:
+            build_typed_quiz_questions([source], {"fill_blank": 1})
+
+        self.assertEqual(error.exception.status_code, 502)
+        self.assertIn("one clear answer", error.exception.detail)
+
+    def test_matching_type_contains_three_unique_pairs_per_activity(self):
+        questions = build_typed_quiz_questions(
+            self.source_questions,
+            {"matching": 2},
+        )
+
+        self.assertEqual(len(questions), 2)
+        for activity in questions:
+            self.assertEqual(len(activity["pairs"]), 3)
+            self.assertEqual(len({pair["left"] for pair in activity["pairs"]}), 3)
+            self.assertEqual(len({pair["right"] for pair in activity["pairs"]}), 3)
+            self.assertEqual(set(activity["choices"]), {pair["right"] for pair in activity["pairs"]})
+
     @patch.object(learning_tools, "get_tutor_context")
     @patch.object(learning_tools, "get_all_document_chunks")
     def test_selected_document_context_does_not_mix_other_files(
@@ -249,7 +295,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(generate.call_count, 2)
 
     @patch.object(learning_tools, "generate")
-    def test_generator_processes_later_document_sections_after_reaching_count(self, generate):
+    def test_generator_stops_after_reaching_count_without_calling_later_sections(self, generate):
         first_section = (
             "Human-computer interaction studies how people use and experience technology. "
             "Usability is the ease with which users can complete tasks. "
@@ -279,8 +325,8 @@ class QuizQuestionTypeTests(unittest.TestCase):
         )
 
         self.assertEqual(len(questions), 1)
-        self.assertEqual(generate.call_count, 2)
-        self.assertIn(second_section, generate.call_args.args[0])
+        self.assertEqual(generate.call_count, 1)
+        self.assertNotIn(second_section, generate.call_args.args[0])
 
     @patch.object(learning_tools, "generate")
     def test_generator_batches_thirty_questions_without_truncating_output(self, generate):
@@ -409,6 +455,16 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(
             [question["question_type"] for question in payload["questions"]],
             list(counts.keys()),
+        )
+        self.assertEqual(
+            {
+                question_type: sum(
+                    question["question_type"] == question_type
+                    for question in payload["questions"]
+                )
+                for question_type in counts
+            },
+            counts,
         )
         self.assertEqual(len(payload["questions"][-1]["pairs"]), 3)
         generate_questions.assert_called_once_with(
