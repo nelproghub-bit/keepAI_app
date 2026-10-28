@@ -22,6 +22,17 @@ ADMIN_API_PREFIX = "/api/admin"
 MAINTENANCE_STATUS_PATH = "/api/maintenance-status"
 HEALTH_PATHS = {"/health", "/api/health"}
 
+# Auth endpoints that must remain accessible during maintenance so that
+# administrators can verify their session, sign in to the admin portal,
+# and update their profile/password without being blocked.
+ADMIN_AUTH_PASSTHROUGH_PATHS = {
+    "/api/auth/me",
+    "/api/auth/profile",
+    "/api/auth/password",
+    "/api/auth/login",
+    "/api/auth/token",
+}
+
 
 class MaintenanceModeMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, maintenance_page: Union[str, Path]):
@@ -40,6 +51,7 @@ class MaintenanceModeMiddleware(BaseHTTPMiddleware):
             (not is_public_page and not is_api_request)
             or path == MAINTENANCE_STATUS_PATH
             or path in HEALTH_PATHS
+            or path in ADMIN_AUTH_PASSTHROUGH_PATHS
             or path == ADMIN_API_PREFIX
             or path.startswith(f"{ADMIN_API_PREFIX}/")
         ):
