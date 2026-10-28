@@ -209,6 +209,15 @@ def generate_grounded_quiz_questions(
                         )
                         + "\n"
                     )
+                retry_guidance = ""
+                if round_index:
+                    retry_guidance = (
+                        "Your previous response did not pass source validation. Return only complete "
+                        "questions whose answer appears in an exact evidence excerpt from this section. "
+                        "Keep evidence at or below 500 characters, and include four distinct choices "
+                        "that each appear in the selected document. Do not return an explanation that "
+                        "adds facts beyond the evidence.\n"
+                    )
                 prompt = (
                     f"Analyze this selected lecture excerpt and create up to {chunk_target} unique "
                     "multiple-choice assessment questions. "
@@ -218,11 +227,13 @@ def generate_grounded_quiz_questions(
                     "the excerpt. Questions must be clear, specific, unambiguous, and have exactly one "
                     "correct choice. Each question must have four distinct choices, and every choice must be "
                     "a phrase copied verbatim from this excerpt. The correct_answer must be copied verbatim "
-                    "from the evidence excerpt. The evidence must be an exact excerpt from this text and "
-                    "contain the correct answer. The explanation must be a sentence copied verbatim from "
-                    "this excerpt and support the answer. Do not create a question if the excerpt cannot "
-                    "support it. Return a JSON array only; each object must contain question, choices, "
-                    "correct_answer, explanation, evidence.\n"
+                    "from the evidence excerpt. The evidence must be an exact excerpt of no more than "
+                    "500 characters from this text and contain the correct answer. Keep evidence concise "
+                    "and use the shortest complete sentence or passage that supports the answer. The "
+                    "evidence excerpt will also be shown as the explanation. Do not create a question "
+                    "if the excerpt cannot support it. Return a JSON array only; each object must contain "
+                    "question, choices, correct_answer, evidence.\n"
+                    f"{retry_guidance}"
                     f"{exclusions}"
                     f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n"
                     f"{PromptGuardrail.contain_untrusted_input(source_chunk, 'lesson_document_excerpt')}"
@@ -259,7 +270,6 @@ def generate_grounded_quiz_questions(
                     question = item.get("question")
                     choices = item.get("choices")
                     answer = item.get("correct_answer")
-                    explanation = item.get("explanation")
                     evidence = item.get("evidence")
                     if (
                         not isinstance(question, str)
@@ -277,9 +287,6 @@ def generate_grounded_quiz_questions(
                         or not isinstance(answer, str)
                         or not answer.strip()
                         or len(answer.strip()) > 200
-                        or not isinstance(explanation, str)
-                        or not explanation.strip()
-                        or len(explanation.strip()) > 500
                         or not isinstance(evidence, str)
                         or not evidence.strip()
                         or len(evidence) > 500
@@ -291,7 +298,6 @@ def generate_grounded_quiz_questions(
                         or normalize(answer) not in normalized_evidence
                         or normalize(answer) not in {normalize(choice) for choice in choices}
                         or any(normalize(choice) not in normalized_context for choice in choices)
-                        or normalize(explanation) not in normalized_chunk
                     ):
                         continue
 
@@ -315,7 +321,7 @@ def generate_grounded_quiz_questions(
                             "question": question.strip(),
                             "choices": choices,
                             "correct_answer": answer,
-                            "explanation": explanation.strip(),
+                            "explanation": evidence.strip(),
                             "source_excerpt": evidence.strip(),
                             "generation_method": "ai",
                         }

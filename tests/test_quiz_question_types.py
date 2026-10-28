@@ -244,6 +244,33 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertIn("</lesson_document_excerpt>", generate.call_args.args[0])
         self.assertTrue(generate.call_args.kwargs["has_sources"])
 
+    @patch.object(learning_tools, "generate")
+    def test_generator_uses_verified_evidence_without_requiring_ai_explanation(self, generate):
+        evidence = "Usability is the ease with which users can complete tasks."
+        generate.return_value = json.dumps(
+            [
+                {
+                    "question": "What is usability?",
+                    "choices": ["Usability", "User experience", "Interface design", "User research"],
+                    "correct_answer": "Usability",
+                    "evidence": evidence,
+                }
+            ]
+        )
+
+        questions = generate_grounded_quiz_questions(
+            context=(
+                f"{evidence} User experience describes a person's overall perception of a product. "
+                "Interface design organizes visible controls and interactions. "
+                "User research observes people using products."
+            ),
+            target_count=1,
+            difficulty="easy",
+        )
+
+        self.assertEqual(questions[0]["explanation"], evidence)
+        self.assertEqual(questions[0]["source_excerpt"], evidence)
+
     @patch.object(learning_tools, "record_activity")
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "get_lesson_context", return_value=("A source excerpt.", ["lesson.pdf"]))
@@ -293,6 +320,8 @@ class QuizQuestionTypeTests(unittest.TestCase):
 
         self.assertEqual(len(questions), 1)
         self.assertEqual(generate.call_count, 2)
+        self.assertIn("no more than 500 characters", generate.call_args_list[0].args[0])
+        self.assertIn("previous response did not pass source validation", generate.call_args_list[1].args[0])
 
     @patch.object(learning_tools, "generate")
     def test_generator_stops_after_reaching_count_without_calling_later_sections(self, generate):
