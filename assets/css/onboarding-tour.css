@@ -236,10 +236,27 @@ body.admin-theme-dark .keepai-tour-guidance,
 
 @media (max-width: 600px) {
   .keepai-tour-guidance {
-    width: calc(100vw - 24px);
-    max-height: calc(100vh - 32px);
-    padding: 17px;
-    border-radius: 14px;
+    position: fixed !important;
+    inset: auto 12px max(12px, env(safe-area-inset-bottom)) !important;
+    width: calc(100vw - 24px) !important;
+    max-height: min(52dvh, 400px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 16px;
+    border-radius: 16px;
+    box-shadow: 0 20px 56px rgba(15, 23, 42, 0.28), 0 4px 14px rgba(15, 23, 42, 0.12);
+    scroll-padding-block: 12px;
+  }
+
+  .keepai-tour-guidance[data-mobile-side="top"] {
+    inset: max(12px, env(safe-area-inset-top)) 12px auto !important;
+  }
+
+  .keepai-tour-target {
+    outline: 3px solid var(--primary, #0f766e) !important;
+    outline-offset: 3px;
+    border-radius: 10px;
+    box-shadow: 0 0 0 6px rgba(15, 118, 110, 0.14);
   }
 
   .keepai-tour-guidance h2 {
@@ -251,6 +268,7 @@ body.admin-theme-dark .keepai-tour-guidance,
   }
 
   .keepai-tour-controls {
+    flex-wrap: wrap;
     gap: 8px;
     margin-top: 14px;
     padding-top: 12px;
@@ -261,8 +279,8 @@ body.admin-theme-dark .keepai-tour-guidance,
   }
 
   .keepai-tour-controls button {
-    min-height: 36px;
-    padding: 7px 9px;
+    min-height: 44px;
+    padding: 9px 11px;
     font-size: 12px;
   }
 
@@ -271,13 +289,13 @@ body.admin-theme-dark .keepai-tour-guidance,
   }
 
   .keepai-tour-arrow-line {
-    stroke-width: 2;
+    display: none;
   }
 }
 
 @media (max-width: 360px) {
   .keepai-tour-guidance {
-    padding: 14px;
+    padding: 13px;
   }
 
   .keepai-tour-controls {
@@ -285,7 +303,7 @@ body.admin-theme-dark .keepai-tour-guidance,
   }
 
   .keepai-tour-controls button {
-    padding-inline: 7px;
+    padding-inline: 8px;
     font-size: 11px;
   }
 }

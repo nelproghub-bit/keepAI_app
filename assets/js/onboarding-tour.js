@@ -123,6 +123,7 @@
   let guidance = null;
   let arrowPath = null;
   let currentTarget = null;
+  let highlightedTarget = null;
   let resizeObserver = null;
   let mutationObserver = null;
   let flowPlaceholder = null;
@@ -391,8 +392,33 @@
     flowViewport = null;
   }
 
+  function setHighlightedTarget(target) {
+    if (highlightedTarget === target) return;
+    highlightedTarget?.classList.remove('keepai-tour-target');
+    highlightedTarget = target;
+    highlightedTarget?.classList.add('keepai-tour-target');
+  }
+
   function positionGuidance(target) {
     if (!guidance || !tourRoot) return;
+    setHighlightedTarget(target);
+
+    const viewportWidth = document.documentElement.clientWidth;
+    const viewportHeight = window.visualViewport?.height || document.documentElement.clientHeight;
+    if (window.matchMedia('(max-width: 600px)').matches) {
+      disableFlowPlacement();
+      guidance.style.width = `${Math.max(0, viewportWidth - 24)}px`;
+      guidance.style.left = '12px';
+      guidance.style.top = 'auto';
+      guidance.style.bottom = 'max(12px, env(safe-area-inset-bottom))';
+      guidance.dataset.mobileSide = target
+        && target.getBoundingClientRect().top > viewportHeight / 2
+        ? 'top'
+        : 'bottom';
+      arrowPath?.setAttribute('d', '');
+      return;
+    }
+
     if (flowPlaceholder && (!flowPlaceholder.isConnected
       || flowViewport.width !== window.innerWidth
       || flowViewport.height !== window.innerHeight)) {
@@ -401,8 +427,6 @@
 
     const margin = 16;
     const gap = 18;
-    const viewportWidth = document.documentElement.clientWidth;
-    const viewportHeight = document.documentElement.clientHeight;
     const width = Math.max(0, Math.min(380, viewportWidth - margin * 2));
     guidance.style.width = `${width}px`;
 
@@ -619,7 +643,7 @@
       if (target) {
         target.scrollIntoView({
           behavior: 'smooth',
-          block: window.innerWidth <= 600 ? 'start' : 'center',
+          block: 'center',
           inline: 'nearest'
         });
       }
@@ -661,6 +685,7 @@
     flowPlaceholder?.remove();
     flowPlaceholder = null;
     flowViewport = null;
+    setHighlightedTarget(null);
     tourRoot.remove();
     tourRoot = null;
     guidance = null;
@@ -701,6 +726,8 @@
   document.addEventListener('keydown', handleKeydown);
   window.addEventListener('scroll', refreshPosition, { passive: true, capture: true });
   window.addEventListener('resize', refreshPosition, { passive: true });
+  window.visualViewport?.addEventListener('resize', refreshPosition, { passive: true });
+  window.visualViewport?.addEventListener('scroll', refreshPosition, { passive: true });
 
   window.KeepAITour = {
     start(role, user) {
