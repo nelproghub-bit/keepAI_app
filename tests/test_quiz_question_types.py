@@ -1,5 +1,6 @@
 import unittest
 import json
+import re
 from unittest.mock import Mock, patch
 
 from pydantic import ValidationError
@@ -115,15 +116,17 @@ class QuizQuestionTypeTests(unittest.TestCase):
 
     @patch.object(learning_tools, "get_tutor_context")
     @patch.object(learning_tools, "get_all_document_chunks")
+    @patch.object(learning_tools, "_load_user_files_meta")
     def test_selected_document_context_does_not_mix_other_files(
         self,
+        get_files_meta,
         get_chunks,
         get_tutor_context,
     ):
         full_document_text = "Evidence from the selected document. " * 500
-        get_chunks.return_value = [
-            {"filename": "selected.pdf", "text": full_document_text},
-        ]
+        get_files_meta.return_value = {
+            "selected.pdf": {"full_text": full_document_text},
+        }
 
         context, sources = learning_tools.get_lesson_context(
             "student-id",
@@ -133,6 +136,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
 
         self.assertEqual(context, full_document_text)
         self.assertEqual(sources, ["selected.pdf"])
+        get_chunks.assert_not_called()
         get_tutor_context.assert_not_called()
 
     def test_question_counts_require_supported_formats_and_maximum_100(self):
@@ -415,7 +419,10 @@ class QuizQuestionTypeTests(unittest.TestCase):
             "explanation": evidence,
             "evidence": evidence,
         }
-        generate.side_effect = ["not valid JSON", json.dumps([item])]
+        generate.side_effect = [
+            "not valid JSON",
+            f'```json\n{{"questions": [{json.dumps(item)}]}}\n```',
+        ]
 
         questions = generate_grounded_quiz_questions(
             context=(
@@ -430,7 +437,83 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(len(questions), 1)
         self.assertEqual(generate.call_count, 2)
         self.assertIn("no more than 1000 characters", generate.call_args_list[0].args[0])
-        self.assertIn("previous response did not pass source validation", generate.call_args_list[1].args[0])
+        self.assertIn("prior response contained invalid", generate.call_args_list[1].args[0])
+
+    @patch.object(learning_tools, "generate")
+    def test_evidence_matching_accepts_an_excerpt_crossing_a_section_boundary(self, generate):
+        evidence = "Usability is the ease with which users can complete tasks."
+        context = (
+            ("x" * 9990)
+            + " "
+            + evidence
+            + " User experience is a product perception. Interface design organizes controls. "
+            + "User research observes people."
+        )
+        item = {
+            "question": "What is usability?",
+            "choices": ["Usability", "User experience", "Interface design", "User research"],
+            "correct_answer": "Usability",
+            "evidence": evidence,
+        }
+        generate.return_value = json.dumps([item])
+
+        questions = generate_grounded_quiz_questions(
+            context=context,
+            target_count=1,
+            difficulty="easy",
+        )
+
+        self.assertEqual(len(questions), 1)
+        self.assertEqual(questions[0]["source_excerpt"], evidence)
+        self.assertEqual(generate.call_count, 1)
+
+    @patch.object(learning_tools, "generate")
+    def test_primary_generation_samples_sections_across_the_document(self, generate):
+        context = "\n\n".join(
+            f"Concept{index} is a key idea in topic {index}. "
+            + (f"Additional source material for topic {index}. " * 700)
+            for index in range(12)
+        )
+
+        def generate_for_section(prompt, **kwargs):
+            section_number = int(re.search(r"DOCUMENT SECTION (\d+) OF", prompt).group(1))
+            concept_number = (section_number - 1) % 12
+            answer = f"Concept{concept_number}"
+            return json.dumps(
+                [
+                    {
+                        "question": f"What does {answer} represent in this topic?",
+                        "choices": ["Concept0", "Concept1", "Concept2", "Concept3"],
+                        "correct_answer": answer,
+                        "evidence": (
+                            f"{answer} is a key idea in topic {concept_number}."
+                        ),
+                    }
+                ]
+            )
+
+        generate.side_effect = generate_for_section
+
+        questions = generate_grounded_quiz_questions(
+            context=context,
+            target_count=4,
+            difficulty="medium",
+        )
+
+        section_matches = [
+            re.search(r"DOCUMENT SECTION (\d+) OF (\d+)", call.args[0])
+            for call in generate.call_args_list
+        ]
+        selected_sections = [int(match.group(1)) for match in section_matches]
+        self.assertEqual(len(questions), 4)
+        self.assertEqual(len(selected_sections), 4)
+        self.assertLess(selected_sections[0], 5)
+        self.assertEqual(selected_sections[-1], int(section_matches[-1].group(2)))
+        self.assertEqual(len(set(selected_sections)), 4)
+        for question in questions:
+            self.assertEqual(len(question["choices"]), 4)
+            self.assertEqual(len(set(question["choices"])), 4)
+            self.assertIn(question["correct_answer"], question["choices"])
 
     @patch.object(learning_tools, "generate")
     def test_generator_stops_after_reaching_count_without_calling_later_sections(self, generate):
@@ -547,7 +630,7 @@ class QuizQuestionTypeTests(unittest.TestCase):
             )
 
         self.assertEqual(error.exception.status_code, 502)
-        self.assertIn("does not contain enough", error.exception.detail)
+        self.assertIn("could be verified against", error.exception.detail)
         self.assertEqual(generate.call_count, 2)
 
     @patch.object(learning_tools, "record_activity")

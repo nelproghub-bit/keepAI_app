@@ -176,8 +176,50 @@ def _save_user_documents(user_id: str, documents: List[Dict]) -> None:
     except Exception as e:
         print(f"Error saving documents: {e}")
 
-def _load_user_files_meta(user_id: str) -> Dict[str, Any]:
+def _load_user_files_meta(
+    user_id: str,
+    target_filename: Optional[str] = None,
+) -> Dict[str, Any]:
     """Load file metadata from the database, then legacy local files."""
+    if target_filename:
+        conn = get_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute(
+                """
+                SELECT r.id, r.filename, r.metadata_json
+                FROM rag_documents r
+                INNER JOIN documents d ON d.id = r.id AND d.user_id = r.user_id
+                WHERE r.user_id = ? AND LOWER(r.filename) = LOWER(?)
+                ORDER BY r.created_at DESC
+                LIMIT 1
+                """,
+                (user_id, target_filename),
+            )
+            row = cur.fetchone()
+            if row:
+                metadata = json.loads(row["metadata_json"])
+                if not metadata.get("file_id") or metadata["file_id"] == row["id"]:
+                    return {row["filename"]: metadata}
+        finally:
+            conn.close()
+
+        path = _get_files_meta_path(user_id)
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    metadata = json.load(f)
+                owned_ids, owned_filenames = _get_user_document_refs(user_id)
+                item = metadata.get(target_filename)
+                if item and (
+                    item.get("file_id") in owned_ids
+                    or (not item.get("file_id") and target_filename in owned_filenames)
+                ):
+                    return {target_filename: item}
+            except Exception as e:
+                print(f"Error loading files meta for {user_id}: {e}")
+        return {}
+
     records = _load_user_rag_records(user_id)
     if records:
         return {

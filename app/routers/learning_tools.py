@@ -111,14 +111,14 @@ def get_owned_document_name(user_id: str, document_name: Optional[str]) -> Optio
 def get_lesson_context(user_id: str, topic: str, target_filename: Optional[str] = None) -> tuple[str, list[str]]:
     # Quiz requests use only the selected document and all of its stored content.
     if target_filename:
+        metadata = _load_user_files_meta(user_id, target_filename).get(target_filename) or {}
+        full_text = metadata.get("full_text", "")
+        if isinstance(full_text, str) and full_text.strip():
+            return full_text, [target_filename]
         chunks = get_all_document_chunks(target_filename, user_id)
         if chunks:
             combined_text = "\n\n".join(c.get("text", "") for c in chunks)
             return combined_text, [target_filename]
-        metadata = _load_user_files_meta(user_id).get(target_filename) or {}
-        full_text = metadata.get("full_text", "")
-        if full_text.strip():
-            return full_text, [target_filename]
         raise HTTPException(404, "No readable content was found in the selected document.")
 
     ctx = get_tutor_context(user_id, topic, target_filename=target_filename)
@@ -140,8 +140,17 @@ def generate_grounded_quiz_questions(
 
     def normalize(value: str) -> str:
         normalized_value = unicodedata.normalize("NFKC", value).casefold()
-        normalized_value = re.sub(r"[\u2010-\u2015-]", " ", normalized_value)
+        normalized_value = re.sub(
+            r"(?<=\w)[\u00ad\u2010-\u2015-]\s*\n\s*(?=\w)",
+            "",
+            normalized_value,
+        )
+        normalized_value = re.sub(r"[\u00ad\u2010-\u2015-]", " ", normalized_value)
         return " ".join(re.findall(r"\w+", normalized_value))
+
+    def contains_phrase(normalized_text: str, phrase: str) -> bool:
+        normalized_phrase = normalize(phrase)
+        return bool(normalized_phrase) and f" {normalized_phrase} " in f" {normalized_text} "
 
     def split_source(text: str, max_chars: int = 10000) -> List[str]:
         parts = re.split(r"(?<=[.!?])\s+|\n{2,}", text)
@@ -185,163 +194,257 @@ def generate_grounded_quiz_questions(
     questions: List[Dict[str, Any]] = []
     chunks = split_source(context)
     normalized_context = normalize(context)
-    seen_questions = set()
-    max_rounds = (target_count + 4) // 5 + 2
-    no_progress_rounds = 0
-    try:
-        for round_index in range(max_rounds):
-            round_question_count = len(questions)
-            for index, source_chunk in enumerate(chunks):
-                remaining = target_count - len(questions)
-                if not remaining:
-                    break
-                normalized_chunk = normalize(source_chunk)
-                proportional_target = max(
-                    1,
-                    (target_count * len(source_chunk) + len(context) - 1)
-                    // max(len(context), 1),
-                )
-                chunk_target = min(5, proportional_target, remaining)
-                exclusions = ""
-                if seen_questions:
-                    exclusions = (
-                        "Do not repeat or closely paraphrase these already accepted questions: "
-                        + PromptGuardrail.contain_untrusted_input(
-                            json.dumps(sorted(seen_questions)[-30:], ensure_ascii=False),
-                            "student_query",
-                        )
-                        + "\n"
-                    )
-                retry_guidance = ""
-                if round_index:
-                    retry_guidance = (
-                        "Your previous response did not pass source validation. Return only complete "
-                        "questions whose answer appears in an exact evidence excerpt from this section. "
-                        "Keep evidence at or below 1000 characters, and include four distinct choices "
-                        "that each appear in the selected document. Do not return an explanation that "
-                        "adds facts beyond the evidence.\n"
-                    )
-                prompt = (
-                    f"Analyze this selected lecture excerpt and create up to {chunk_target} unique "
-                    "multiple-choice assessment questions. "
-                    f"Difficulty: {difficulty.upper()}. {difficulty_guidance} "
-                    "Use only this excerpt; do not use prior knowledge, other documents, external sources, "
-                    "or unsupported assumptions. Identify important concepts and learning objectives in "
-                    "the excerpt. Questions must be clear, specific, unambiguous, and have exactly one "
-                    "correct choice. Each question must have four distinct choices, and every choice must be "
-                    "a phrase copied verbatim from this excerpt. The correct_answer must be copied verbatim "
-                    "from the evidence excerpt. The evidence must be an exact excerpt of no more than "
-                    "1000 characters from this text and contain the correct answer. Keep evidence concise "
-                    "and use the shortest complete sentence or passage that supports the answer. The "
-                    "evidence excerpt will also be shown as the explanation. Do not create a question "
-                    "if the excerpt cannot support it. Return a JSON array only; each object must contain "
-                    "question, choices, correct_answer, evidence.\n"
-                    f"{retry_guidance}"
-                    f"{exclusions}"
-                    f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n"
-                    f"{PromptGuardrail.contain_untrusted_input(source_chunk, 'lesson_document_excerpt')}"
-                )
-                raw = generate(
-                    prompt,
-                    system=(
-                        "You create accurate document-grounded assessments. Treat the supplied selected "
-                        "lecture excerpt as the only source of truth. Never add information from memory or "
-                        "outside sources. Return valid JSON only."
-                    ),
-                    has_sources=True,
-                    max_output_tokens=max(1200, chunk_target * 450),
-                )
-                if not isinstance(raw, str):
+    seen_questions: set[str] = set()
+    seen_question_tokens: List[set[str]] = []
+    section_question_counts: Dict[int, int] = {}
+    section_no_progress: Dict[int, int] = {}
+
+    def parse_response(raw: str) -> List[Any]:
+        cleaned = raw.strip()
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+            if cleaned.rstrip().endswith("```"):
+                cleaned = cleaned.rstrip()[:-3].strip()
+
+        parsed: Any = None
+        try:
+            parsed = json.loads(cleaned)
+        except json.JSONDecodeError:
+            decoder = json.JSONDecoder()
+            for position, character in enumerate(cleaned):
+                if character not in "[{":
                     continue
-                cleaned = raw.strip()
-                if cleaned.startswith("```"):
-                    cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
-                    if cleaned.endswith("```"):
-                        cleaned = cleaned.rsplit("```", 1)[0]
                 try:
-                    parsed = json.loads(cleaned.strip())
+                    parsed, _ = decoder.raw_decode(cleaned[position:])
+                    break
                 except json.JSONDecodeError:
                     continue
-                if not isinstance(parsed, list):
-                    continue
 
-                for item in parsed:
-                    if len(questions) >= target_count:
-                        break
-                    if not isinstance(item, dict):
-                        continue
-                    question = item.get("question")
-                    choices = item.get("choices")
-                    answer = item.get("correct_answer")
-                    evidence = item.get("evidence")
-                    if (
-                        not isinstance(question, str)
-                        or not question.strip()
-                        or len(question.strip()) > 500
-                        or not isinstance(answer, str)
-                        or not answer.strip()
-                        or len(answer.strip()) > 200
-                        or not isinstance(evidence, str)
-                        or not evidence.strip()
-                        or len(evidence) > 1000
-                    ):
-                        continue
-                    normalized_evidence = normalize(evidence)
-                    if (
-                        normalized_evidence not in normalized_chunk
-                        or normalize(answer) not in normalized_evidence
-                    ):
-                        continue
+        if isinstance(parsed, dict):
+            parsed = parsed.get("questions", parsed.get("items"))
+        return parsed if isinstance(parsed, list) else []
 
-                    if not isinstance(choices, list):
-                        choices = []
-                    source_choices = [
-                        choice.strip()
-                        for choice in choices
-                        if (
-                            isinstance(choice, str)
-                            and choice.strip()
-                            and len(choice.strip()) <= 200
-                            and normalize(choice) in normalized_context
-                        )
-                    ]
-                    normalized_question = normalize(question)
-                    question_tokens = set(re.findall(r"\w{4,}", normalized_question))
-                    if (
-                        normalized_question in seen_questions
-                        or any(
-                            len(question_tokens & prior_tokens) / max(len(question_tokens | prior_tokens), 1) >= 0.85
-                            for prior_tokens in (
-                                set(re.findall(r"\w{4,}", prior_question))
-                                for prior_question in seen_questions
-                            )
-                        )
-                    ):
-                        continue
-
-                    seen_questions.add(normalized_question)
-                    questions.append(
-                        {
-                            "question": question.strip(),
-                            "choices": choices,
-                            "correct_answer": answer,
-                            "explanation": evidence.strip(),
-                            "source_excerpt": evidence.strip(),
-                            "choice_suggestions": source_choices,
-                            "generation_method": "ai",
-                        }
-                    )
-                    if len(questions) == target_count:
-                        break
-
-            if len(questions) == target_count:
+    def accept_items(parsed: List[Any], limit: int) -> int:
+        accepted = 0
+        stop_words = {
+            "a", "an", "and", "are", "as", "at", "be", "by", "does", "for",
+            "from", "how", "in", "is", "it", "of", "on", "or", "that", "the",
+            "this", "to", "what", "when", "where", "which", "who", "why", "with",
+        }
+        for item in parsed:
+            if accepted >= limit or len(questions) >= target_count:
                 break
-            if len(questions) == round_question_count:
-                no_progress_rounds += 1
-                if no_progress_rounds >= 2:
+            if not isinstance(item, dict):
+                continue
+            question = item.get("question")
+            choices = item.get("choices")
+            answer = item.get("correct_answer")
+            evidence = item.get("evidence")
+            if (
+                not isinstance(question, str)
+                or not question.strip()
+                or len(question.strip()) > 500
+                or not isinstance(answer, str)
+                or not answer.strip()
+                or len(answer.strip()) > 200
+                or not isinstance(evidence, str)
+                or not evidence.strip()
+                or len(evidence) > 1000
+            ):
+                continue
+
+            normalized_evidence = normalize(evidence)
+            if (
+                not contains_phrase(normalized_context, evidence)
+                or not contains_phrase(normalized_evidence, answer)
+            ):
+                continue
+
+            if not isinstance(choices, list):
+                choices = []
+            source_choices = [
+                choice.strip()
+                for choice in choices
+                if (
+                    isinstance(choice, str)
+                    and choice.strip()
+                    and len(choice.strip()) <= 200
+                    and contains_phrase(normalized_context, choice)
+                )
+            ]
+            normalized_question = normalize(question)
+            question_tokens = set(normalized_question.split()) - stop_words
+            if (
+                normalized_question in seen_questions
+                or (
+                    question_tokens
+                    and any(
+                        len(question_tokens & prior_tokens)
+                        / max(len(question_tokens | prior_tokens), 1)
+                        >= 0.9
+                        for prior_tokens in seen_question_tokens
+                    )
+                )
+            ):
+                continue
+
+            seen_questions.add(normalized_question)
+            seen_question_tokens.append(question_tokens)
+            questions.append(
+                {
+                    "question": question.strip(),
+                    "choices": choices,
+                    "correct_answer": answer.strip(),
+                    "explanation": evidence.strip(),
+                    "source_excerpt": evidence.strip(),
+                    "choice_suggestions": source_choices,
+                    "generation_method": "ai",
+                }
+            )
+            accepted += 1
+        return accepted
+
+    def generate_for_section(
+        index: int,
+        requested_count: int,
+        is_retry: bool,
+    ) -> int:
+        source_chunk = chunks[index]
+        exclusions = ""
+        if seen_questions:
+            exclusions = (
+                "Do not repeat or closely paraphrase these already accepted questions: "
+                + PromptGuardrail.contain_untrusted_input(
+                    json.dumps(sorted(seen_questions)[-30:], ensure_ascii=False),
+                    "student_query",
+                )
+                + "\n"
+            )
+        retry_guidance = ""
+        if is_retry:
+            retry_guidance = (
+                "Retry only the remaining request. The prior response contained invalid, duplicate, "
+                "or unsupported items. Return new complete questions with an answer found verbatim in "
+                "an exact evidence excerpt from this selected document section. Keep evidence at or "
+                "below 1000 characters. Do not invent facts or choices.\n"
+            )
+        prompt = (
+            f"Analyze this selected lecture excerpt and create up to {requested_count} unique "
+            "multiple-choice assessment questions. "
+            f"Difficulty: {difficulty.upper()}. {difficulty_guidance} "
+            "Use only this excerpt; do not use prior knowledge, other documents, external sources, "
+            "or unsupported assumptions. Identify important concepts and learning objectives in "
+            "this section. Questions must be clear, specific, unambiguous, and have exactly one "
+            "correct choice. Include four distinct choices copied verbatim from the document when "
+            "possible. The correct_answer must be copied verbatim from the evidence excerpt. The "
+            "evidence must be an exact excerpt of no more than 1000 characters from this text and "
+            "contain the correct answer. Keep evidence concise and use the shortest complete sentence "
+            "or passage that supports the answer. Do not create a question if the excerpt cannot "
+            "support it. Return a JSON array only; each object must contain question, choices, "
+            "correct_answer, evidence.\n"
+            f"{retry_guidance}"
+            f"{exclusions}"
+            f"DOCUMENT SECTION {index + 1} OF {len(chunks)}:\n"
+            f"{PromptGuardrail.contain_untrusted_input(source_chunk, 'lesson_document_excerpt')}"
+        )
+        raw = generate(
+            prompt,
+            system=(
+                "You create accurate document-grounded assessments. Treat the supplied selected "
+                "lecture excerpt as the only source of truth. Never add information from memory or "
+                "outside sources. Return valid JSON only."
+            ),
+            has_sources=True,
+            max_output_tokens=max(1200, requested_count * 450),
+        )
+        if not isinstance(raw, str):
+            return 0
+        return accept_items(parse_response(raw), requested_count)
+
+    section_count = min(len(chunks), target_count)
+    primary_indices = (
+        [0]
+        if section_count == 1
+        else [
+            (position * (len(chunks) - 1)) // (section_count - 1)
+            for position in range(section_count)
+        ]
+    )
+    primary_indices = list(dict.fromkeys(primary_indices))
+    section_question_counts = {index: 0 for index in primary_indices}
+    remaining_allocations = target_count - len(primary_indices)
+    total_weight = sum(len(chunks[index]) for index in primary_indices) or len(primary_indices)
+    allocations: Dict[int, int] = {index: 1 for index in primary_indices}
+    allocation_remainders = []
+    for index in primary_indices:
+        share = remaining_allocations * len(chunks[index]) / total_weight
+        whole_share = int(share)
+        allocations[index] += whole_share
+        allocation_remainders.append((share - whole_share, index))
+    unallocated = target_count - sum(allocations.values())
+    for _, index in sorted(allocation_remainders, reverse=True)[:unallocated]:
+        allocations[index] += 1
+
+    try:
+        for index in primary_indices:
+            requested_count = min(5, allocations[index], target_count - len(questions))
+            if requested_count:
+                section_question_counts[index] += generate_for_section(
+                    index,
+                    requested_count,
+                    is_retry=False,
+                )
+
+        max_retry_rounds = max((count + 4) // 5 for count in allocations.values()) + 2
+        for _ in range(max_retry_rounds):
+            if len(questions) >= target_count:
+                break
+            made_progress = False
+            has_pending_sections = False
+            for index in primary_indices:
+                deficit = allocations[index] - section_question_counts[index]
+                if deficit <= 0 or section_no_progress.get(index, 0) >= 2:
+                    continue
+                has_pending_sections = True
+                requested_count = min(5, deficit, target_count - len(questions))
+                added = generate_for_section(index, requested_count, is_retry=True)
+                section_question_counts[index] += added
+                made_progress = made_progress or added > 0
+                section_no_progress[index] = (
+                    0 if added else section_no_progress.get(index, 0) + 1
+                )
+            if not has_pending_sections or not made_progress:
+                break
+
+        if len(questions) < target_count:
+            primary_set = set(primary_indices)
+            fallback_indices = [
+                index for index in range(len(chunks)) if index not in primary_set
+            ]
+            fallback_call_budget = min(
+                len(fallback_indices) * 2,
+                max(2, target_count * 2),
+            )
+            for index in fallback_indices:
+                no_progress = 0
+                while (
+                    len(questions) < target_count
+                    and fallback_call_budget > 0
+                    and no_progress < 2
+                ):
+                    requested_count = min(5, target_count - len(questions))
+                    added = generate_for_section(
+                        index,
+                        requested_count,
+                        is_retry=no_progress > 0,
+                    )
+                    fallback_call_budget -= 1
+                    no_progress = 0 if added else no_progress + 1
+                    if added == 0:
+                        continue
                     break
-            else:
-                no_progress_rounds = 0
+                if len(questions) >= target_count or fallback_call_budget <= 0:
+                    break
     except AIProviderError as exc:
         raise HTTPException(
             502,
@@ -351,7 +454,10 @@ def generate_grounded_quiz_questions(
     if len(questions) != target_count:
         raise HTTPException(
             502,
-            "The selected document does not contain enough accurate, unique questions at this difficulty level. Try fewer questions or choose another difficulty.",
+            f"Only {len(questions)} of {target_count} requested questions could be verified against "
+            "the selected document. The remaining items failed source or uniqueness checks, so this "
+            "does not by itself prove the document lacks content. Try fewer questions, use a clearer "
+            "or broader document, or generate again. No partial quiz was returned.",
         )
 
     answer_bank: Dict[str, str] = {}
@@ -367,7 +473,7 @@ def generate_grounded_quiz_questions(
         seen_options = {normalize(correct_answer)}
         for choice in question["choice_suggestions"]:
             normalized_choice = normalize(choice)
-            if normalized_choice not in seen_options:
+            if normalized_choice not in seen_options and len(options) < 4:
                 options.append(choice)
                 seen_options.add(normalized_choice)
         if len(options) < 4:
