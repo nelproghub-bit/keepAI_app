@@ -5195,14 +5195,8 @@
 
                 if (res.ok) {
                     const data = await res.json();
-                    if (
-                        !Array.isArray(data.cards)
-                        || data.cards.length !== cardCount
-                        || data.total_cards !== cardCount
-                    ) {
-                        throw new Error(
-                            `The server returned ${Array.isArray(data.cards) ? data.cards.length : 0} cards instead of the ${cardCount} requested. No incomplete deck was opened.`
-                        );
+                    if (!Array.isArray(data.cards) || data.cards.length === 0) {
+                        throw new Error('No source-supported flashcards could be created from this document.');
                     }
                     closeModal('flashcard-launch-modal');
                     await loadFlashcardDeck(data.cards, selectDoc, cardType, data.generation_mode);
@@ -5210,7 +5204,7 @@
                     const errData = await res.json().catch(() => ({}));
                     const errMsg = errData.detail || `Server responded with status ${res.status}`;
                     
-                    // Auto-adapt if server indicates fewer cards are available from the document
+                    // Check if server reports a specific count of source-verified cards
                     const match = errMsg.match(/Only\s+(\d+)\s+distinct,\s*source-verified/i);
                     if (match && parseInt(match[1]) > 0) {
                         const availableCount = parseInt(match[1]);
@@ -5218,31 +5212,33 @@
                             slider.value = availableCount;
                             updateFCCountDisplay(availableCount);
                         }
-                        if (status) {
-                            status.style.display = 'block';
-                            status.textContent = `Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available. Creating complete deck now…`;
-                        }
-                        // Automatically generate with the verified available count
-                        const retryRes = await fetch(`${API_BASE}/learning/flashcards`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': token ? `Bearer ${token}` : ''
-                            },
-                            body: JSON.stringify({
-                                topic: topic,
-                                document_name: selectDoc,
-                                card_count: availableCount,
-                                card_type: cardType
-                            })
-                        });
-                        if (retryRes.ok) {
-                            const retryData = await retryRes.json();
-                            if (Array.isArray(retryData.cards) && retryData.cards.length === availableCount) {
-                                closeModal('flashcard-launch-modal');
-                                showToast(`Loaded deck with all ${availableCount} source-verified card${availableCount === 1 ? '' : 's'} from this document.`, 'info');
-                                await loadFlashcardDeck(retryData.cards, selectDoc, cardType, retryData.generation_mode);
-                                return;
+                        // If available count is at least 2 or close to requested, auto-adapt
+                        if (availableCount >= 2 && availableCount >= Math.min(cardCount * 0.5, 3)) {
+                            if (status) {
+                                status.style.display = 'block';
+                                status.textContent = `Adapting to document length: generating ${availableCount} verified cards…`;
+                            }
+                            const retryRes = await fetch(`${API_BASE}/learning/flashcards`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': token ? `Bearer ${token}` : ''
+                                },
+                                body: JSON.stringify({
+                                    topic: topic,
+                                    document_name: selectDoc,
+                                    card_count: availableCount,
+                                    card_type: cardType
+                                })
+                            });
+                            if (retryRes.ok) {
+                                const retryData = await retryRes.json();
+                                if (Array.isArray(retryData.cards) && retryData.cards.length > 0) {
+                                    closeModal('flashcard-launch-modal');
+                                    showToast(`Loaded deck with ${retryData.cards.length} source-verified cards.`, 'info');
+                                    await loadFlashcardDeck(retryData.cards, selectDoc, cardType, retryData.generation_mode);
+                                    return;
+                                }
                             }
                         }
                     }

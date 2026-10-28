@@ -727,7 +727,11 @@ FLASHCARD_TYPES = {
 
 
 def _normalize_flashcard_text(value: str) -> str:
-    return re.sub(r"\s+", " ", value).strip().casefold()
+    text = value.replace("“", '"').replace("”", '"')
+    text = text.replace("‘", "'").replace("’", "'")
+    text = text.replace("–", "-").replace("—", "-")
+    text = text.replace("…", "...").replace(" ", " ")
+    return re.sub(r"\s+", " ", text).strip().casefold()
 
 
 def _flashcard_key(value: str) -> str:
@@ -894,16 +898,29 @@ def _is_valid_flashcard_candidate(
     if not front_terms.intersection(evidence_terms):
         return False
 
-    if focus_topic:
+    GENERIC_TOPICS = {
+        "flashcards", "flashcard", "quiz", "general", "all",
+        "lesson", "study", "notes", "lecture", "document",
+    }
+    cleaned_focus = _normalize_flashcard_text(focus_topic) if focus_topic else ""
+    if cleaned_focus and cleaned_focus not in GENERIC_TOPICS:
         focus_terms = {
-            token for token in re.findall(r"\w+", _normalize_flashcard_text(focus_topic))
+            token for token in re.findall(r"\w+", cleaned_focus)
             if len(token) > 2
         }
-        if focus_terms and not focus_terms.intersection(evidence_terms):
+        section_terms = set(re.findall(r"\w+", normalized_section))
+        if focus_terms and not (
+            focus_terms.intersection(evidence_terms)
+            or focus_terms.intersection(front_terms)
+            or focus_terms.intersection(section_terms)
+        ):
             return False
 
     if card_type == "term-definition":
-        return normalized_front in normalized_evidence and not normalized_front.endswith("?")
+        return (
+            (normalized_front in normalized_evidence or front_terms.issubset(evidence_terms))
+            and not normalized_front.endswith("?")
+        )
     if card_type == "question-answer":
         return (
             front.rstrip().endswith("?")
@@ -948,6 +965,12 @@ def generate_flashcards_from_document(
         raise HTTPException(422, "Choose between 1 and 100 flashcards.")
 
     focus_topic = topic.strip()
+    GENERIC_TOPICS = {
+        "flashcards", "flashcard", "quiz", "general", "all",
+        "lesson", "study", "notes", "lecture", "document",
+    }
+    if focus_topic.casefold() in GENERIC_TOPICS:
+        focus_topic = ""
     type_instructions = {
         "term-definition": "Put one exact key term on front and its concise source-stated definition on back.",
         "question-answer": "Put one clear, grammatical question ending in ? on front and its concise source-stated answer on back.",
@@ -971,17 +994,16 @@ def generate_flashcards_from_document(
             else "Cover the full selected lesson. "
         )
         prompt = (
-            f"Create up to {batch_count} distinct, high-value flashcards for {focus_topic or 'the selected lesson'}. "
-            "Use only the supplied excerpt. Prioritize essential concepts, key terms, explicit definitions, "
-            "important processes, and memorable examples. Exclude trivial, repetitive, or low-value details. "
+            f"Generate {batch_count} distinct, high-value flashcards for {focus_topic or 'the selected lesson'}. "
+            "Cover all key concepts, definitions, principles, and facts throughout the supplied excerpt to reach the requested count. "
+            "Prioritize essential terms, clear explanations, and memorable examples. "
             "Preserve the order topics appear in the lecture. "
             f"{focus_instruction}"
-            f"Format: {type_instructions[card_type]} Each card must contain one idea only. "
-            "Keep front under 180 characters and back to one or two short sentences, under 450 characters. "
-            "Return JSON array objects with front, back, source_excerpt. source_excerpt must be copied "
-            "verbatim from the supplied excerpt, and back must be an exact continuous quote contained "
-            "in source_excerpt. Do not invent, infer, add examples, combine concepts, or return duplicates. "
-            "Skip unsupported concepts rather than guessing. Return [] if the excerpt has no suitable content.\n"
+            f"Format: {type_instructions[card_type]} Each card must contain one distinct idea. "
+            "Keep front under 180 characters and back under 450 characters. "
+            "Return JSON array of objects with keys front, back, source_excerpt. "
+            "source_excerpt must be a direct passage copied from the excerpt, and back must be verified in source_excerpt. "
+            "Do not return duplicate cards.\n"
             "LECTURE EXCERPT:\n"
             f"{PromptGuardrail.contain_untrusted_input(section, 'lesson_document_excerpt')}"
         )
@@ -1037,7 +1059,6 @@ def generate_flashcards_from_document(
                     focus_topic,
                 )
                 or normalized_front in seen_fronts
-                or normalized_evidence in seen_evidence
                 or normalized_back in seen_answers
             ):
                 continue
