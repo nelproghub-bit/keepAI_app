@@ -25,10 +25,12 @@
 <style>
 :root {
   --primary: #0F766E;
-  --primary-hover: #115E59;
-  --primary-light: #E8F5F2;
+  --primary-hover: #0D6560;
+  --primary-dark: #094D46;
+  --primary-light: #E6F4F3;
   --primary-border: #B7DDD6;
-  --primary-gradient: linear-gradient(135deg, #0F766E 0%, #115E59 100%);
+  --primary-gradient: linear-gradient(135deg, #0F766E 0%, #0D6560 50%, #094D46 100%);
+  --accent: #14B8A6;
   --emerald: #059669;
   --emerald-light: #ecfdf5;
   --emerald-border: #a7f3d0;
@@ -43,18 +45,31 @@
   --bg-app: #F4F7FA;
   --bg-surface: #ffffff;
   --bg-subtle: #f1f5f9;
-  --border: #DCE4EC;
+  --border: #E2E8F0;
   --text-main: #0f172a;
   --text-body: #334155;
-  --text-muted: #52647A;
+  --text-muted: #64748B;
   --radius-sm: 8px;
-  --radius-md: 14px;
+  --radius-md: 12px;
   --radius-lg: 18px;
-  --radius-xl: 24px;
-  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.08);
-  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.1);
+  --radius-xl: 26px;
+  --shadow-card: 0 32px 80px -8px rgba(7, 20, 45, 0.55), 0 8px 24px -4px rgba(7, 20, 45, 0.30);
+  --shadow-btn: 0 6px 18px -2px rgba(15, 118, 110, 0.40);
+  --shadow-inp: 0 0 0 3px rgba(15, 118, 110, 0.14);
+  --shadow-sm: 0 1px 3px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 10px 25px -5px rgba(15, 23, 42, 0.08);
   --shadow-xl: 0 20px 50px -12px rgba(15, 118, 110, 0.25);
+}
+
+@keyframes cardEntrance {
+  from { opacity: 0; transform: translateY(28px) scale(.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);   }
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -80,24 +95,23 @@ button, input, select, textarea {
 button { cursor: pointer; }
 
 /* -------------------------------------------------------------------------
-   AUTH CONTAINER (Single-page entry inspired by student_portal.html)
+   AUTH CONTAINER (Modern elevated pro design aligned with KeepAI system)
    ------------------------------------------------------------------------- */
-#auth-container {
+#auth-container, #session-restore-container {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 24px 16px;
-  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
+  background-color: #0B1E35;
+  background-image:
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(15,118,110,.18) 0%, transparent 70%),
+    radial-gradient(ellipse 60% 50% at 80% 90%, rgba(9, 77, 70,.22) 0%, transparent 65%),
+    radial-gradient(ellipse 50% 40% at 50% 50%, rgba(7, 20, 45,.60) 0%, transparent 80%);
 }
 
 #session-restore-container {
-  min-height: 100vh;
   display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 24px 16px;
-  background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%);
 }
 
 #session-restore-container.active {
@@ -106,17 +120,26 @@ button { cursor: pointer; }
 
 .session-restore-card {
   width: 100%;
-  max-width: 420px;
-  padding: 28px;
+  max-width: 440px;
+  padding: 32px 28px;
   border-radius: var(--radius-xl);
-  background: var(--bg-surface);
-  box-shadow: var(--shadow-xl);
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
   text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.session-restore-card strong {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 18px;
+  color: var(--text-main);
+  display: block;
 }
 
 .session-restore-card p {
-  margin: 12px 0 18px;
+  margin: 10px 0 20px;
   color: var(--text-muted);
+  font-size: 13.5px;
 }
 
 #session-restore-retry[hidden] {
@@ -126,43 +149,67 @@ button { cursor: pointer; }
 .auth-wrapper {
   width: 100%;
   max-width: 480px;
+  animation: cardEntrance .55s cubic-bezier(.22,.68,0,1.2) both;
 }
 
 .auth-card {
-  background: var(--bg-surface);
-  border-radius: var(--radius-xl);
-  box-shadow: var(--shadow-xl);
+  background: #ffffff;
+  border-radius: 26px;
+  box-shadow: var(--shadow-card);
   overflow: hidden;
   position: relative;
+  border: 1px solid rgba(255,255,255,.06);
 }
 
 .auth-card::before {
   content: "";
   position: absolute;
   top: 0; left: 0; right: 0;
-  height: 4px;
-  background: var(--primary-gradient);
+  height: 3px;
+  background: linear-gradient(90deg, #0F766E, #14B8A6, #0F766E);
+  background-size: 200% 100%;
+  animation: shimmer 3.5s linear infinite;
 }
 
 .auth-header {
-  padding: 36px 32px 20px;
+  padding: 42px 36px 24px;
   text-align: center;
-  background: #fafafa;
-  border-bottom: 1px solid var(--border);
+  background: linear-gradient(170deg, #F8FFFE 0%, #F0F9F8 55%, #E9F5F4 100%);
+  border-bottom: 1px solid #DFF0EE;
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-header::after {
+  content: "";
+  position: absolute;
+  top: -60px; left: 50%;
+  transform: translateX(-50%);
+  width: 260px; height: 260px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(15,118,110,.07) 0%, transparent 70%);
+  pointer-events: none;
 }
 
 .auth-logo {
-  width: 76px;
-  height: 76px;
+  width: 84px;
+  height: 84px;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.15);
-  padding: 3px;
+  box-shadow: 0 0 0 4px rgba(15,118,110,.10), 0 8px 28px rgba(15,23,42,.14);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
+  transition: transform .25s ease, box-shadow .25s ease;
+}
+
+.auth-logo:hover {
+  transform: scale(1.04);
+  box-shadow: 0 0 0 6px rgba(15,118,110,.16), 0 12px 36px rgba(15,23,42,.18);
 }
 
 .auth-logo img {
@@ -173,29 +220,38 @@ button { cursor: pointer; }
 }
 
 .auth-school {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--primary-text, var(--primary));
-  letter-spacing: 1.2px;
+  letter-spacing: 1.4px;
   text-transform: uppercase;
+  color: var(--primary);
+  opacity: .85;
+  position: relative;
+  z-index: 1;
 }
 
 .auth-title {
-  font-size: 22px;
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 26px;
   font-weight: 800;
+  letter-spacing: -.3px;
   color: var(--text-main);
   margin: 6px 0 4px;
+  position: relative;
+  z-index: 1;
 }
 
 .auth-desc {
   font-size: 13px;
   color: var(--text-muted);
+  position: relative;
+  z-index: 1;
 }
 
 .auth-tabs {
   display: flex;
+  background: #F8FFFE;
   border-bottom: 1px solid var(--border);
-  background: #fdfdfd;
 }
 
 .auth-tab {
@@ -205,26 +261,35 @@ button { cursor: pointer; }
   font-size: 13.5px;
   font-weight: 600;
   color: var(--text-muted);
-  background: #f9fafb;
+  background: transparent;
   border: 0;
-  border-bottom: 3px solid transparent;
-  transition: all 0.2s;
+  border-bottom: 2.5px solid transparent;
+  cursor: pointer;
+  transition: color .2s, border-color .2s, background .2s;
+  letter-spacing: .1px;
+}
+
+.auth-tab:hover:not(.active):not(.locked) {
+  color: var(--primary);
+  background: rgba(15,118,110,.04);
 }
 
 .auth-tab.active {
-  background: white;
-  color: var(--primary-text, var(--primary));
+  color: var(--primary);
   border-bottom-color: var(--primary);
+  background: white;
+  font-weight: 700;
 }
 
 .auth-tab.locked {
   cursor: not-allowed;
-  opacity: 0.65;
-  background: #f1f5f9;
+  opacity: 0.7;
+  background: #f8fafc;
 }
 
 .auth-body {
-  padding: 28px 32px 32px;
+  padding: 14px 34px 34px;
+  background: white;
 }
 
 .form-view {
@@ -286,15 +351,31 @@ button { cursor: pointer; }
 }
 
 .btn-primary {
-  width: 100%;
   background: var(--primary-gradient);
   color: white;
-  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.25);
+  font-weight: 700;
+  letter-spacing: .2px;
+  box-shadow: var(--shadow-btn);
+  position: relative;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, opacity .18s;
+}
+
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,.10) 0%, transparent 60%);
+  pointer-events: none;
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.95;
-  transform: translateY(-1px);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px -4px rgba(15,118,110,.50);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .btn-primary:disabled {
@@ -380,7 +461,7 @@ button { cursor: pointer; }
 
 /* Sidebar */
 .dash-sidebar {
-  background: #142D4E;
+  background: #0B1E35;
   color: #f1f5f9;
   display: flex;
   flex-direction: column;
@@ -393,6 +474,35 @@ button { cursor: pointer; }
   overflow-x: hidden;
   overflow-y: auto;
   transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sidebar-pwa-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.06);
+  color: #cbd5e1;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 12px;
+}
+
+.sidebar-pwa-btn:hover {
+  background: rgba(15, 118, 110, 0.25);
+  border-color: rgba(20, 184, 166, 0.4);
+  color: #ffffff;
+}
+
+.sidebar-pwa-btn svg {
+  width: 15px;
+  height: 15px;
 }
 
 #dashboard-app.sidebar-collapsed .dash-sidebar {
@@ -2248,7 +2358,7 @@ body.admin-theme-dark .modal-card textarea {
             </div>
 
             <button type="submit" class="btn btn-primary" id="btn-login" style="margin-top: 10px;">
-              Sign In as Administrator ✦
+              Sign In as Administrator
             </button>
             <p class="auth-desc" style="margin-top: 14px; text-align: center; font-size: 12px;">
               <a href="#" onclick="openAppDownloadModal(); return false;" style="color: var(--primary-text, var(--primary)); font-weight: 600; text-decoration: none;">
@@ -2291,7 +2401,7 @@ body.admin-theme-dark .modal-card textarea {
             </div>
 
             <button type="submit" class="btn btn-primary" id="btn-register">
-              Register Primary Administrator ✦
+              Register Primary Administrator
             </button>
           </form>
         </div>
@@ -2370,19 +2480,15 @@ body.admin-theme-dark .modal-card textarea {
         <span>Settings</span>
       </button>
 
-      <a class="nav-link" href="admin_panel.html" title="Admin Panel" style="text-decoration: none;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <span>Admin Panel</span>
-      </a>
 
-      <button class="nav-link" title="Install Web App" onclick="openAppDownloadModal()" style="margin-top: 10px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
-        <span>Install Web App</span>
-      </button>
     </nav>
 
     <!-- Sidebar footer -->
     <div class="dash-sidebar-footer">
+      <button class="sidebar-pwa-btn" type="button" onclick="openAppDownloadModal()" title="Install KeepAI Web App">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        <span>Install Web App</span>
+      </button>
       <div class="admin-badge">
         <div class="admin-info">
           <span class="admin-name" id="sidebar-admin-name">Administrator</span>
@@ -2497,22 +2603,32 @@ body.admin-theme-dark .modal-card textarea {
 
     <!-- 2. USER MANAGEMENT SECTION (Real Database Connection) -->
     <div id="section-users" class="content-section" style="display: none; padding-bottom: 60px;">
-      <div class="page-header" style="margin-bottom: 28px;">
-        <div>
-          <h1 style="font-size: 26px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Management</h1>
-          <p style="color: var(--text-muted); font-size: 13.5px;">Manage student and admin accounts</p>
+      <div class="page-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 14px;">
+        <div class="page-title">
+          <h1>User Management</h1>
+          <p>Manage student and administrator accounts, roles, and security credentials</p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: center;">
+          <button class="btn btn-secondary" onclick="exportUsersCSV()" title="Export users as CSV file">
+            <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Export CSV</span>
+          </button>
+          <button class="btn btn-secondary" onclick="loadUsersList()" title="Refresh database user list">
+            <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+            <span>Refresh</span>
+          </button>
         </div>
       </div>
 
       <div id="user-management-card" class="dash-card" style="border-radius: var(--radius-lg); box-shadow: var(--shadow-sm); border: 1px solid var(--border); padding: 24px;">
         <div class="dash-card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 14px;">
           <div>
-            <h2 style="font-size: 19px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Accounts</h2>
-            <p style="color: var(--text-muted); font-size: 13px;">Manage student and admin accounts</p>
+            <h2 style="font-size: 18px; font-weight: 800; color: #0f172a; margin-bottom: 2px;">User Directory</h2>
+            <p style="color: var(--text-muted); font-size: 13px;">Search, inspect, edit, or provision accounts</p>
           </div>
           <div id="user-management-toolbar" style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-            <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="height: 38px; box-sizing: border-box; padding: 0 14px 0 38px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 280px; background: #ffffff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E\") no-repeat 12px center; transition: border-color 0.2s, box-shadow 0.2s; outline: none; color: var(--text-main);">
-            <button class="btn-admin-add" onclick="openAddUserModal()">
+            <input type="text" id="user-search-input" placeholder="Search by username, name, or email..." oninput="filterUsersTable()" style="height: 38px; box-sizing: border-box; padding: 0 14px 0 38px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; width: 280px; background: #ffffff url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E&quot;) no-repeat 12px center; transition: border-color 0.2s, box-shadow 0.2s; outline: none; color: var(--text-main);">
+            <button class="btn btn-primary" onclick="openAddUserModal()" style="width: auto; padding: 9px 18px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
               <svg style="width: 16px; height: 16px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
               <span>Add User</span>
             </button>
@@ -2545,17 +2661,7 @@ body.admin-theme-dark .modal-card textarea {
 
         <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 12px;">
           <div style="font-size: 13px; color: var(--text-muted);" id="user-count-footer">
-            Showing <strong id="user-count-display">0</strong> users
-          </div>
-          <div style="display: flex; gap: 10px;">
-            <button class="btn btn-secondary" onclick="exportUsersCSV()" style="padding: 8px 16px; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-              <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              <span>Export</span>
-            </button>
-            <button class="btn-purple" onclick="loadUsersList()" style="padding: 8px 16px; font-size: 13px;">
-              <svg style="width: 14px; height: 14px;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
-              <span>Refresh</span>
-            </button>
+            Showing <strong id="user-count-display">0</strong> accounts
           </div>
         </div>
       </div>
@@ -2585,7 +2691,7 @@ body.admin-theme-dark .modal-card textarea {
           </select>
           <label for="announcement-message" style="display:block;font-weight:700;margin-bottom:6px;">Message</label>
           <textarea id="announcement-message" required minlength="3" maxlength="5000" rows="4" placeholder="Describe what changed and what students should do." style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);resize:vertical;margin-bottom:14px;"></textarea>
-          <button class="btn-purple" id="announcement-publish-button" type="submit">Publish to students</button>
+          <button class="btn btn-primary" id="announcement-publish-button" style="width: auto; padding: 10px 22px;" type="submit">Publish to students</button>
         </form>
       </div>
 
@@ -2799,15 +2905,7 @@ body.admin-theme-dark .modal-card textarea {
         </div>
       </div>
 
-      <div class="dash-card" style="margin-top: 18px; max-width: 680px;">
-        <div class="dash-card-header">
-          <div>
-            <div class="dash-card-title">Administrator settings</div>
-            <div class="dash-card-subtitle">Manage your account security and platform preferences from Admin Settings.</div>
-          </div>
-          <button type="button" class="btn btn-secondary" onclick="switchDashboardTab('settings')">Open settings</button>
-        </div>
-      </div>
+
     </div>
 
     <div id="section-settings" class="content-section" style="display: none;">
@@ -3232,7 +3330,7 @@ async function checkAdminRegistrationStatus() {
       regTabBtn.textContent = 'Register Admin';
       lockedBanner.style.display = 'none';
       regSubmitBtn.disabled = false;
-      regSubmitBtn.textContent = 'Register Primary Administrator ✦';
+      regSubmitBtn.textContent = 'Register Primary Administrator';
     }
   } catch (err) {
     console.error('Failed to verify admin status:', err);
@@ -3317,7 +3415,7 @@ async function handleAdminLogin(e) {
     if (!loginSucceeded) {
       btn.disabled = false;
       btn.removeAttribute('aria-busy');
-      btn.textContent = 'Sign In as Administrator ✦';
+      btn.textContent = 'Sign In as Administrator';
     }
   }
 }
@@ -3376,7 +3474,7 @@ async function handleAdminRegister(e) {
     showAuthAlert(err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.textContent = 'Register Primary Administrator ✦';
+    btn.textContent = 'Register Primary Administrator';
   }
 }
 
@@ -3459,7 +3557,7 @@ function enterDashboard(user) {
   const loginButton = document.getElementById('btn-login');
   loginButton.disabled = false;
   loginButton.removeAttribute('aria-busy');
-  loginButton.textContent = 'Sign In as Administrator ✦';
+  loginButton.textContent = 'Sign In as Administrator';
   document.getElementById('auth-container').style.display = 'none';
   document.getElementById('dashboard-app').classList.add('active');
   document.getElementById('sidebar-admin-name').textContent = user.full_name || user.username;
