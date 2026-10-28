@@ -233,6 +233,25 @@ CREATE TABLE IF NOT EXISTS `flashcard_progress` (
         REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Source-verified flashcard decks and their exact generation scope
+CREATE TABLE IF NOT EXISTS `flashcard_decks` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `document_key` VARCHAR(64) NOT NULL,
+    `source_hash` VARCHAR(64) NOT NULL,
+    `topic` TEXT NOT NULL,
+    `requested_count` INTEGER NOT NULL,
+    `card_types_json` TEXT NOT NULL,
+    `cards_json` LONGTEXT NOT NULL,
+    `is_complete` TINYINT(1) NOT NULL DEFAULT 0,
+    `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_flashcard_decks_user_document` (`user_id`, `document_key`),
+    CONSTRAINT `fk_flashcard_decks_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Optional: Seed Default Workspace for Demo Student
 INSERT INTO `workspaces` (`id`, `user_id`, `name`, `description`, `color`, `icon`, `is_active`)
 VALUES (

@@ -1,12 +1,12 @@
 import json
+import logging
 import re
 import random
 import hashlib
 import unicodedata
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Dict, Any, List, Union
 from fastapi import APIRouter, HTTPException, Depends, Query
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from app.core.ai_guardrails import PromptGuardrail
 from app.core.security import get_current_student_user
 from app.core.database import get_connection
@@ -16,6 +16,7 @@ from app.services.rag_service import get_tutor_context, _load_user_documents, _l
 from app.services.gemini_service import AIProviderError, generate
 
 router = APIRouter(tags=["Learning Tools"])
+logger = logging.getLogger(__name__)
 
 class LessonRequest(BaseModel):
     topic: str = Field(default="Quiz", max_length=500)
@@ -844,6 +845,62 @@ FLASHCARD_TYPES = {
     "fill-blank",
 }
 
+FLASHCARD_STOP_WORDS = {
+    "a", "an", "and", "are", "as", "at", "be", "been", "being", "but",
+    "by", "can", "could", "define", "describe", "does", "for", "from",
+    "had", "has", "have", "how", "i", "in", "into", "is", "it", "its",
+    "may", "might", "must", "of", "on", "or", "our", "should", "that",
+    "the", "their", "there", "these", "this", "those", "to", "was", "we",
+    "were", "what", "when", "where", "which", "who", "why", "will", "with",
+    "would", "you", "your", "concept", "example", "explain", "identify",
+    "item", "lesson", "list", "name", "study", "term", "thing", "topic",
+}
+
+
+class FlashcardCandidate(BaseModel):
+    model_config = ConfigDict(extra="ignore", strict=True, str_strip_whitespace=True)
+
+    front: str = Field(min_length=2, max_length=180)
+    back: str = Field(min_length=2, max_length=450)
+    source_excerpt: str = Field(min_length=12, max_length=750)
+
+
+def _parse_flashcard_response(raw: str) -> List[FlashcardCandidate]:
+    cleaned = raw.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
+        if cleaned.rstrip().endswith("```"):
+            cleaned = cleaned.rstrip()[:-3].strip()
+
+    parsed: Any = None
+    try:
+        parsed = json.loads(cleaned)
+    except json.JSONDecodeError:
+        decoder = json.JSONDecoder()
+        for position, character in enumerate(cleaned):
+            if character not in "[{":
+                continue
+            try:
+                parsed, _ = decoder.raw_decode(cleaned[position:])
+                break
+            except json.JSONDecodeError:
+                continue
+
+    if isinstance(parsed, dict):
+        parsed = parsed.get("flashcards", parsed.get("cards", parsed.get("items")))
+    if not isinstance(parsed, list):
+        return []
+
+    candidates = []
+    for item in parsed:
+        if not isinstance(item, dict):
+            continue
+        try:
+            candidates.append(FlashcardCandidate.model_validate(item))
+        except ValueError:
+            continue
+    return candidates
+
 
 def _normalize_flashcard_text(value: str) -> str:
     text = value.replace("“", '"').replace("”", '"')
@@ -905,6 +962,105 @@ def _flashcard_page(source_excerpt: str) -> Optional[int]:
     return int(match.group(1)) if match else None
 
 
+def _source_page_for_excerpt(section: str, evidence: str) -> Optional[int]:
+    evidence_page = _flashcard_page(evidence)
+    if evidence_page is not None:
+        return evidence_page
+
+    page_markers = list(re.finditer(r"\[Page\s*(\d+)\]", section, re.IGNORECASE))
+    for index, marker in enumerate(page_markers):
+        end = page_markers[index + 1].start() if index + 1 < len(page_markers) else len(section)
+        if _contains_flashcard_phrase(section[marker.end():end], evidence):
+            return int(marker.group(1))
+    return int(page_markers[0].group(1)) if len(page_markers) == 1 else None
+
+
+def _flashcard_front_terms(front: str) -> set[str]:
+    return {
+        token
+        for token in re.findall(r"\w+", _normalize_flashcard_text(front))
+        if len(token) > 2 and token not in FLASHCARD_STOP_WORDS
+    }
+
+
+def _flashcard_concept_key(front: str) -> tuple[str, ...]:
+    return tuple(sorted(_flashcard_front_terms(front)))
+
+
+def _flashcard_card_concept_key(
+    front: str,
+    card_type: Optional[str] = None,
+    back: str = "",
+) -> tuple[str, ...]:
+    if card_type == "fill-blank" and back:
+        return _flashcard_concept_key(back)
+    return _flashcard_concept_key(front)
+
+
+def _flashcard_concepts_are_similar(
+    first: tuple[str, ...],
+    second: tuple[str, ...],
+) -> bool:
+    first_terms = set(first)
+    second_terms = set(second)
+    if not first_terms or not second_terms:
+        return False
+    overlap = len(first_terms.intersection(second_terms))
+    return overlap / min(len(first_terms), len(second_terms)) >= 0.9
+
+
+def _has_flashcard_concept_duplicate(
+    concept_key: tuple[str, ...],
+    seen_concepts: set[tuple[str, ...]],
+) -> bool:
+    return any(
+        _flashcard_concepts_are_similar(concept_key, seen_concept)
+        for seen_concept in seen_concepts
+    )
+
+
+def _clean_flashcard_term(term: str) -> str:
+    cleaned = re.sub(r"^(?:a|an|the)\s+", "", term.strip(" -:"))
+    if not _flashcard_front_terms(cleaned):
+        return ""
+    if len(cleaned) > 75:
+        return ""
+    return cleaned
+
+
+def _definition_pair_supported(front: str, back: str, evidence: str) -> bool:
+    normalized_front = _normalize_flashcard_text(front)
+    normalized_back = _normalize_flashcard_text(back)
+    normalized_evidence = _normalize_flashcard_text(evidence)
+    sentences = re.split(r"(?<=[.!?])\s+", normalized_evidence)
+
+    for sentence in sentences:
+        term_match = re.search(
+            rf"(?<!\w){re.escape(normalized_front)}(?!\w)",
+            sentence,
+        )
+        if not term_match:
+            continue
+        suffix = sentence[term_match.end():]
+        connector = re.match(
+            r"\s*(?::|(?:is defined as|refers to|means|is|are|represents|consists of|includes)\b)\s*",
+            suffix,
+        )
+        if connector:
+            answer_start = term_match.end() + connector.end()
+            answer_position = sentence.find(normalized_back, answer_start)
+            if answer_position >= answer_start and answer_position - answer_start <= 350:
+                return True
+
+    question_response = re.search(
+        rf"\bwhat is\s+(?:a|an|the\s+)?{re.escape(normalized_front)}\?\s+"
+        rf"(?:it|this|that|they)\s+(?:is|are)\b[^.!?;]{{0,350}}?"
+        rf"{re.escape(normalized_back)}",
+        normalized_evidence,
+    )
+    return question_response is not None
+
+
 def build_extractive_flashcards(
     document_text: str,
     card_type: str,
@@ -914,12 +1070,18 @@ def build_extractive_flashcards(
     """Extract only explicit source definitions or examples; never pad with generic prompts."""
     cards = list(existing_cards or [])
     seen_fronts = {_normalize_flashcard_text(card.get("front", "")) for card in cards}
+    seen_concepts = {
+        _flashcard_card_concept_key(
+            card.get("front", ""),
+            card.get("card_type"),
+            card.get("back", ""),
+        )
+        for card in cards
+        if card.get("front")
+    }
     seen_evidence = {_normalize_flashcard_text(card.get("source_excerpt", "")) for card in cards}
     seen_answers = {_normalize_flashcard_text(card.get("back", "")) for card in cards}
-    focus_terms = {
-        token for token in re.findall(r"\w+", _normalize_flashcard_text(focus_topic))
-        if len(token) > 2
-    }
+    focus_terms = _flashcard_front_terms(focus_topic)
     statement_pattern = re.compile(
         r"^(?P<term>[A-Z][A-Za-z0-9() /&+_-]{1,75}?)\s+"
         r"(?P<link>is defined as|refers to|means|is|are|represents|consists of|includes)\s+"
@@ -927,20 +1089,25 @@ def build_extractive_flashcards(
         re.IGNORECASE,
     )
     example_pattern = re.compile(r"\b(for example|for instance|such as|example:)\b", re.IGNORECASE)
+    question_pattern = re.compile(
+        r"^(?:what is|what are|define)\s+(?:a|an|the\s+)?(?P<term>[^?]{2,75})\?$",
+        re.IGNORECASE,
+    )
+    pronoun_definition_pattern = re.compile(
+        r"^(?:it|this|that|they)\s+(?:is|are|means|refers to)\s+"
+        r"(?P<answer>[^.!?;]{12,350}[.!?]?)$",
+        re.IGNORECASE,
+    )
 
     for section in _flashcard_source_sections(document_text):
-        page = _flashcard_page(section)
         clean_section = re.sub(r"\[Page\s*\d+\]", "", section, flags=re.IGNORECASE)
         statements = re.split(r"(?<=[.!?])\s+|(?<=;)\s+|\n+", clean_section)
-        for raw_statement in statements:
-            evidence = re.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s*", "", raw_statement).strip()
+        cleaned_statements = [
+            re.sub(r"^\s*(?:[-*\u2022]|\d+[.)])\s*", "", raw_statement).strip()
+            for raw_statement in statements
+        ]
+        for statement_index, evidence in enumerate(cleaned_statements):
             if not 30 <= len(evidence) <= 500:
-                continue
-            normalized_evidence = _normalize_flashcard_text(evidence)
-            if normalized_evidence in seen_evidence:
-                continue
-            evidence_terms = set(re.findall(r"\w+", normalized_evidence))
-            if focus_terms and not focus_terms.intersection(evidence_terms):
                 continue
             match = statement_pattern.match(evidence)
             label_match = re.match(
@@ -948,17 +1115,49 @@ def build_extractive_flashcards(
                 evidence,
             )
             definition = match or label_match
+            source_evidence = evidence
+            term = _clean_flashcard_term(definition.group("term")) if definition else ""
+            answer = definition.group("answer").strip() if definition else ""
+
+            if not term and statement_index > 0:
+                previous = cleaned_statements[statement_index - 1]
+                question_match = question_pattern.match(previous)
+                pronoun_match = pronoun_definition_pattern.match(evidence)
+                if question_match and pronoun_match:
+                    term = _clean_flashcard_term(question_match.group("term"))
+                    answer = pronoun_match.group("answer").strip()
+                    source_evidence = f"{previous} {evidence}"
+
+            normalized_evidence = _normalize_flashcard_text(source_evidence)
+            evidence_terms = set(re.findall(r"\w+", normalized_evidence))
+            if focus_terms and not focus_terms.intersection(evidence_terms):
+                continue
             example_match = example_pattern.search(evidence)
-            term = ""
-            if definition:
-                term = definition.group("term").strip(" -")
-                answer = definition.group("answer").strip()
+            if (
+                normalized_evidence in seen_evidence
+                or answer.casefold().rstrip(".!?") in FLASHCARD_STOP_WORDS
+                or (
+                    not term
+                    and not (
+                        card_type == "concept-example"
+                        and example_match
+                    )
+                )
+            ):
+                continue
+            if term:
                 if card_type == "term-definition":
                     front, back = term, answer
                 elif card_type == "question-answer":
-                    front, back = f"What does the lesson say about {term}?", answer
+                    front, back = f"What is {term}?", answer
                 elif card_type == "fill-blank":
-                    front = re.sub(re.escape(term), "______", evidence, count=1, flags=re.IGNORECASE)
+                    front = re.sub(
+                        re.escape(term),
+                        "______",
+                        source_evidence,
+                        count=1,
+                        flags=re.IGNORECASE,
+                    )
                     back = term
                 elif card_type == "concept-example" and example_match:
                     front, back = term, evidence[example_match.start():].strip()
@@ -978,7 +1177,12 @@ def build_extractive_flashcards(
             if (
                 len(front) > 180
                 or len(back) > 450
+                or not _flashcard_front_terms(front)
                 or normalized_front in seen_fronts
+                or _has_flashcard_concept_duplicate(
+                    _flashcard_card_concept_key(front, card_type, back),
+                    seen_concepts,
+                )
                 or normalized_back in seen_answers
                 or normalized_back not in normalized_evidence
             ):
@@ -987,13 +1191,16 @@ def build_extractive_flashcards(
                 {
                     "front": front,
                     "back": back,
-                    "source_excerpt": evidence,
-                    "source_page": page,
+                    "source_excerpt": source_evidence,
+                    "source_page": _source_page_for_excerpt(section, source_evidence),
                     "topic": term or "Example",
                     "generation_method": "document_extract",
                 }
             )
             seen_fronts.add(normalized_front)
+            seen_concepts.add(
+                _flashcard_card_concept_key(front, card_type, back)
+            )
             seen_evidence.add(normalized_evidence)
             seen_answers.add(normalized_back)
     return cards
@@ -1011,9 +1218,15 @@ def _is_valid_flashcard_candidate(
     normalized_back = _normalize_flashcard_text(back)
     normalized_evidence = _normalize_flashcard_text(evidence)
     normalized_section = _normalize_flashcard_text(section)
+    meaningful_back_terms = {
+        token
+        for token in re.findall(r"\w+", normalized_back)
+        if token not in FLASHCARD_STOP_WORDS and (len(token) > 2 or token.isdigit())
+    }
     if (
         not normalized_front
         or not normalized_back
+        or not meaningful_back_terms
         or len(front) > 180
         or len(back) > 450
         or len(evidence) > 750
@@ -1023,14 +1236,7 @@ def _is_valid_flashcard_candidate(
         return False
 
     evidence_terms = set(re.findall(r"\w+", normalized_evidence))
-    front_terms = {
-        token for token in re.findall(r"\w+", normalized_front)
-        if len(token) > 2
-        and token not in {
-            "what", "does", "the", "this", "that", "with", "from",
-            "according", "example", "illustrated",
-        }
-    }
+    front_terms = _flashcard_front_terms(front)
     if not front_terms.intersection(evidence_terms):
         return False
 
@@ -1056,10 +1262,11 @@ def _is_valid_flashcard_candidate(
                 _contains_flashcard_phrase(normalized_evidence, front)
                 or (front_terms and front_terms.issubset(evidence_terms))
             )
+            and _definition_pair_supported(front, back, evidence)
             and not normalized_front.endswith("?")
         )
     if card_type == "question-answer":
-        return (
+        complete_question = (
             front.rstrip().endswith("?")
             and re.match(
                 r"^(?:who|what|when|where|why|which|how|define|explain|describe|identify|name|list)\b",
@@ -1067,6 +1274,26 @@ def _is_valid_flashcard_candidate(
                 re.IGNORECASE,
             ) is not None
         )
+        if not complete_question:
+            return False
+        directly_supported = any(
+            front_terms.intersection(re.findall(r"\w+", sentence))
+            and _contains_flashcard_phrase(sentence, back)
+            for sentence in re.split(r"(?<=[.!?])\s+", normalized_evidence)
+        )
+        question_term = re.match(
+            r"^what is\s+(?:a|an|the\s+)?(.+?)\?$",
+            normalized_front,
+        )
+        pronoun_supported = bool(
+            question_term
+            and _definition_pair_supported(
+                question_term.group(1),
+                back,
+                normalized_evidence,
+            )
+        )
+        return directly_supported or pronoun_supported
     if card_type == "concept-example":
         example_match = re.search(
             r"\b(?:for example|for instance|such as|example:|e\.g\.?)\b",
@@ -1092,6 +1319,7 @@ def _generate_flashcards_for_type(
     topic: str,
     card_count: int,
     card_type: str,
+    existing_cards: Optional[List[Dict[str, Any]]] = None,
 ) -> List[Dict[str, Any]]:
     """Create concise cards whose answers are directly verifiable in source excerpts."""
     if not document_text.strip():
@@ -1115,7 +1343,7 @@ def _generate_flashcards_for_type(
         "fill-blank": "Put one exact source sentence on front with exactly one key term replaced by ______, and that exact missing text on back.",
     }
     sections = _flashcard_source_sections(document_text)
-    selected_count = min(card_count, len(sections), 20)
+    selected_count = min(card_count, len(sections))
     if selected_count == 1:
         selected_indices = [0] if len(sections) == 1 else [len(sections) // 2]
     else:
@@ -1142,34 +1370,30 @@ def _generate_flashcards_for_type(
     for _, index in sorted(fractional_targets, reverse=True)[:unallocated]:
         section_targets[index] += 1
 
+    existing_cards = existing_cards or []
     cards: List[Dict[str, Any]] = []
-    seen_fronts = set()
-    seen_evidence = set()
-    seen_answers = set()
+    seen_fronts = {
+        _normalize_flashcard_text(card.get("front", ""))
+        for card in existing_cards
+    }
+    seen_concepts = {
+        _flashcard_card_concept_key(
+            card.get("front", ""),
+            card.get("card_type"),
+            card.get("back", ""),
+        )
+        for card in existing_cards
+        if card.get("front")
+    }
+    seen_evidence = {
+        _normalize_flashcard_text(card.get("source_excerpt", ""))
+        for card in existing_cards
+    }
+    seen_answers = {
+        _normalize_flashcard_text(card.get("back", ""))
+        for card in existing_cards
+    }
     generation_failed = False
-
-    def parse_response(raw: str) -> List[Any]:
-        cleaned = raw.strip()
-        if cleaned.startswith("```"):
-            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else ""
-            if cleaned.rstrip().endswith("```"):
-                cleaned = cleaned.rstrip()[:-3].strip()
-        parsed: Any = None
-        try:
-            parsed = json.loads(cleaned)
-        except json.JSONDecodeError:
-            decoder = json.JSONDecoder()
-            for position, character in enumerate(cleaned):
-                if character not in "[{":
-                    continue
-                try:
-                    parsed, _ = decoder.raw_decode(cleaned[position:])
-                    break
-                except json.JSONDecodeError:
-                    continue
-        if isinstance(parsed, dict):
-            parsed = parsed.get("flashcards", parsed.get("cards", parsed.get("items")))
-        return parsed if isinstance(parsed, list) else []
 
     for section_index, section_target in section_targets.items():
         section = sections[section_index]
@@ -1177,7 +1401,8 @@ def _generate_flashcards_for_type(
         while section_cards < section_target:
             batch_count = min(section_target - section_cards, 10)
             accepted_in_batch = 0
-            for attempt in range(2):
+            rejected_fronts: set[str] = set()
+            for attempt in range(3):
                 needed = batch_count - accepted_in_batch
                 if needed <= 0:
                     break
@@ -1191,9 +1416,19 @@ def _generate_flashcards_for_type(
                         )
                         + "\n"
                     )
+                if rejected_fronts:
+                    exclusion_instruction += (
+                        "Do not repeat these rejected or incomplete fronts: "
+                        + PromptGuardrail.contain_untrusted_input(
+                            json.dumps(sorted(rejected_fronts)[-20:], ensure_ascii=False),
+                            "student_query",
+                        )
+                        + "\n"
+                    )
                 retry_instruction = (
-                    "This is a focused retry for missing cards. Replace invalid or duplicate items "
-                    "with new, source-supported cards; do not repeat accepted fronts.\n"
+                    "This is a targeted replacement pass for the missing cards. Return only complete, "
+                    "grammatical, source-supported cards. Never use generic fronts such as 'What', "
+                    "'Define', or pronouns such as 'It'. Do not repeat rejected or accepted concepts.\n"
                     if attempt
                     else ""
                 )
@@ -1209,10 +1444,14 @@ def _generate_flashcards_for_type(
                     "Prioritize important concepts, precise definitions, and useful examples. "
                     "Each card must contain one distinct idea, use clear academic wording, and stay "
                     "strictly within the provided lesson. "
+                    "A term-definition front must name a specific concept, never a question word, "
+                    "pronoun, or generic instruction. A question-answer front must be a complete "
+                    "question. A fill-in-the-blank front must be a complete contextual sentence. "
                     f"{focus_instruction}"
                     f"Format: {type_instructions[card_type]} "
                     "Keep front under 180 characters and back under 450 characters. "
-                    "Return a JSON array with objects containing front, back, and source_excerpt. "
+                    "Return a JSON array matching this schema: "
+                    '[{"front":"string","back":"string","source_excerpt":"string"}]. '
                     "source_excerpt must be a short, exact passage copied from this section and must "
                     "support both the front and back. Do not invent, paraphrase source evidence, or "
                     "return duplicate cards.\n"
@@ -1231,63 +1470,87 @@ def _generate_flashcards_for_type(
                         has_sources=True,
                         max_output_tokens=max(1200, needed * 450),
                     )
-                except AIProviderError:
+                except AIProviderError as exc:
+                    logger.warning(
+                        "Flashcard provider failure for type=%s section=%s (%s)",
+                        card_type,
+                        section_index + 1,
+                        type(exc).__name__,
+                    )
                     generation_failed = True
                     break
                 if not isinstance(raw, str):
+                    logger.warning(
+                        "Flashcard provider returned a non-text response for type=%s section=%s",
+                        card_type,
+                        section_index + 1,
+                    )
                     continue
 
-                for item in parse_response(raw):
+                candidates = _parse_flashcard_response(raw)
+                if not candidates:
+                    logger.warning(
+                        "Flashcard response had no schema-valid candidates for type=%s section=%s attempt=%s",
+                        card_type,
+                        section_index + 1,
+                        attempt + 1,
+                    )
+                accepted_before_attempt = accepted_in_batch
+                for item in candidates:
                     if section_cards >= section_target:
                         break
-                    if not isinstance(item, dict):
-                        continue
-                    front = item.get("front")
-                    back = item.get("back")
-                    evidence = item.get("source_excerpt")
-                    if (
-                        not all(
-                            isinstance(value, str) and value.strip()
-                            for value in (front, back, evidence)
-                        )
-                        or len(front.strip()) > 180
-                        or len(back.strip()) > 450
-                        or len(evidence.strip()) > 750
-                    ):
-                        continue
+                    front = item.front
+                    back = item.back
+                    evidence = item.source_excerpt
                     normalized_evidence = _normalize_flashcard_text(evidence)
                     normalized_back = _normalize_flashcard_text(back)
                     normalized_front = _normalize_flashcard_text(front)
                     if (
                         not _is_valid_flashcard_candidate(
-                            front.strip(),
-                            back.strip(),
-                            evidence.strip(),
+                            front,
+                            back,
+                            evidence,
                             section,
                             card_type,
                             focus_topic,
                         )
+                        or not _flashcard_front_terms(front)
                         or normalized_front in seen_fronts
+                        or _has_flashcard_concept_duplicate(
+                            _flashcard_card_concept_key(front, card_type, back),
+                            seen_concepts,
+                        )
                         or normalized_back in seen_answers
                         or normalized_evidence in seen_evidence
                     ):
+                        rejected_fronts.add(front)
                         continue
                     cards.append(
                         {
-                            "front": front.strip(),
-                            "back": back.strip(),
-                            "source_excerpt": evidence.strip(),
-                            "source_page": _flashcard_page(evidence) or _flashcard_page(section),
+                            "front": front,
+                            "back": back,
+                            "source_excerpt": evidence,
+                            "source_page": _source_page_for_excerpt(section, evidence),
                             "topic": topic,
                             "card_type": card_type,
                             "generation_method": "ai",
                         }
                     )
                     seen_fronts.add(normalized_front)
+                    seen_concepts.add(
+                        _flashcard_card_concept_key(front, card_type, back)
+                    )
                     seen_evidence.add(normalized_evidence)
                     seen_answers.add(normalized_back)
                     section_cards += 1
                     accepted_in_batch += 1
+                if candidates and accepted_in_batch == accepted_before_attempt:
+                    logger.warning(
+                        "Flashcard response candidates failed source or quality validation for type=%s section=%s attempt=%s",
+                        card_type,
+                        section_index + 1,
+                        attempt + 1,
+                    )
                 if accepted_in_batch >= batch_count:
                     break
             if generation_failed:
@@ -1301,9 +1564,18 @@ def _generate_flashcards_for_type(
         cards = build_extractive_flashcards(
             document_text,
             card_type,
-            existing_cards=cards,
+            existing_cards=existing_cards + cards,
             focus_topic=focus_topic,
         )
+        excluded_fronts = {
+            _normalize_flashcard_text(card.get("front", ""))
+            for card in existing_cards
+        }
+        cards = [
+            card
+            for card in cards
+            if _normalize_flashcard_text(card.get("front", "")) not in excluded_fronts
+        ]
 
     if not cards:
         raise HTTPException(
@@ -1325,6 +1597,14 @@ def _generate_flashcards_for_type(
     for card in cards:
         card.setdefault("card_type", card_type)
         card["card_key"] = _flashcard_key(card["front"])
+    logger.info(
+        "Flashcard generation finished type=%s requested=%s verified=%s sections=%s provider_failed=%s",
+        card_type,
+        card_count,
+        len(cards),
+        len(sections),
+        generation_failed,
+    )
     return cards
 
 
@@ -1352,32 +1632,21 @@ def generate_flashcards_from_document(
         quotient + (1 if index < remainder else 0)
         for index in range(len(selected_types))
     ]
-    if len(selected_types) == 1:
-        return _generate_flashcards_for_type(
-            document_text,
-            topic,
-            type_counts[0],
-            selected_types[0],
-        )
-
     generation_errors: List[HTTPException] = []
-    with ThreadPoolExecutor(max_workers=2) as executor:
-        futures = [
-            executor.submit(
-                _generate_flashcards_for_type,
-                document_text,
-                topic,
-                count,
-                selected_type,
+    cards: List[Dict[str, Any]] = []
+    for selected_type, count in zip(selected_types, type_counts):
+        try:
+            cards.extend(
+                _generate_flashcards_for_type(
+                    document_text,
+                    topic,
+                    count,
+                    selected_type,
+                    existing_cards=cards,
+                )
             )
-            for selected_type, count in zip(selected_types, type_counts)
-        ]
-        cards = []
-        for future in futures:
-            try:
-                cards.extend(future.result())
-            except HTTPException as error:
-                generation_errors.append(error)
+        except HTTPException as error:
+            generation_errors.append(error)
 
     if not cards:
         if generation_errors:
@@ -1409,6 +1678,225 @@ def _get_flashcard_progress(user_id: str, document_name: str) -> List[str]:
             (user_id, _flashcard_document_key(document_name), True),
         )
         return [row["card_key"] for row in cursor.fetchall()]
+    finally:
+        conn.close()
+
+
+def _flashcard_deck_cache_id(
+    user_id: str,
+    document_name: str,
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_types: List[str],
+) -> tuple[str, str, str]:
+    document_key = _flashcard_document_key(document_name)
+    source_hash = hashlib.sha256(
+        _normalize_flashcard_text(document_text).encode("utf-8")
+    ).hexdigest()
+    normalized_topic = _normalize_flashcard_text(topic)
+    scope = json.dumps(
+        [user_id, document_key, source_hash, normalized_topic, card_count, card_types],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+    return (
+        hashlib.sha256(scope.encode("utf-8")).hexdigest(),
+        document_key,
+        source_hash,
+    )
+
+
+def _flashcard_deck_is_complete(
+    cards: List[Dict[str, Any]],
+    card_count: int,
+    card_types: List[str],
+) -> bool:
+    if not isinstance(cards, list) or len(cards) != card_count:
+        return False
+    quotient, remainder = divmod(card_count, len(card_types))
+    expected_counts = {
+        card_type: quotient + (index < remainder)
+        for index, card_type in enumerate(card_types)
+    }
+    actual_counts = {card_type: 0 for card_type in card_types}
+    seen_concepts = set()
+    seen_evidence = set()
+    for card in cards:
+        if not isinstance(card, dict):
+            return False
+        card_type = card.get("card_type")
+        front = card.get("front")
+        evidence = card.get("source_excerpt")
+        if (
+            not isinstance(card_type, str)
+            or card_type not in actual_counts
+            or not isinstance(front, str)
+            or not isinstance(evidence, str)
+        ):
+            return False
+        actual_counts[card_type] += 1
+        concept_key = _flashcard_card_concept_key(
+            front,
+            card_type,
+            str(card.get("back", "")),
+        )
+        evidence_key = _normalize_flashcard_text(evidence)
+        if (
+            not concept_key
+            or _has_flashcard_concept_duplicate(concept_key, seen_concepts)
+            or not evidence_key
+            or evidence_key in seen_evidence
+        ):
+            return False
+        seen_concepts.add(concept_key)
+        seen_evidence.add(evidence_key)
+    return actual_counts == expected_counts
+
+
+def _get_cached_flashcard_deck(
+    user_id: str,
+    document_name: str,
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_types: List[str],
+) -> Optional[List[Dict[str, Any]]]:
+    deck_id, _, _ = _flashcard_deck_cache_id(
+        user_id,
+        document_name,
+        document_text,
+        topic,
+        card_count,
+        card_types,
+    )
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT cards_json FROM flashcard_decks WHERE id = ? AND user_id = ? AND is_complete = ?",
+            (deck_id, user_id, True),
+        )
+        row = cursor.fetchone()
+        if not row:
+            return None
+
+        try:
+            cards = json.loads(row["cards_json"])
+        except (TypeError, json.JSONDecodeError):
+            logger.warning("Ignoring malformed cached flashcard deck id=%s", deck_id)
+            return None
+
+        if not isinstance(cards, list) or not _flashcard_deck_is_complete(
+            cards,
+            card_count,
+            card_types,
+        ):
+            logger.warning("Ignoring incomplete cached flashcard deck id=%s", deck_id)
+            return None
+
+        focus_topic = topic.strip()
+        if focus_topic.casefold() in {
+            "flashcards", "flashcard", "quiz", "general", "all",
+            "lesson", "study", "notes", "lecture", "document",
+        }:
+            focus_topic = ""
+        seen_fronts = set()
+        for card in cards:
+            front = card.get("front")
+            back = card.get("back")
+            evidence = card.get("source_excerpt")
+            card_type = card.get("card_type")
+            if (
+                not all(isinstance(value, str) for value in (front, back, evidence))
+                or not _is_valid_flashcard_candidate(
+                    front,
+                    back,
+                    evidence,
+                    document_text,
+                    card_type,
+                    focus_topic,
+                )
+                or not _contains_flashcard_phrase(document_text, evidence)
+                or _normalize_flashcard_text(front) in seen_fronts
+            ):
+                logger.warning("Ignoring source-invalid cached flashcard deck id=%s", deck_id)
+                return None
+            expected_page = _source_page_for_excerpt(document_text, evidence)
+            if card.get("source_page") != expected_page:
+                logger.warning("Ignoring page-mismatched cached flashcard deck id=%s", deck_id)
+                return None
+            seen_fronts.add(_normalize_flashcard_text(front))
+            card["card_key"] = _flashcard_key(front)
+        return cards
+    finally:
+        conn.close()
+
+
+def _save_flashcard_deck(
+    user_id: str,
+    document_name: str,
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_types: List[str],
+    cards: List[Dict[str, Any]],
+) -> None:
+    deck_id, document_key, source_hash = _flashcard_deck_cache_id(
+        user_id,
+        document_name,
+        document_text,
+        topic,
+        card_count,
+        card_types,
+    )
+    for card in cards:
+        card.setdefault("card_type", card_types[0])
+        card.setdefault("card_key", _flashcard_key(card["front"]))
+        card.setdefault("generation_method", "ai")
+    cards_json = json.dumps(cards, ensure_ascii=False, separators=(",", ":"))
+    card_types_json = json.dumps(card_types, ensure_ascii=False)
+    is_complete = _flashcard_deck_is_complete(cards, card_count, card_types)
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM flashcard_decks WHERE id = ? AND user_id = ?",
+            (deck_id, user_id),
+        )
+        if cursor.fetchone():
+            cursor.execute(
+                """
+                UPDATE flashcard_decks
+                SET cards_json = ?, is_complete = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ? AND user_id = ?
+                """,
+                (cards_json, is_complete, deck_id, user_id),
+            )
+        else:
+            cursor.execute(
+                """
+                INSERT INTO flashcard_decks
+                (id, user_id, document_key, source_hash, topic, requested_count,
+                 card_types_json, cards_json, is_complete)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """,
+                (
+                    deck_id,
+                    user_id,
+                    document_key,
+                    source_hash,
+                    topic,
+                    card_count,
+                    card_types_json,
+                    cards_json,
+                    is_complete,
+                ),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
     finally:
         conn.close()
 
@@ -1483,18 +1971,46 @@ def create_flashcards(
     card_count = request.card_count or 10
     card_types = request.card_types or [request.card_type]
     context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
-
-    cards = generate_flashcards_from_document(
+    deck_document_name = document_name or (
+        sources[0] if sources else "Uploaded Document"
+    )
+    cards = _get_cached_flashcard_deck(
+        uid,
+        deck_document_name,
         context,
         request.topic,
         card_count,
-        card_types[0] if len(card_types) == 1 else card_types,
+        card_types,
     )
+    cache_hit = cards is not None
+    if cache_hit:
+        logger.info(
+            "Reusing verified flashcard deck requested=%s types=%s",
+            card_count,
+            card_types,
+        )
+    else:
+        cards = generate_flashcards_from_document(
+            context,
+            request.topic,
+            card_count,
+            card_types[0] if len(card_types) == 1 else card_types,
+        )
     if not cards:
         raise HTTPException(
             422,
             "No source-verified flashcards could be created for the selected type and focus. "
             "Try another type or choose a broader focus.",
+        )
+    if not cache_hit:
+        _save_flashcard_deck(
+            uid,
+            deck_document_name,
+            context,
+            request.topic,
+            card_count,
+            card_types,
+            cards,
         )
     user_service.increment_stat(uid, "flashcards_studied", len(cards))
 
@@ -1508,7 +2024,7 @@ def create_flashcards(
 
     return {
         "topic": request.topic,
-        "document_name": document_name or (sources[0] if sources else "Uploaded Document"),
+        "document_name": deck_document_name,
         "card_type": card_types[0],
         "card_types": card_types,
         "total_cards": len(cards),

@@ -52,9 +52,9 @@ async def upload_document(
     uid = current_user["id"]
     fn = sanitize_filename(file.filename or "")
     fn_lower = fn.lower()
-    allowed_exts = (".pdf", ".docx", ".doc", ".txt", ".md", ".csv")
+    allowed_exts = (".pdf", ".docx", ".doc", ".pptx", ".txt", ".md", ".csv")
     if not any(fn_lower.endswith(ext) for ext in allowed_exts):
-        raise HTTPException(400, "Supported formats: PDF, DOCX, TXT, MD.")
+        raise HTTPException(400, "Supported formats: PDF, DOCX, PPTX, TXT, MD.")
 
     previous_document_ids = []
     effective_workspace_id = workspace_id
@@ -104,9 +104,16 @@ async def upload_document(
 
     full_text = doc_info.get("full_text", "")
     if not full_text.strip():
+        ocr_failed = bool(doc_info.get("warnings"))
+        detail = (
+            "OCR could not read one or more scanned pages. Ensure Tesseract OCR is installed "
+            "and available to the application, or upload a text-based copy."
+            if ocr_failed
+            else "No readable text could be extracted. For scanned PDFs, ensure OCR is available or upload a text-based copy."
+        )
         raise HTTPException(
             400,
-            "No readable text found in document. Scanned documents require optical character recognition (OCR).",
+            detail,
         )
 
     chunks = split_text(full_text)
@@ -175,6 +182,7 @@ async def upload_document(
         "page_count": doc_info.get("page_count", 1),
         "char_count": len(full_text),
         "size_bytes": len(data),
+        "warnings": doc_info.get("warnings", []),
     }
 
 

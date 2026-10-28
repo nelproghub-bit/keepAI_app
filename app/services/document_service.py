@@ -1,7 +1,20 @@
 import io
+import logging
 import re
-import fitz  # PyMuPDF
+import unicodedata
+import pymupdf as fitz
 from typing import List, Dict, Any
+
+logger = logging.getLogger(__name__)
+
+
+def _normalize_extracted_text(text: str) -> str:
+    text = unicodedata.normalize("NFKC", text).replace("\x00", "").replace("\u00ad", "")
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    text = re.sub(r"(?<=\w)-\s*\n\s*(?=\w)", "", text)
+    lines = [re.sub(r"[ \t]+", " ", line).strip() for line in text.split("\n")]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
 
 def extract_pdf_structured(data: bytes) -> Dict[str, Any]:
     """
@@ -14,14 +27,30 @@ def extract_pdf_structured(data: bytes) -> Dict[str, Any]:
         pages = []
         full_text_parts = []
         outline = []
+        ocr_pages = []
+        ocr_warnings = []
         total_pages = len(pdf_document)
         
-        print(f"📄 Processing PDF: {total_pages} pages")
+        logger.info("Processing PDF with %s pages", total_pages)
         
         for page_num in range(total_pages):
             page = pdf_document.load_page(page_num)
-            raw_text = page.get_text("text") or ""
-            cleaned = raw_text.strip()
+            raw_text = page.get_text("text", sort=True) or ""
+            if len(re.findall(r"\w+", raw_text)) < 12 and page.get_images(full=True):
+                try:
+                    ocr_text_page = page.get_textpage_ocr(language="eng", dpi=200, full=True)
+                    ocr_text = page.get_text("text", textpage=ocr_text_page, sort=True) or ""
+                    if len(ocr_text) > len(raw_text):
+                        raw_text = ocr_text
+                        ocr_pages.append(page_num + 1)
+                except Exception as exc:
+                    warning = (
+                        f"OCR unavailable for PDF page {page_num + 1} "
+                        f"({type(exc).__name__})"
+                    )
+                    ocr_warnings.append(warning)
+                    logger.warning("%s", warning)
+            cleaned = _normalize_extracted_text(raw_text)
             
             if cleaned:
                 page_str = f"[Page {page_num + 1}]\n{cleaned}"
@@ -43,17 +72,24 @@ def extract_pdf_structured(data: bytes) -> Dict[str, Any]:
         pdf_document.close()
         
         full_text = "\n\n".join(full_text_parts)
-        print(f"✅ Extracted {len(full_text)} characters across {len(pages)} non-empty pages (out of {total_pages})")
+        logger.info(
+            "Extracted %s characters across %s non-empty PDF pages (out of %s)",
+            len(full_text),
+            len(pages),
+            total_pages,
+        )
         
         return {
             "full_text": full_text,
             "page_count": total_pages,
             "pages": pages,
-            "outline": outline[:25]  # Cap outline entries to prevent bloat
+            "outline": outline[:25],  # Cap outline entries to prevent bloat
+            "ocr_pages": ocr_pages,
+            "warnings": ocr_warnings,
         }
         
     except Exception as e:
-        print(f"❌ PDF extraction error: {e}")
+        logger.exception("PDF extraction failed")
         return {
             "full_text": "",
             "page_count": 0,
@@ -96,7 +132,11 @@ def _paginate_paragraphs(paragraphs: List[str], outline: List[str]) -> Dict[str,
         full_text_parts.append(page_str)
         
     full_text = "\n\n".join(full_text_parts)
-    print(f"✅ Extracted {len(full_text)} characters across {len(pages)} pages")
+    logger.info(
+        "Extracted %s characters across %s synthetic pages",
+        len(full_text),
+        len(pages),
+    )
     return {
         "full_text": full_text,
         "page_count": len(pages),
@@ -117,7 +157,7 @@ def extract_docx_structured(data: bytes) -> Dict[str, Any]:
         import docx
         doc = docx.Document(io.BytesIO(data))
         for p in doc.paragraphs:
-            txt = p.text.strip()
+            txt = _normalize_extracted_text(p.text)
             if txt:
                 paragraphs.append(txt)
                 style_name = getattr(p.style, 'name', '') or ''
@@ -128,11 +168,18 @@ def extract_docx_structured(data: bytes) -> Dict[str, Any]:
                     
         for tbl in doc.tables:
             for row in tbl.rows:
-                row_cells = [cell.text.strip() for cell in row.cells if cell.text.strip()]
+                row_cells = [
+                    _normalize_extracted_text(cell.text)
+                    for cell in row.cells
+                    if _normalize_extracted_text(cell.text)
+                ]
                 if row_cells:
                     paragraphs.append(" | ".join(row_cells))
     except Exception as e:
-        print(f"⚠️ python-docx notice: {e}. Trying zipfile XML fallback.")
+        logger.warning(
+            "python-docx extraction failed (%s); trying XML fallback",
+            type(e).__name__,
+        )
         # Attempt 2: zipfile + xml.etree.ElementTree
         try:
             import zipfile
@@ -147,7 +194,7 @@ def extract_docx_structured(data: bytes) -> Dict[str, Any]:
                         if re.match(r'^([A-Z]\.|\d+\.|\bChapter\b|\bModule\b|\bLecture\b|\bTopic\b|\bUnit\b)', p_text, re.IGNORECASE) and len(p_text) <= 120:
                             outline.append(p_text[:120])
         except Exception as zerr:
-            print(f"❌ DOCX extraction error: {zerr}")
+            logger.exception("DOCX extraction failed")
             return {
                 "full_text": "",
                 "page_count": 0,
@@ -174,6 +221,7 @@ def extract_txt_structured(data: bytes) -> Dict[str, Any]:
     except Exception:
         text = data.decode("latin-1", errors="replace")
         
+    text = _normalize_extracted_text(text)
     paragraphs = [p.strip() for p in text.split("\n\n") if p.strip()]
     outline = []
     for p in paragraphs:
@@ -184,11 +232,105 @@ def extract_txt_structured(data: bytes) -> Dict[str, Any]:
                 
     return _paginate_paragraphs(paragraphs, outline)
 
+
+def _append_presentation_shape_text(shape: Any, lines: List[str]) -> None:
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    if getattr(shape, "has_text_frame", False):
+        text = _normalize_extracted_text(shape.text_frame.text)
+        if text:
+            lines.append(text)
+    if getattr(shape, "has_table", False):
+        for row in shape.table.rows:
+            cells = [
+                _normalize_extracted_text(cell.text)
+                for cell in row.cells
+                if _normalize_extracted_text(cell.text)
+            ]
+            if cells:
+                lines.append(" | ".join(cells))
+    if getattr(shape, "shape_type", None) == MSO_SHAPE_TYPE.GROUP:
+        for child in shape.shapes:
+            _append_presentation_shape_text(child, lines)
+
+
+def extract_pptx_structured(data: bytes) -> Dict[str, Any]:
+    """Extract slide text, tables, and speaker notes from a PowerPoint deck."""
+    try:
+        from pptx import Presentation
+
+        presentation = Presentation(io.BytesIO(data))
+        pages = []
+        outline = []
+        full_text_parts = []
+
+        for slide_num, slide in enumerate(presentation.slides, start=1):
+            lines: List[str] = []
+            shapes = sorted(slide.shapes, key=lambda shape: (shape.top, shape.left))
+            for shape in shapes:
+                _append_presentation_shape_text(shape, lines)
+
+            title = slide.shapes.title
+            if title is not None and title.text.strip():
+                outline.append(f"Slide {slide_num}: {title.text.strip()[:120]}")
+
+            try:
+                notes_frame = slide.notes_slide.notes_text_frame
+                notes = _normalize_extracted_text(notes_frame.text) if notes_frame else ""
+                if notes:
+                    lines.append(f"Speaker notes: {notes}")
+            except (AttributeError, KeyError, ValueError):
+                pass
+
+            text = "\n".join(dict.fromkeys(line for line in lines if line))
+            if text:
+                tagged_text = f"[Page {slide_num}]\n{text}"
+                pages.append({
+                    "page_num": slide_num,
+                    "text": text,
+                    "tagged_text": tagged_text,
+                })
+                full_text_parts.append(tagged_text)
+
+        if not pages:
+            return {
+                "full_text": "",
+                "page_count": len(presentation.slides),
+                "pages": [],
+                "outline": outline[:25],
+                "error": "No readable text extracted from PowerPoint slides",
+            }
+
+        full_text = "\n\n".join(full_text_parts)
+        logger.info(
+            "Extracted %s characters across %s PowerPoint slides",
+            len(full_text),
+            len(pages),
+        )
+        return {
+            "full_text": full_text,
+            "page_count": len(presentation.slides),
+            "pages": pages,
+            "outline": outline[:25],
+        }
+    except Exception as exc:
+        logger.exception("PowerPoint extraction failed")
+        return {
+            "full_text": "",
+            "page_count": 0,
+            "pages": [],
+            "outline": [],
+            "error": str(exc),
+        }
+
+
 def extract_document_structured(data: bytes, filename: str) -> Dict[str, Any]:
     """Dispatcher to extract structured text based on file extension"""
     fn_lower = filename.lower()
     if fn_lower.endswith(".pdf"):
         return extract_pdf_structured(data)
+    elif fn_lower.endswith(".pptx"):
+        return extract_pptx_structured(data)
     elif fn_lower.endswith((".docx", ".doc")):
         return extract_docx_structured(data)
     elif fn_lower.endswith((".txt", ".md", ".csv")):
@@ -274,5 +416,14 @@ def split_text(text: str, chunk_size: int = 900, overlap: int = 150) -> List[str
             if temp_chunk:
                 final_chunks.append(temp_chunk.strip())
     
-    print(f"📊 Split into {len(final_chunks)} chunks (avg {sum(len(c) for c in final_chunks) // len(final_chunks) if final_chunks else 0} chars each)")
+    average_length = (
+        sum(len(chunk) for chunk in final_chunks) // len(final_chunks)
+        if final_chunks
+        else 0
+    )
+    logger.info(
+        "Split document into %s chunks (average %s characters)",
+        len(final_chunks),
+        average_length,
+    )
     return final_chunks

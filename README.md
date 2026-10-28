@@ -113,10 +113,11 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - Maintenance mode pauses public/student pages and non-admin API access while keeping the admin portal available. Disabling it publishes a service-restored announcement and sends push notifications to subscribed devices when configured.
 
 ### Core Functionality
-- **📚 Document Library** - Upload and organize PDF materials
+- **📚 Document Library** - Upload and organize PDF, DOCX, PPTX, TXT, Markdown, and CSV study materials. Scanned PDF pages are OCR-processed when Tesseract is installed; unavailable OCR is reported rather than silently treated as extracted text.
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
 - **📝 Smart Summaries** - Generate structured study notes
 - **🎯 Practice Quizzes** - Generate identification, multiple-choice, true/false, fill-in-the-blank, and matching questions; mix formats and set a custom count for each (up to 100 total).
+- **🃏 Source-verified flashcards** - Generate up to 100 cards across term-definition, question-answer, concept-example, and fill-in-the-blank formats. Cards retain source excerpts and page references; generated content and mastery progress are saved per student and document.
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 

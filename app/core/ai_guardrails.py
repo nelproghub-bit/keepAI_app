@@ -14,7 +14,7 @@ from typing import Dict, Any, List, Optional, Tuple
 # 1. FILE & FILENAME SECURITY GUARDRAILS
 # ==============================================================================
 
-ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt", ".md", ".csv"}
+ALLOWED_EXTENSIONS = {".pdf", ".docx", ".doc", ".pptx", ".txt", ".md", ".csv"}
 
 # Signatures for dangerous executable/script formats that must NEVER be allowed
 DANGEROUS_SIGNATURES = [
@@ -111,7 +111,15 @@ def verify_file_content(data: bytes, filename: str) -> Tuple[bool, str]:
             return False, "Invalid DOCX: archive does not contain Word document structure."
         return True, "Valid DOCX"
 
-    # 3. Plaintext / Markdown / CSV verification
+    # 3. PowerPoint Verification (ZIP archive containing the presentation package)
+    elif fn_lower.endswith(".pptx"):
+        if not data.startswith(b"PK\x03\x04"):
+            return False, "Invalid PowerPoint: missing standard ZIP container signature ('PK')."
+        if b"ppt/presentation.xml" not in data:
+            return False, "Invalid PowerPoint: archive does not contain presentation structure."
+        return True, "Valid PowerPoint"
+
+    # 4. Plaintext / Markdown / CSV verification
     elif fn_lower.endswith((".txt", ".md", ".csv")):
         # Prohibit null bytes which indicate binary data disguised as text
         if b"\x00" in data[:4096]:
@@ -125,7 +133,7 @@ def verify_file_content(data: bytes, filename: str) -> Tuple[bool, str]:
                 return False, "Invalid text document: unable to decode file as standard text."
         return True, "Valid text document"
 
-    # 4. Legacy DOC
+    # 5. Legacy DOC
     elif fn_lower.endswith(".doc"):
         # OLE Compound Document signature: D0 CF 11 E0 A1 B1 1A E1
         ole_sig = b"\xd0\xcf\x11\xe0\xa1\xb1\x1a\xe1"
@@ -133,7 +141,7 @@ def verify_file_content(data: bytes, filename: str) -> Tuple[bool, str]:
             return True, "Valid DOC (OLE)"
         return True, "Valid DOC"
 
-    return False, "Unsupported file format. Please upload PDF, DOCX, TXT, or MD."
+    return False, "Unsupported file format. Please upload PDF, DOCX, PPTX, TXT, or MD."
 
 
 # ==============================================================================

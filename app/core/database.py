@@ -220,6 +220,24 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    deck_json_type = (
+        "LONGTEXT" if _active_engine in {"mysql", "mariadb"} else "TEXT"
+    )
+    cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS flashcard_decks (
+            id VARCHAR(64) PRIMARY KEY,
+            user_id VARCHAR(64) NOT NULL,
+            document_key VARCHAR(64) NOT NULL,
+            source_hash VARCHAR(64) NOT NULL,
+            topic TEXT NOT NULL,
+            requested_count INTEGER NOT NULL,
+            card_types_json TEXT NOT NULL,
+            cards_json {deck_json_type} NOT NULL,
+            is_complete BOOLEAN NOT NULL DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
 
     if _active_engine == "postgres":
         cursor.execute("""

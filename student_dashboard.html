@@ -2592,7 +2592,7 @@
 
                         <div class="chat-input">
                             <!-- Hidden file input for chat attachment (context only, not saved to Documents) -->
-                            <input type="file" id="chat-attach-input" accept=".pdf,.txt,.docx" style="display:none;" onchange="handleChatFileAttach(this)">
+                            <input type="file" id="chat-attach-input" accept=".pdf,.docx,.pptx,.txt,.md,.csv" style="display:none;" onchange="handleChatFileAttach(this)">
                             <button class="btn btn-plain btn-sm" onclick="document.getElementById('chat-attach-input').click()" title="Attach file as context for this session only">
                                 <i class="fas fa-paperclip"></i>
                             </button>
@@ -2959,8 +2959,8 @@
                     </select>
                 </div>
                 <div class="form-field">
-                    <label for="document-file">PDF Document File *</label>
-                    <input type="file" id="document-file" required accept=".pdf,.txt,.docx">
+                    <label for="document-file">Study Document File *</label>
+                    <input type="file" id="document-file" required accept=".pdf,.docx,.pptx,.txt,.md,.csv">
                 </div>
                 <button type="submit" class="btn btn-primary" id="btn-upload-submit" style="width: 100%;">
                     <i class="fas fa-cloud-upload-alt me-1"></i> Upload Document
@@ -4594,6 +4594,7 @@
             let fileId = 'doc_' + Date.now();
             let chunksIndexed = Math.max(1, Math.floor(file.size / 1024));
             let savedWorkspaceId = wsSelect.value;
+            let extractionWarnings = [];
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -4609,6 +4610,7 @@
                 fileId = data.file_id || fileId;
                 chunksIndexed = data.chunks_indexed || chunksIndexed;
                 savedWorkspaceId = data.workspace_id || '';
+                extractionWarnings = Array.isArray(data.warnings) ? data.warnings : [];
             } catch (err) {
                 console.error('Document upload failed:', err);
                 showToast(err.message || 'The document could not be uploaded. Please try again.', 'error');
@@ -4642,7 +4644,14 @@
             fileInput.value = '';
             renderDocuments();
             renderWorkspaces();
-            showToast(`"${file.name}" uploaded successfully!`, 'success');
+            if (extractionWarnings.length) {
+                showToast(
+                    `"${file.name}" uploaded, but some scanned pages could not be read. Install Tesseract OCR on the server to extract them.`,
+                    'warning'
+                );
+            } else {
+                showToast(`"${file.name}" uploaded successfully!`, 'success');
+            }
             await syncWithBackend();
         }
 
@@ -4728,10 +4737,10 @@
         async function handleChatFileAttach(input) {
             if (!input.files || input.files.length === 0) return;
             const file = input.files[0];
-            const allowedTypes = ['.pdf', '.txt', '.docx', '.doc', '.md'];
+            const allowedTypes = ['.pdf', '.docx', '.pptx', '.txt', '.md', '.csv'];
             const ext = '.' + file.name.split('.').pop().toLowerCase();
             if (!allowedTypes.includes(ext)) {
-                showToast('Supported formats: PDF, DOCX, TXT, MD.', 'warning');
+                showToast('Supported formats: PDF, DOCX, PPTX, TXT, MD, CSV.', 'warning');
                 input.value = '';
                 return;
             }
@@ -4773,6 +4782,7 @@
             let fileId = 'doc_' + Date.now();
             let chunksIndexed = Math.max(1, Math.floor(file.size / 1024));
             let savedWorkspaceId = targetWs ? targetWs.id : '';
+            let extractionWarnings = [];
 
             try {
                 const token = localStorage.getItem('access_token');
@@ -4789,6 +4799,7 @@
                 fileId = data.file_id || fileId;
                 chunksIndexed = data.chunks_indexed || chunksIndexed;
                 savedWorkspaceId = data.workspace_id || '';
+                extractionWarnings = Array.isArray(data.warnings) ? data.warnings : [];
             } catch (err) {
                 console.error('Chat attachment upload failed:', err);
                 const statusEl = document.getElementById(`${attachBubbleId}-status`);
@@ -4803,7 +4814,17 @@
             // Update bubble badge with success
             const statusEl = document.getElementById(`${attachBubbleId}-status`);
             if (statusEl) {
-                statusEl.innerHTML = `<i class="fas fa-check-circle me-1" style="color: #86efac;"></i> Attached & recorded in Documents`;
+                if (extractionWarnings.length) {
+                    statusEl.textContent = 'Attached; some scanned pages need OCR.';
+                } else {
+                    statusEl.innerHTML = '<i class="fas fa-check-circle me-1" style="color: #86efac;"></i> Attached & recorded in Documents';
+                }
+            }
+            if (extractionWarnings.length) {
+                showToast(
+                    `"${file.name}" was attached, but some scanned pages could not be read. Install Tesseract OCR on the server.`,
+                    'warning'
+                );
             }
 
             // Set active context for tutor
@@ -5259,8 +5280,11 @@
             const genBtn = document.getElementById('fc-generate-btn');
             const status = document.getElementById('fc-generation-status');
             const progressMessages = [
-                `Generating ${cardCount} cards from "${selectDoc}" using the selected types…`,
-                'Checking source passages, duplicate content, and the requested card count…'
+                `Reading "${selectDoc}" and mapping its page references…`,
+                'Prioritizing distinct concepts supported by the selected lesson…',
+                `Generating up to ${cardCount} cards in controlled batches…`,
+                'Replacing incomplete or repeated cards with verified alternatives…',
+                'Checking source passages, card-type distribution, and the requested total…'
             ];
             let progressIndex = 0;
             isGeneratingFlashcards = true;

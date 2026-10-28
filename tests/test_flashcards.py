@@ -15,6 +15,9 @@ from app.routers.learning_tools import (
     build_extractive_flashcards,
     generate_flashcards_from_document,
     _is_valid_flashcard_candidate,
+    _parse_flashcard_response,
+    _flashcard_concepts_are_similar,
+    _source_page_for_excerpt,
 )
 
 
@@ -42,6 +45,23 @@ class FlashcardFeatureTests(unittest.TestCase):
                     card_key TEXT NOT NULL,
                     card_front TEXT NOT NULL,
                     mastered INTEGER NOT NULL DEFAULT 0,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+                """
+            )
+            conn.execute(
+                """
+                CREATE TABLE flashcard_decks (
+                    id TEXT PRIMARY KEY,
+                    user_id TEXT NOT NULL,
+                    document_key TEXT NOT NULL,
+                    source_hash TEXT NOT NULL,
+                    topic TEXT NOT NULL,
+                    requested_count INTEGER NOT NULL,
+                    card_types_json TEXT NOT NULL,
+                    cards_json TEXT NOT NULL,
+                    is_complete INTEGER NOT NULL DEFAULT 0,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
                 )
                 """
@@ -122,7 +142,7 @@ class FlashcardFeatureTests(unittest.TestCase):
 
         self.assertEqual(len(cards), 1)
         self.assertEqual(generate.call_count, 2)
-        self.assertIn("focused retry", generate.call_args_list[1].args[0])
+        self.assertIn("targeted replacement", generate.call_args_list[1].args[0])
         self.assertGreaterEqual(
             generate.call_args_list[0].kwargs["max_output_tokens"],
             450,
@@ -235,6 +255,82 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertEqual(examples[0]["back"], "for example, a print queue manages pending jobs.")
         self.assertIn(examples[0]["back"], examples[0]["source_excerpt"])
 
+    def test_extractive_fallback_resolves_pronoun_definitions_and_rejects_generic_terms(self):
+        source = (
+            "[Page 7]\n"
+            "What is computer networking? It is the exchange of data between connected devices."
+        )
+        cards = build_extractive_flashcards(source, "term-definition")
+
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["front"], "computer networking")
+        self.assertEqual(
+            cards[0]["back"],
+            "the exchange of data between connected devices.",
+        )
+        self.assertEqual(cards[0]["source_page"], 7)
+        self.assertIn("What is computer networking?", cards[0]["source_excerpt"])
+        focused_cards = build_extractive_flashcards(
+            source,
+            "term-definition",
+            focus_topic="computer networking",
+        )
+        self.assertEqual(len(focused_cards), 1)
+
+        for generic_front in ("What", "Define", "It"):
+            with self.subTest(front=generic_front):
+                self.assertFalse(
+                    _is_valid_flashcard_candidate(
+                        generic_front,
+                        "the exchange of data between connected devices",
+                        source,
+                        source,
+                        "term-definition",
+                        "",
+                    )
+                )
+
+    def test_structured_candidate_parser_and_semantic_validation(self):
+        parsed = _parse_flashcard_response(
+            '```json\n{"cards":['
+            '{"front":"What","back":"answer","source_excerpt":"A sufficiently long exact source passage."},'
+            '{"front":"Usability","back":"the ease with which users complete tasks",'
+            '"source_excerpt":"Usability is the ease with which users complete tasks."}]}\n```'
+        )
+
+        self.assertEqual(len(parsed), 2)
+        self.assertEqual(parsed[0].front, "What")
+        self.assertEqual(parsed[1].front, "Usability")
+        self.assertFalse(
+            _is_valid_flashcard_candidate(
+                parsed[0].front,
+                parsed[0].back,
+                parsed[0].source_excerpt,
+                parsed[0].source_excerpt,
+                "term-definition",
+                "",
+            )
+        )
+        self.assertEqual(
+            _source_page_for_excerpt(
+                "[Page 2]\nAn earlier sentence.\n[Page 9]\nUsability is the ease with which users complete tasks.",
+                "Usability is the ease with which users complete tasks.",
+            ),
+            9,
+        )
+        self.assertTrue(
+            _flashcard_concepts_are_similar(
+                ("computer", "interaction"),
+                ("human", "computer", "interaction"),
+            )
+        )
+        self.assertFalse(
+            _flashcard_concepts_are_similar(
+                ("network", "security"),
+                ("network", "protocol"),
+            )
+        )
+
     def test_quality_checks_enforce_selected_flashcard_format(self):
         examples = [
             (
@@ -280,6 +376,22 @@ class FlashcardFeatureTests(unittest.TestCase):
         )
         self.assertFalse(
             _is_valid_flashcard_candidate(
+                "What does a router forward?",
+                "reliability",
+                (
+                    "A router forwards network packets between connected networks. "
+                    "Reliability is the ability of a system to perform consistently."
+                ),
+                (
+                    "A router forwards network packets between connected networks. "
+                    "Reliability is the ability of a system to perform consistently."
+                ),
+                "question-answer",
+                "",
+            )
+        )
+        self.assertFalse(
+            _is_valid_flashcard_candidate(
                 "The ______ protocol uses a broker to route messages.",
                 "broker",
                 "The MQTT protocol uses a broker to route messages.",
@@ -299,6 +411,22 @@ class FlashcardFeatureTests(unittest.TestCase):
                 ),
                 "term-definition",
                 "Reliability",
+            )
+        )
+        self.assertFalse(
+            _is_valid_flashcard_candidate(
+                "Usability",
+                "the ability of a system to perform consistently",
+                (
+                    "Usability is the ease with which users can complete tasks. "
+                    "Reliability is the ability of a system to perform consistently."
+                ),
+                (
+                    "Usability is the ease with which users can complete tasks. "
+                    "Reliability is the ability of a system to perform consistently."
+                ),
+                "term-definition",
+                "",
             )
         )
 
@@ -364,11 +492,103 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertEqual([card["front"] for card in cards], ["Usability", "Reliability"])
         self.assertEqual(len({card["card_key"] for card in cards}), 2)
 
+    @patch.object(learning_tools, "generate", return_value="[]")
+    def test_source_backed_fallback_meets_supported_counts_through_100(self, generate):
+        source = "\n".join(
+            f"[Page {index + 1}] Concept{index} is an important learning concept used to explain subject {index}."
+            for index in range(100)
+        )
+
+        for requested_count in (10, 25, 50, 75, 100):
+            with self.subTest(requested_count=requested_count):
+                cards = generate_flashcards_from_document(
+                    source,
+                    "",
+                    requested_count,
+                    "term-definition",
+                )
+
+                self.assertEqual(len(cards), requested_count)
+                self.assertEqual(
+                    len({card["card_key"] for card in cards}),
+                    requested_count,
+                )
+                self.assertTrue(
+                    all(card["source_excerpt"] in source for card in cards)
+                )
+
+    @patch.object(learning_tools, "generate")
+    def test_partial_ai_batches_are_replaced_from_remaining_source_definitions(self, generate):
+        source = "\n".join(
+            f"[Page {index + 1}] Concept{index} is an important learning concept used to explain subject {index}."
+            for index in range(60)
+        )
+        evidence = (
+            "[Page 1] Concept0 is an important learning concept used to explain subject 0."
+        )
+        generate.return_value = json.dumps(
+            [
+                {
+                    "front": "Concept0",
+                    "back": "an important learning concept used to explain subject 0",
+                    "source_excerpt": evidence,
+                }
+            ]
+        )
+
+        cards = generate_flashcards_from_document(
+            source,
+            "",
+            50,
+            "term-definition",
+        )
+
+        self.assertEqual(len(cards), 50)
+        self.assertEqual(len({card["card_key"] for card in cards}), 50)
+        self.assertEqual(
+            len({card["source_excerpt"] for card in cards}),
+            50,
+        )
+
+    @patch.object(learning_tools, "generate", return_value="[]")
+    def test_multiple_selected_types_receive_the_requested_verified_quotas(self, generate):
+        source = "\n".join(
+            f"[Page {index + 1}] Topic{index} is a distinct learning concept, "
+            f"for example, a framework used to explain subject {index}."
+            for index in range(12)
+        )
+        selected_types = [
+            "term-definition",
+            "question-answer",
+            "concept-example",
+            "fill-blank",
+        ]
+
+        cards = generate_flashcards_from_document(source, "", 10, selected_types)
+
+        self.assertEqual(len(cards), 10)
+        self.assertEqual(
+            {
+                card_type: sum(card["card_type"] == card_type for card in cards)
+                for card_type in selected_types
+            },
+            {
+                "term-definition": 3,
+                "question-answer": 3,
+                "concept-example": 2,
+                "fill-blank": 2,
+            },
+        )
+        self.assertEqual(
+            len({card["source_excerpt"] for card in cards}),
+            len(cards),
+        )
+
     @patch.object(learning_tools, "_generate_flashcards_for_type")
     def test_multi_type_generation_splits_exact_total_evenly(self, generate_type):
         types = ["term-definition", "question-answer", "fill-blank"]
 
-        def generate_for_type(_, __, count, card_type):
+        def generate_for_type(_, __, count, card_type, existing_cards=None):
             return [
                 {
                     "front": f"{card_type} card {index}",
@@ -401,7 +621,7 @@ class FlashcardFeatureTests(unittest.TestCase):
 
     @patch.object(learning_tools, "_generate_flashcards_for_type")
     def test_multi_type_generation_keeps_verified_cards_when_a_type_has_no_matches(self, generate_type):
-        def generate_for_type(_, __, count, card_type):
+        def generate_for_type(_, __, count, card_type, existing_cards=None):
             if card_type == "question-answer":
                 raise HTTPException(422, "No supported question-answer cards.")
             return [{
@@ -434,29 +654,61 @@ class FlashcardFeatureTests(unittest.TestCase):
         generate_cards,
         increment_stat,
     ):
-        get_lesson_context.return_value = ("SELECTED DOCUMENT ONLY", ["selected.docx"])
         generate_cards.return_value = [
-            {"front": "Term 1", "back": "Definition 1", "source_excerpt": "Evidence 1", "card_type": "term-definition"},
-            {"front": "Term 2", "back": "Definition 2", "source_excerpt": "Evidence 2", "card_type": "term-definition"},
-        ]
-
-        response = self.client.post(
-            "/api/learning/flashcards",
-            json={
-                "document_name": "selected.docx",
-                "card_count": 2,
+            {
+                "front": "First concept",
+                "back": "the original core idea used by the lesson",
+                "source_excerpt": (
+                    "First concept is the original core idea used by the lesson."
+                ),
                 "card_type": "term-definition",
             },
+            {
+                "front": "Second concept",
+                "back": "the next important idea introduced in this lesson",
+                "source_excerpt": (
+                    "Second concept is the next important idea introduced in this lesson."
+                ),
+                "card_type": "term-definition",
+            },
+        ]
+        get_lesson_context.return_value = (
+            "First concept is the original core idea used by the lesson. "
+            "Second concept is the next important idea introduced in this lesson.",
+            ["selected.docx"],
         )
+
+        request = {
+            "document_name": "selected.docx",
+            "card_count": 2,
+            "card_type": "term-definition",
+        }
+        response = self.client.post("/api/learning/flashcards", json=request)
+        cached_response = self.client.post("/api/learning/flashcards", json=request)
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["total_cards"], 2)
         self.assertEqual(response.json()["requested_cards"], 2)
         self.assertEqual(len(response.json()["cards"]), 2)
         self.assertEqual(response.json()["document_name"], "selected.docx")
-        self.assertEqual(generate_cards.call_args.args[0], "SELECTED DOCUMENT ONLY")
+        self.assertEqual(
+            generate_cards.call_args.args[0],
+            get_lesson_context.return_value[0],
+        )
         self.assertEqual(generate_cards.call_args.args[2:], (2, "term-definition"))
-        increment_stat.assert_called_once()
+        self.assertEqual(cached_response.status_code, 200, cached_response.text)
+        self.assertEqual(cached_response.json()["cards"], response.json()["cards"])
+        generate_cards.assert_called_once()
+        self.assertEqual(increment_stat.call_count, 2)
+        conn = self.open_database()
+        try:
+            saved_deck = conn.execute(
+                "SELECT cards_json, is_complete FROM flashcard_decks"
+            ).fetchone()
+        finally:
+            conn.close()
+        self.assertTrue(saved_deck["is_complete"])
+        self.assertEqual(len(json.loads(saved_deck["cards_json"])), 2)
 
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
