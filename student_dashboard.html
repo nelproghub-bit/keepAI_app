@@ -5155,10 +5155,11 @@
             }
         }
 
-        async function processFlashcardAction() {
+        async function processFlashcardAction(forcedCount = null) {
             const selectDoc = document.getElementById('fc-lesson-select').value;
             const topic = document.getElementById('fc-topic-input').value.trim();
-            const cardCount = parseInt(document.getElementById('fc-count-slider').value) || 10;
+            const slider = document.getElementById('fc-count-slider');
+            const cardCount = (typeof forcedCount === 'number' && forcedCount > 0) ? forcedCount : (parseInt(slider ? slider.value : 10) || 10);
             const cardType = selectedFlashcardType || 'term-definition';
 
             if (!selectDoc) {
@@ -5208,15 +5209,78 @@
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     const errMsg = errData.detail || `Server responded with status ${res.status}`;
+                    
+                    // Auto-adapt if server indicates fewer cards are available from the document
+                    const match = errMsg.match(/Only\s+(\d+)\s+distinct,\s*source-verified/i);
+                    if (match && parseInt(match[1]) > 0) {
+                        const availableCount = parseInt(match[1]);
+                        if (slider) {
+                            slider.value = availableCount;
+                            updateFCCountDisplay(availableCount);
+                        }
+                        if (status) {
+                            status.style.display = 'block';
+                            status.textContent = `Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available. Creating complete deck now…`;
+                        }
+                        // Automatically generate with the verified available count
+                        const retryRes = await fetch(`${API_BASE}/learning/flashcards`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': token ? `Bearer ${token}` : ''
+                            },
+                            body: JSON.stringify({
+                                topic: topic,
+                                document_name: selectDoc,
+                                card_count: availableCount,
+                                card_type: cardType
+                            })
+                        });
+                        if (retryRes.ok) {
+                            const retryData = await retryRes.json();
+                            if (Array.isArray(retryData.cards) && retryData.cards.length === availableCount) {
+                                closeModal('flashcard-launch-modal');
+                                showToast(`Loaded deck with all ${availableCount} source-verified card${availableCount === 1 ? '' : 's'} from this document.`, 'info');
+                                await loadFlashcardDeck(retryData.cards, selectDoc, cardType, retryData.generation_mode);
+                                return;
+                            }
+                        }
+                    }
                     throw new Error(errMsg);
                 }
             } catch (err) {
                 console.error('Flashcard generation error:', err);
-                showToast(`Flashcard error: ${err.message || 'Could not reach server'}`, 'error');
-                if (status) {
-                    status.style.display = 'block';
-                    status.textContent = err.message || 'Flashcards could not be generated. Check your connection and try again.';
-                    status.setAttribute('role', 'alert');
+                const countMatch = (err.message || '').match(/Only\s+(\d+)\s+distinct/i);
+                if (countMatch && parseInt(countMatch[1]) > 0) {
+                    const availableCount = parseInt(countMatch[1]);
+                    const slider = document.getElementById('fc-count-slider');
+                    if (slider) {
+                        slider.value = availableCount;
+                        updateFCCountDisplay(availableCount);
+                    }
+                    showToast(`Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available. Count updated to ${availableCount}.`, 'warning');
+                    if (status) {
+                        status.style.display = 'block';
+                        status.innerHTML = `
+                            <div style="font-size: 13px; line-height: 1.5;">
+                                <strong><i class="fas fa-info-circle me-1"></i> Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available.</strong><br>
+                                The slider has been updated to ${availableCount}.
+                                <div style="margin-top: 8px;">
+                                    <button type="button" class="btn btn-sm btn-primary" style="padding: 4px 14px; font-size: 12px;" onclick="processFlashcardAction(${availableCount})">
+                                        <i class="fas fa-play me-1"></i> Create ${availableCount} Cards Now
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        status.setAttribute('role', 'alert');
+                    }
+                } else {
+                    showToast(`Flashcard error: ${err.message || 'Could not reach server'}`, 'error');
+                    if (status) {
+                        status.style.display = 'block';
+                        status.textContent = err.message || 'Flashcards could not be generated. Check your connection and try again.';
+                        status.setAttribute('role', 'alert');
+                    }
                 }
             } finally {
                 genBtn.disabled = false;

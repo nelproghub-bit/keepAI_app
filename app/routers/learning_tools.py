@@ -876,7 +876,7 @@ def _is_valid_flashcard_candidate(
         or not normalized_back
         or len(front) > 180
         or len(back) > 450
-        or len(evidence) > 500
+        or len(evidence) > 750
         or normalized_evidence not in normalized_section
         or normalized_back not in normalized_evidence
     ):
@@ -963,7 +963,7 @@ def generate_flashcards_from_document(
     for section in _flashcard_source_sections(document_text):
         if len(cards) >= card_count:
             break
-        batch_count = min(5, card_count - len(cards))
+        batch_count = min(card_count - len(cards), 30)
         focus_instruction = (
             f"Prioritize content relevant to this focus topic: "
             f"{PromptGuardrail.contain_untrusted_input(focus_topic, 'student_query')}. "
@@ -1021,7 +1021,7 @@ def generate_flashcards_from_document(
                 not all(isinstance(value, str) and value.strip() for value in (front, back, evidence))
                 or len(front.strip()) > 180
                 or len(back.strip()) > 450
-                or len(evidence.strip()) > 500
+                or len(evidence.strip()) > 750
             ):
                 continue
             normalized_evidence = _normalize_flashcard_text(evidence)

@@ -2543,6 +2543,237 @@ body.admin-theme-dark .ai-live-badge,
   .settings-select { width: min(160px, 46%); }
   .settings-actions { align-items: flex-start; flex-direction: column; }
 }
+
+/* ===============================================================
+   DARK MODE - AI PLAYGROUND COMPREHENSIVE FIX
+   Ensures all playground UI elements are readable in dark mode.
+   =============================================================== */
+
+/* Response type chips (Study Tutor / Simple Summary / etc.) */
+body.admin-theme-dark .mode-chip,
+#dashboard-app.admin-theme-dark .mode-chip {
+  background: #1a2535 !important;
+  background-image: none !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #94A3B8 !important;
+  box-shadow: none !important;
+}
+
+body.admin-theme-dark .mode-chip:hover,
+#dashboard-app.admin-theme-dark .mode-chip:hover {
+  background: rgba(15, 118, 110, 0.2) !important;
+  border-color: rgba(20, 184, 166, 0.4) !important;
+  color: #5EEAD4 !important;
+}
+
+body.admin-theme-dark .mode-chip.active,
+#dashboard-app.admin-theme-dark .mode-chip.active {
+  background: linear-gradient(135deg, #0F766E 0%, #0D6560 60%, #094D46 100%) !important;
+  border-color: #0F766E !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(15, 118, 110, 0.35) !important;
+}
+
+/* Quick-prompt sample buttons */
+body.admin-theme-dark .quick-prompt-btn,
+#dashboard-app.admin-theme-dark .quick-prompt-btn {
+  background-color: #1a2535 !important;
+  color: #CBD5E1 !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  box-shadow: none !important;
+}
+
+body.admin-theme-dark .quick-prompt-btn:hover,
+#dashboard-app.admin-theme-dark .quick-prompt-btn:hover {
+  background-color: rgba(15, 118, 110, 0.25) !important;
+  border-color: rgba(20, 184, 166, 0.45) !important;
+  color: #5EEAD4 !important;
+}
+
+body.admin-theme-dark .quick-prompt-label,
+#dashboard-app.admin-theme-dark .quick-prompt-label {
+  color: #64748B !important;
+}
+
+/* AI Response body - override the hardcoded #ffffff */
+body.admin-theme-dark .ai-response-body,
+#dashboard-app.admin-theme-dark .ai-response-body {
+  background-color: #0d1b2e !important;
+  background: #0d1b2e !important;
+  color: #E2E8F0 !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Markdown content inside response body */
+body.admin-theme-dark .ai-response-body p,
+#dashboard-app.admin-theme-dark .ai-response-body p,
+body.admin-theme-dark .ai-response-body li,
+#dashboard-app.admin-theme-dark .ai-response-body li,
+body.admin-theme-dark .ai-response-body span,
+#dashboard-app.admin-theme-dark .ai-response-body span,
+body.admin-theme-dark .ai-response-body td,
+#dashboard-app.admin-theme-dark .ai-response-body td,
+body.admin-theme-dark .ai-response-body th,
+#dashboard-app.admin-theme-dark .ai-response-body th,
+body.admin-theme-dark .ai-response-body h1,
+#dashboard-app.admin-theme-dark .ai-response-body h1,
+body.admin-theme-dark .ai-response-body h2,
+#dashboard-app.admin-theme-dark .ai-response-body h2,
+body.admin-theme-dark .ai-response-body h3,
+#dashboard-app.admin-theme-dark .ai-response-body h3,
+body.admin-theme-dark .ai-response-body h4,
+#dashboard-app.admin-theme-dark .ai-response-body h4,
+body.admin-theme-dark .ai-response-body strong,
+#dashboard-app.admin-theme-dark .ai-response-body strong,
+body.admin-theme-dark .ai-response-body em,
+#dashboard-app.admin-theme-dark .ai-response-body em {
+  color: #E2E8F0 !important;
+}
+
+body.admin-theme-dark .ai-response-body code,
+#dashboard-app.admin-theme-dark .ai-response-body code {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #5EEAD4 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+body.admin-theme-dark .ai-response-body pre,
+#dashboard-app.admin-theme-dark .ai-response-body pre {
+  background: #0B1322 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  color: #CBD5E1 !important;
+}
+
+/* Empty state (robot icon + placeholder text) */
+body.admin-theme-dark .ai-empty-prompt-state,
+#dashboard-app.admin-theme-dark .ai-empty-prompt-state {
+  background: transparent !important;
+  color: #94A3B8 !important;
+}
+
+body.admin-theme-dark .ai-empty-prompt-state h4,
+#dashboard-app.admin-theme-dark .ai-empty-prompt-state h4 {
+  color: #F1F5F9 !important;
+}
+
+body.admin-theme-dark .ai-empty-prompt-state p,
+#dashboard-app.admin-theme-dark .ai-empty-prompt-state p {
+  color: #94A3B8 !important;
+}
+
+body.admin-theme-dark .ai-empty-prompt-state p strong,
+#dashboard-app.admin-theme-dark .ai-empty-prompt-state p strong {
+  color: #5EEAD4 !important;
+}
+
+body.admin-theme-dark .ai-empty-icon,
+#dashboard-app.admin-theme-dark .ai-empty-icon {
+  background-color: rgba(15, 118, 110, 0.2) !important;
+  color: #5EEAD4 !important;
+  border-color: rgba(20, 184, 166, 0.35) !important;
+}
+
+/* AI Response wrapper container */
+body.admin-theme-dark .ai-response-wrapper,
+#dashboard-app.admin-theme-dark .ai-response-wrapper {
+  background-color: #0d1b2e !important;
+  background: #0d1b2e !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Toolbar row above response area */
+body.admin-theme-dark .ai-response-toolbar,
+#dashboard-app.admin-theme-dark .ai-response-toolbar {
+  background-color: #111C2E !important;
+  background: #111C2E !important;
+  border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  color: #CBD5E1 !important;
+}
+
+body.admin-theme-dark .ai-response-toolbar strong,
+#dashboard-app.admin-theme-dark .ai-response-toolbar strong,
+body.admin-theme-dark .ai-response-status,
+#dashboard-app.admin-theme-dark .ai-response-status {
+  color: #F1F5F9 !important;
+}
+
+/* Model tag pill */
+body.admin-theme-dark .ai-model-tag,
+#dashboard-app.admin-theme-dark .ai-model-tag {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+  color: #94A3B8 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+
+/* Copy button */
+body.admin-theme-dark .btn-copy-response,
+#dashboard-app.admin-theme-dark .btn-copy-response {
+  background-color: #1a2535 !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  color: #CBD5E1 !important;
+}
+
+body.admin-theme-dark .btn-copy-response:hover,
+#dashboard-app.admin-theme-dark .btn-copy-response:hover {
+  background-color: rgba(15, 118, 110, 0.3) !important;
+  border-color: rgba(20, 184, 166, 0.5) !important;
+  color: #5EEAD4 !important;
+}
+
+/* Test prompt textarea */
+body.admin-theme-dark #ai-test-prompt,
+#dashboard-app.admin-theme-dark #ai-test-prompt {
+  background-color: #0B1322 !important;
+  background: #0B1322 !important;
+  color: #F1F5F9 !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  caret-color: #14B8A6 !important;
+}
+
+body.admin-theme-dark #ai-test-prompt:focus,
+#dashboard-app.admin-theme-dark #ai-test-prompt:focus {
+  border-color: #14B8A6 !important;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.2) !important;
+}
+
+body.admin-theme-dark #ai-test-prompt::placeholder,
+#dashboard-app.admin-theme-dark #ai-test-prompt::placeholder {
+  color: #4B5563 !important;
+}
+
+/* Shortcut hint text */
+body.admin-theme-dark .shortcut-hint,
+#dashboard-app.admin-theme-dark .shortcut-hint {
+  color: #64748B !important;
+}
+
+body.admin-theme-dark .shortcut-hint kbd,
+#dashboard-app.admin-theme-dark .shortcut-hint kbd {
+  background: #1f2937 !important;
+  color: #94A3B8 !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Supports Markdown & code label */
+body.admin-theme-dark .prompt-meta,
+#dashboard-app.admin-theme-dark .prompt-meta {
+  color: #64748B !important;
+}
+
+/* Section labels (SELECT RESPONSE TYPE, TEST QUESTION OR PROMPT) */
+body.admin-theme-dark .playground-box label,
+body.admin-theme-dark .playground-box .section-label,
+body.admin-theme-dark .playground-box .form-label,
+#dashboard-app.admin-theme-dark .playground-box label,
+#dashboard-app.admin-theme-dark .playground-box .section-label,
+#dashboard-app.admin-theme-dark .playground-box .form-label {
+  color: #94A3B8 !important;
+}
+
+/* ===============================================================
+   END DARK MODE AI PLAYGROUND FIX
+   =============================================================== */
 </style>
 <link rel="stylesheet" href="assets/css/responsive-layouts.css">
 <style>
