@@ -1449,6 +1449,9 @@
                 width: 100%;
                 justify-content: space-between;
             }
+
+            .fc-upload-zone { padding: 17px 12px; }
+            .fc-howto { padding: 12px; }
         }
 
         .flashcard-front {
@@ -1503,12 +1506,109 @@
             flex-shrink: 0;
         }
 
-        .fc-select {
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 12px center;
-            padding-right: 36px !important;
+        .fc-upload-zone {
+            display: grid;
+            justify-items: center;
+            gap: 7px;
+            padding: 20px 16px;
+            border: 1.5px dashed var(--border);
+            border-radius: var(--radius-md, 12px);
+            background: var(--bg-subtle);
+            color: var(--text-body);
+            text-align: center;
+            cursor: pointer;
+            transition: border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .fc-upload-zone:hover,
+        .fc-upload-zone:focus-visible,
+        .fc-upload-zone.is-dragging {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            outline: none;
+        }
+
+        .fc-upload-icon {
+            display: grid;
+            place-items: center;
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            background: var(--primary-light);
+            color: var(--primary-text, var(--primary));
+            font-size: 17px;
+        }
+
+        .fc-upload-file {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+            padding: 11px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm, 8px);
+            background: var(--bg-surface);
+        }
+
+        .fc-upload-file-icon {
+            color: var(--primary-text, var(--primary));
+            font-size: 20px;
+        }
+
+        .fc-upload-file-info {
+            min-width: 0;
+            flex: 1;
+        }
+
+        .fc-upload-file-name {
+            overflow: hidden;
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 700;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .fc-upload-progress {
+            width: 100%;
+            height: 5px;
+            margin-top: 6px;
+            overflow: hidden;
+            border-radius: 999px;
+            background: var(--border);
+        }
+
+        .fc-upload-progress > span {
+            display: block;
+            width: 0;
+            height: 100%;
+            border-radius: inherit;
+            background: var(--primary);
+            transition: width 0.15s ease;
+        }
+
+        .fc-howto {
+            margin: -6px 0 18px;
+            padding: 13px 15px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md, 12px);
+            background: var(--bg-subtle);
+        }
+
+        .fc-howto h4 {
+            margin: 0 0 7px;
+            color: var(--text-main);
+            font-size: 12.5px;
+            font-weight: 800;
+        }
+
+        .fc-howto ol {
+            display: grid;
+            gap: 4px;
+            margin: 0;
+            padding-left: 19px;
+            color: var(--text-muted);
+            font-size: 11px;
+            line-height: 1.45;
         }
 
         /* Flashcard Type Grid */
@@ -2988,19 +3088,59 @@
                 </button>
             </div>
 
-            <!-- Step 1: Source Document -->
+            <!-- Step 1: Private source upload -->
             <div class="form-field">
-                <label for="fc-lesson-select">
-                    <i class="fas fa-file-alt me-1" style="color: var(--primary-text, var(--primary));"></i>
-                    Source Lesson / Document <span style="color: var(--primary-text, var(--primary));">*</span>
+                <label for="fc-upload-input">
+                    <i class="fas fa-file-upload me-1" style="color: var(--primary-text, var(--primary));"></i>
+                    Upload Learning Material <span style="color: var(--primary-text, var(--primary));">*</span>
                 </label>
-                <select id="fc-lesson-select" class="fc-select">
-                    <!-- Populated dynamically -->
-                </select>
-                <div style="font-size: 11.5px; color: var(--text-muted); margin-top: 5px;">
-                    <i class="fas fa-info-circle me-1"></i> Select from your uploaded library. Upload more in the <strong>Library</strong> section.
+                <input id="fc-upload-input" type="file" accept=".pdf,.docx,.pptx,.txt,application/pdf,text/plain" hidden
+                       onchange="handleFlashcardFileSelection(this.files)">
+                <div id="fc-upload-zone" class="fc-upload-zone" role="group"
+                     aria-label="Choose a PDF, DOCX, PPTX, or TXT file, or drag and drop it here"
+                     onclick="document.getElementById('fc-upload-input').click()"
+                     ondragover="handleFlashcardDragOver(event)" ondragleave="handleFlashcardDragLeave(event)"
+                     ondrop="handleFlashcardFileDrop(event)">
+                    <span class="fc-upload-icon"><i class="fas fa-cloud-upload-alt"></i></span>
+                    <strong style="font-size: 12.5px; color: var(--text-main);">Drag your lesson here</strong>
+                    <span style="font-size: 11px; color: var(--text-muted);">or</span>
+                    <button class="btn btn-plain" type="button" style="padding: 6px 12px; font-size: 11px;"
+                            onclick="event.preventDefault();event.stopPropagation();document.getElementById('fc-upload-input').click();">
+                        <i class="fas fa-folder-open me-1"></i> Choose File
+                    </button>
+                    <span style="font-size: 10px; color: var(--text-muted);">PDF · DOCX · PPTX · TXT &nbsp;|&nbsp; Up to 15 MB</span>
                 </div>
+                <div style="margin-top: 5px; font-size: 10.5px; color: var(--text-muted);">
+                    <i class="fas fa-lock me-1" aria-hidden="true"></i>Uploaded for this deck only; the source is not added to your Library.
+                </div>
+                <div id="fc-upload-file" class="fc-upload-file" style="display: none; margin-top: 9px;">
+                    <i id="fc-upload-file-icon" class="fc-upload-file-icon fas fa-file-alt" aria-hidden="true"></i>
+                    <div class="fc-upload-file-info">
+                        <div id="fc-upload-file-name" class="fc-upload-file-name"></div>
+                        <div id="fc-upload-file-size" style="font-size: 10.5px; color: var(--text-muted);"></div>
+                        <div style="font-size: 10px; color: var(--text-muted);">Choose another file above to replace this one.</div>
+                        <div id="fc-upload-progress" class="fc-upload-progress" style="display: none;" role="progressbar"
+                             aria-label="File upload progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                            <span id="fc-upload-progress-fill"></span>
+                        </div>
+                    </div>
+                    <button id="fc-upload-remove" class="btn btn-plain" type="button" aria-label="Remove selected file"
+                            title="Remove file" style="padding: 6px 8px;"
+                            onclick="clearFlashcardUpload()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div id="fc-upload-error" role="alert" style="display:none; margin-top:6px; color:var(--danger, #dc2626); font-size:11px;"></div>
             </div>
+
+            <section class="fc-howto" aria-labelledby="fc-howto-title">
+                <h4 id="fc-howto-title"><i class="fas fa-list-ol me-1" style="color: var(--primary-text, var(--primary));"></i> How to Generate Flashcards</h4>
+                <ol>
+                    <li>Upload your lesson material above.</li>
+                    <li>Choose one or more flashcard types and the number of cards.</li>
+                    <li>Optionally enter a focus topic, then click <strong>Generate Flashcards</strong>.</li>
+                </ol>
+            </section>
 
             <!-- Step 2: Flashcard Type -->
             <div class="form-field">
@@ -3341,6 +3481,7 @@
         let currentFlashcardIndex = 0;
         let activeFlashcardDeck = [];
         let activeFlashcardDocumentName = '';
+        let selectedFlashcardFile = null;
         let masteredFlashcardKeys = new Set();
         let visibleFlashcardIndexes = [];
         let showUnmasteredFlashcards = false;
@@ -5165,14 +5306,7 @@
 
         // ==================== LEARNING TOOLS LOGIC ====================
         function openFlashcardPlayer() {
-            const select = document.getElementById('fc-lesson-select');
-            if (documents && documents.length > 0) {
-                select.innerHTML = documents.map(d =>
-                    `<option value="${escapeHTML(d.filename)}">${escapeHTML(d.filename)}</option>`
-                ).join('');
-            } else {
-                select.innerHTML = '<option value="">Upload a document to create flashcards</option>';
-            }
+            clearFlashcardUpload();
             document.getElementById('fc-count-slider').value = 10;
             updateFCCountDisplay(10);
             document.querySelectorAll('.fc-type-card').forEach(c => {
@@ -5187,13 +5321,96 @@
             updateFCTypeSummary();
             document.getElementById('fc-topic-input').value = '';
             const generateButton = document.getElementById('fc-generate-btn');
-            if (generateButton) generateButton.disabled = !documents?.length || isGeneratingFlashcards;
+            if (generateButton) generateButton.disabled = !selectedFlashcardFile || isGeneratingFlashcards;
             const status = document.getElementById('fc-generation-status');
             if (status) {
                 status.style.display = 'none';
                 status.setAttribute('role', 'status');
             }
             document.getElementById('flashcard-launch-modal').classList.add('show');
+        }
+
+        function formatFlashcardFileSize(bytes) {
+            return bytes < 1024 * 1024
+                ? `${Math.max(1, Math.round(bytes / 1024))} KB`
+                : `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+        }
+
+        function handleFlashcardFileSelection(files) {
+            const file = files && files[0];
+            const error = document.getElementById('fc-upload-error');
+            if (!file) return;
+            const extension = file.name.split('.').pop().toLowerCase();
+            const allowed = ['pdf', 'docx', 'pptx', 'txt'];
+            if (!allowed.includes(extension)) {
+                if (error) {
+                    error.textContent = 'Choose a PDF, DOCX, PPTX, or TXT file.';
+                    error.style.display = 'block';
+                }
+                document.getElementById('fc-upload-input').value = '';
+                return;
+            }
+            if (file.size === 0 || file.size > 15 * 1024 * 1024) {
+                if (error) {
+                    error.textContent = file.size === 0
+                        ? 'This file is empty. Choose a file with content.'
+                        : 'This file exceeds the 15 MB upload limit.';
+                    error.style.display = 'block';
+                }
+                document.getElementById('fc-upload-input').value = '';
+                return;
+            }
+
+            selectedFlashcardFile = file;
+            if (error) error.style.display = 'none';
+            const fileRow = document.getElementById('fc-upload-file');
+            fileRow.style.display = 'flex';
+            document.getElementById('fc-upload-file-name').textContent = file.name;
+            document.getElementById('fc-upload-file-size').textContent = `${extension.toUpperCase()} · ${formatFlashcardFileSize(file.size)}`;
+            const icon = document.getElementById('fc-upload-file-icon');
+            const fileIcons = {
+                pdf: 'fa-file-pdf',
+                docx: 'fa-file-word',
+                pptx: 'fa-file-powerpoint',
+                txt: 'fa-file-alt'
+            };
+            icon.className = `fc-upload-file-icon fas ${fileIcons[extension]}`;
+            const generateButton = document.getElementById('fc-generate-btn');
+            if (generateButton) generateButton.disabled = isGeneratingFlashcards;
+        }
+
+        function clearFlashcardUpload() {
+            if (isGeneratingFlashcards) return;
+            selectedFlashcardFile = null;
+            const input = document.getElementById('fc-upload-input');
+            if (input) input.value = '';
+            const fileRow = document.getElementById('fc-upload-file');
+            if (fileRow) fileRow.style.display = 'none';
+            const error = document.getElementById('fc-upload-error');
+            if (error) error.style.display = 'none';
+            const progress = document.getElementById('fc-upload-progress');
+            const fill = document.getElementById('fc-upload-progress-fill');
+            if (progress) progress.style.display = 'none';
+            if (fill) fill.style.width = '0%';
+            const button = document.getElementById('fc-generate-btn');
+            if (button) button.disabled = true;
+        }
+
+        function handleFlashcardDragOver(event) {
+            event.preventDefault();
+            if (!isGeneratingFlashcards) event.currentTarget.classList.add('is-dragging');
+        }
+
+        function handleFlashcardDragLeave(event) {
+            event.currentTarget.classList.remove('is-dragging');
+        }
+
+        function handleFlashcardFileDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('is-dragging');
+            if (!isGeneratingFlashcards && event.dataTransfer?.files?.length) {
+                handleFlashcardFileSelection(event.dataTransfer.files);
+            }
         }
 
         function handleFlashcardOverlayClick(e) {
@@ -5262,14 +5479,14 @@
 
         async function processFlashcardAction() {
             if (isGeneratingFlashcards) return;
-            const selectDoc = document.getElementById('fc-lesson-select').value;
+            const uploadedFile = selectedFlashcardFile;
             const topic = document.getElementById('fc-topic-input').value.trim();
             const slider = document.getElementById('fc-count-slider');
             const cardCount = parseInt(slider ? slider.value : 10, 10) || 10;
             const cardTypes = getSelectedFlashcardTypes();
 
-            if (!selectDoc) {
-                showToast('Please select a source document first.', 'warning');
+            if (!uploadedFile) {
+                showToast('Choose a learning-material file to upload first.', 'warning');
                 return;
             }
             if (!cardTypes.length) {
@@ -5280,71 +5497,100 @@
             const genBtn = document.getElementById('fc-generate-btn');
             const status = document.getElementById('fc-generation-status');
             const progressMessages = [
-                `Reading "${selectDoc}" and mapping its page references…`,
+                'Reading the uploaded material and mapping its page references…',
                 'Prioritizing distinct concepts supported by the selected lesson…',
                 `Generating up to ${cardCount} cards in controlled batches…`,
                 'Replacing incomplete or repeated cards with verified alternatives…',
                 'Checking source passages, card-type distribution, and the requested total…'
             ];
             let progressIndex = 0;
+            let progressTimer = null;
             isGeneratingFlashcards = true;
             genBtn.disabled = true;
             genBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Generating…';
             genBtn.setAttribute('aria-busy', 'true');
+            document.getElementById('fc-upload-remove').disabled = true;
+            document.getElementById('fc-upload-input').disabled = true;
+            document.getElementById('fc-upload-zone').setAttribute('aria-disabled', 'true');
+            const uploadProgress = document.getElementById('fc-upload-progress');
+            const uploadProgressFill = document.getElementById('fc-upload-progress-fill');
+            uploadProgress.style.display = 'block';
+            uploadProgress.setAttribute('aria-valuenow', '0');
+            uploadProgressFill.style.width = '0%';
             if (status) {
                 status.style.display = 'block';
-                status.textContent = progressMessages[progressIndex];
+                status.textContent = 'Uploading securely for this flashcard session…';
             }
-            const progressTimer = window.setInterval(() => {
-                progressIndex = (progressIndex + 1) % progressMessages.length;
-                if (status) status.textContent = progressMessages[progressIndex];
-            }, 3500);
 
             try {
                 const token = localStorage.getItem('access_token');
-                const res = await fetch(`${API_BASE}/learning/flashcards`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': token ? `Bearer ${token}` : ''
-                    },
-                    body: JSON.stringify({
-                        topic: topic,
-                        document_name: selectDoc,
-                        card_count: cardCount,
-                        card_type: cardTypes[0],
-                        card_types: cardTypes
-                    })
+                const formData = new FormData();
+                formData.append('file', uploadedFile);
+                formData.append('topic', topic);
+                formData.append('card_count', String(cardCount));
+                cardTypes.forEach(type => formData.append('card_types', type));
+                const data = await new Promise((resolve, reject) => {
+                    const xhr = new XMLHttpRequest();
+                    xhr.open('POST', `${API_BASE}/learning/flashcards/upload`);
+                    if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+                    xhr.upload.addEventListener('progress', event => {
+                        if (!event.lengthComputable) return;
+                        const percent = Math.round((event.loaded / event.total) * 100);
+                        uploadProgress.setAttribute('aria-valuenow', String(percent));
+                        uploadProgressFill.style.width = `${percent}%`;
+                    });
+                    xhr.upload.addEventListener('load', () => {
+                        if (status) status.textContent = 'File received. Extracting lesson content and generating verified cards…';
+                        progressTimer = window.setInterval(() => {
+                            progressIndex = (progressIndex + 1) % progressMessages.length;
+                            if (status) status.textContent = progressMessages[progressIndex];
+                        }, 3500);
+                    });
+                    xhr.addEventListener('load', () => {
+                        let responseData = {};
+                        try {
+                            responseData = JSON.parse(xhr.responseText || '{}');
+                        } catch (error) {
+                            reject(new Error('The server returned an unreadable response.'));
+                            return;
+                        }
+                        if (xhr.status >= 200 && xhr.status < 300) {
+                            resolve(responseData);
+                        } else {
+                            reject(new Error(responseData.detail || `Server responded with status ${xhr.status}`));
+                        }
+                    });
+                    xhr.addEventListener('error', () => reject(new Error('Upload failed. Check your connection and try again.')));
+                    xhr.addEventListener('abort', () => reject(new Error('The upload was cancelled.')));
+                    xhr.send(formData);
                 });
 
-                if (res.ok) {
-                    const data = await res.json();
-                    if (!Array.isArray(data.cards) || data.cards.length === 0 || data.cards.length > cardCount) {
-                        throw new Error(`The server returned ${data.cards?.length || 0} usable cards for a request of ${cardCount}.`);
-                    }
-                    const quotient = Math.floor(cardCount / cardTypes.length);
-                    const remainder = cardCount % cardTypes.length;
-                    const expectedCounts = new Map(cardTypes.map((type, index) => [
-                        type,
-                        quotient + (index < remainder ? 1 : 0)
-                    ]));
-                    const actualCounts = new Map(cardTypes.map(type => [type, 0]));
-                    data.cards.forEach(card => {
-                        const type = card.card_type || (cardTypes.length === 1 ? cardTypes[0] : '');
-                        if (!actualCounts.has(type)) {
-                            throw new Error('The server returned a card with an unexpected flashcard type.');
-                        }
-                        actualCounts.set(type, actualCounts.get(type) + 1);
-                    });
-                    if (cardTypes.some(type => actualCounts.get(type) > expectedCounts.get(type))) {
-                        throw new Error('The returned deck exceeded the requested count for a flashcard type.');
-                    }
-                    closeModal('flashcard-launch-modal');
-                    await loadFlashcardDeck(data.cards, selectDoc, cardTypes, data.generation_mode, cardCount);
-                } else {
-                    const errData = await res.json().catch(() => ({}));
-                    throw new Error(errData.detail || `Server responded with status ${res.status}`);
+                uploadProgress.setAttribute('aria-valuenow', '100');
+                uploadProgressFill.style.width = '100%';
+                if (!Array.isArray(data.cards) || data.cards.length === 0 || data.cards.length > cardCount) {
+                    throw new Error(`The server returned ${data.cards?.length || 0} usable cards for a request of ${cardCount}.`);
                 }
+                const quotient = Math.floor(cardCount / cardTypes.length);
+                const remainder = cardCount % cardTypes.length;
+                const expectedCounts = new Map(cardTypes.map((type, index) => [
+                    type,
+                    quotient + (index < remainder ? 1 : 0)
+                ]));
+                const actualCounts = new Map(cardTypes.map(type => [type, 0]));
+                data.cards.forEach(card => {
+                    const type = card.card_type || (cardTypes.length === 1 ? cardTypes[0] : '');
+                    if (!actualCounts.has(type)) {
+                        throw new Error('The server returned a card with an unexpected flashcard type.');
+                    }
+                    actualCounts.set(type, actualCounts.get(type) + 1);
+                });
+                if (cardTypes.some(type => actualCounts.get(type) > expectedCounts.get(type))) {
+                    throw new Error('The returned deck exceeded the requested count for a flashcard type.');
+                }
+                selectedFlashcardFile = null;
+                document.getElementById('fc-upload-input').value = '';
+                closeModal('flashcard-launch-modal');
+                await loadFlashcardDeck(data.cards, data.document_name, cardTypes, data.generation_mode, cardCount, data.display_name);
             } catch (err) {
                 console.error('Flashcard generation error:', err);
                 const message = err.message || 'Flashcards could not be generated. Check your connection and try again.';
@@ -5355,15 +5601,22 @@
                     status.setAttribute('role', 'alert');
                 }
             } finally {
-                window.clearInterval(progressTimer);
+                if (progressTimer) window.clearInterval(progressTimer);
                 isGeneratingFlashcards = false;
-                genBtn.disabled = false;
+                genBtn.disabled = !selectedFlashcardFile;
                 genBtn.removeAttribute('aria-busy');
                 genBtn.innerHTML = '<i class="fas fa-magic me-1"></i> Generate Flashcards';
+                document.getElementById('fc-upload-remove').disabled = false;
+                document.getElementById('fc-upload-input').disabled = false;
+                document.getElementById('fc-upload-zone').removeAttribute('aria-disabled');
+                if (!document.getElementById('flashcard-launch-modal').classList.contains('show')) {
+                    selectedFlashcardFile = null;
+                    document.getElementById('fc-upload-input').value = '';
+                }
             }
         }
 
-        async function loadFlashcardDeck(cards, docName, cardTypes, generationMode, requestedCount = cards.length) {
+        async function loadFlashcardDeck(cards, docName, cardTypes, generationMode, requestedCount = cards.length, displayName = docName) {
             if (!cards || cards.length === 0) {
                 showToast('No source-supported flashcards could be created from this document.', 'warning');
                 return;
@@ -5419,7 +5672,7 @@
 
             const playerArea = document.getElementById('flashcard-player-area');
             const headerEl = playerArea.querySelector('h4');
-            if (headerEl) headerEl.textContent = `Study Flashcards ? ${docName}`;
+            if (headerEl) headerEl.textContent = `Study Flashcards · ${displayName}`;
             const deckNotice = document.getElementById('flashcard-deck-notice');
             const actualTypeCounts = new Map(selectedTypes.map(type => [type, 0]));
             activeFlashcardDeck.forEach(card => {
@@ -6388,6 +6641,9 @@
         function closeModal(id) {
             const m = document.getElementById(id);
             if (m) m.classList.remove('show');
+            if (id === 'flashcard-launch-modal' && !isGeneratingFlashcards) {
+                clearFlashcardUpload();
+            }
         }
 
         // Close modal on background click

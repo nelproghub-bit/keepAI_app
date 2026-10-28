@@ -1,17 +1,26 @@
+import hashlib
+import io
 import json
 import logging
-import re
 import random
-import hashlib
+import re
+import zipfile
 import unicodedata
 from typing import Optional, Dict, Any, List, Union
-from fastapi import APIRouter, HTTPException, Depends, Query
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from app.core.ai_guardrails import PromptGuardrail
+from starlette.concurrency import run_in_threadpool
+from app.core.ai_guardrails import (
+    PromptGuardrail,
+    sanitize_filename,
+    verify_file_content,
+)
+from app.core.config import MAX_UPLOAD_BYTES
 from app.core.security import get_current_student_user
 from app.core.database import get_connection
 from app.services.user_service import user_service
 from app.services.progress_service import record_activity
+from app.services.document_service import extract_document_structured
 from app.services.rag_service import get_tutor_context, _load_user_documents, _load_user_files_meta
 from app.services.gemini_service import AIProviderError, generate
 
@@ -1981,49 +1990,41 @@ def _save_flashcard_progress(
     return card_key
 
 
-@router.get("/learning/flashcards/progress")
-def read_flashcard_progress(
-    document_name: str = Query(min_length=1, max_length=255),
-    current_user: Dict[str, Any] = Depends(get_current_student_user),
-):
-    owned_name = get_owned_document_name(current_user["id"], document_name)
-    return {"mastered_card_keys": _get_flashcard_progress(current_user["id"], owned_name)}
+def _resolve_flashcard_source_name(user_id: str, document_name: str) -> str:
+    if not document_name.startswith("flashcard-upload://"):
+        owned_name = get_owned_document_name(user_id, document_name)
+        if not owned_name:
+            raise HTTPException(404, "Flashcard source not found.")
+        return owned_name
+
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT id FROM flashcard_decks WHERE user_id = ? AND document_key = ? LIMIT 1",
+            (user_id, _flashcard_document_key(document_name)),
+        )
+        if not cursor.fetchone():
+            raise HTTPException(404, "Flashcard deck not found for this account.")
+    finally:
+        conn.close()
+    return document_name
 
 
-@router.put("/learning/flashcards/progress")
-def update_flashcard_progress(
-    request: FlashcardProgressRequest,
-    current_user: Dict[str, Any] = Depends(get_current_student_user),
-):
-    owned_name = get_owned_document_name(current_user["id"], request.document_name)
-    card_key = _save_flashcard_progress(
-        current_user["id"],
-        owned_name,
-        request.front,
-        request.mastered,
-    )
-    return {"card_key": card_key, "mastered": request.mastered}
-
-
-@router.post("/learning/flashcards")
-def create_flashcards(
-    request: FlashcardRequest,
-    current_user: Dict[str, Any] = Depends(get_current_student_user),
-):
-    """Generate verified flashcards from the student's selected source document."""
-    uid = current_user["id"]
-    document_name = get_owned_document_name(uid, request.document_name)
-    card_count = request.card_count or 10
-    card_types = request.card_types or [request.card_type]
-    context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
-    deck_document_name = document_name or (
-        sources[0] if sources else "Uploaded Document"
-    )
+def _create_flashcard_deck(
+    user_id: str,
+    document_name: str,
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_types: List[str],
+    sources: List[str],
+) -> Dict[str, Any]:
     cards = _get_cached_flashcard_deck(
-        uid,
-        deck_document_name,
-        context,
-        request.topic,
+        user_id,
+        document_name,
+        document_text,
+        topic,
         card_count,
         card_types,
     )
@@ -2036,40 +2037,41 @@ def create_flashcards(
         )
     else:
         cards = generate_flashcards_from_document(
-            context,
-            request.topic,
+            document_text,
+            topic,
             card_count,
             card_types[0] if len(card_types) == 1 else card_types,
         )
     if not cards:
         raise HTTPException(
             422,
-            "No source-verified flashcards could be created for the selected type and focus. "
+            "No source-verified flashcards could be created for the selected types and focus. "
             "Try another type or choose a broader focus.",
         )
     if not cache_hit:
         _save_flashcard_deck(
-            uid,
-            deck_document_name,
-            context,
-            request.topic,
+            user_id,
+            document_name,
+            document_text,
+            topic,
             card_count,
             card_types,
             cards,
         )
-    user_service.increment_stat(uid, "flashcards_studied", len(cards))
+    user_service.increment_stat(user_id, "flashcards_studied", len(cards))
 
     generation_methods = {card.get("generation_method") for card in cards}
-    if generation_methods == {"document_extract"}:
-        generation_mode = "document_extract"
-    elif len(generation_methods) > 1:
-        generation_mode = "mixed"
-    else:
-        generation_mode = "ai"
-
+    generation_mode = (
+        "document_extract"
+        if generation_methods == {"document_extract"}
+        else "mixed"
+        if len(generation_methods) > 1
+        else "ai"
+    )
     return {
-        "topic": request.topic,
-        "document_name": deck_document_name,
+        "topic": topic,
+        "document_name": document_name,
+        "display_name": sources[0] if sources else document_name,
         "card_type": card_types[0],
         "card_types": card_types,
         "total_cards": len(cards),
@@ -2078,3 +2080,147 @@ def create_flashcards(
         "cards": cards,
         "sources": sources,
     }
+
+
+def _validate_office_upload(data: bytes, filename: str) -> None:
+    if not filename.lower().endswith((".docx", ".pptx")):
+        return
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            members = archive.infolist()
+            if len(members) > 10000:
+                raise HTTPException(400, "The Office document contains too many package entries.")
+            if sum(member.file_size for member in members) > 100 * 1024 * 1024:
+                raise HTTPException(413, "The Office document expands beyond the safe processing limit.")
+            if any(
+                member.file_size > 1024 * 1024
+                and member.file_size / max(member.compress_size, 1) > 200
+                for member in members
+            ):
+                raise HTTPException(400, "The Office document has an unsafe compression ratio.")
+            required_member = (
+                "word/document.xml"
+                if filename.lower().endswith(".docx")
+                else "ppt/presentation.xml"
+            )
+            if required_member not in archive.namelist():
+                raise HTTPException(400, "The Office document package is incomplete.")
+    except zipfile.BadZipFile as exc:
+        raise HTTPException(400, "The Office document is not a valid package.") from exc
+
+
+@router.get("/learning/flashcards/progress")
+def read_flashcard_progress(
+    document_name: str = Query(min_length=1, max_length=255),
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
+):
+    owned_name = _resolve_flashcard_source_name(current_user["id"], document_name)
+    return {"mastered_card_keys": _get_flashcard_progress(current_user["id"], owned_name)}
+
+
+@router.put("/learning/flashcards/progress")
+def update_flashcard_progress(
+    request: FlashcardProgressRequest,
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
+):
+    owned_name = _resolve_flashcard_source_name(
+        current_user["id"],
+        request.document_name,
+    )
+    card_key = _save_flashcard_progress(
+        current_user["id"],
+        owned_name,
+        request.front,
+        request.mastered,
+    )
+    return {"card_key": card_key, "mastered": request.mastered}
+
+
+@router.post("/learning/flashcards")
+def reject_library_flashcard_generation():
+    """Retire the old Library-backed generation endpoint."""
+    raise HTTPException(
+        410,
+        "Library-based flashcard generation is no longer available. Upload a file directly to create a deck.",
+    )
+
+
+@router.post("/learning/flashcards/upload")
+async def create_flashcards_from_upload(
+    file: UploadFile = File(...),
+    topic: str = Form(default="", max_length=500),
+    card_count: int = Form(default=10, ge=1, le=100),
+    card_types: List[str] = Form(...),
+    current_user: Dict[str, Any] = Depends(get_current_student_user),
+):
+    """Extract an uploaded lesson in memory without adding it to the Documents Module."""
+    allowed_extensions = {".pdf", ".docx", ".pptx", ".txt"}
+    raw_filename = (file.filename or "").replace("\\", "/").rsplit("/", 1)[-1]
+    original_extension = (
+        f".{raw_filename.rsplit('.', 1)[-1].lower()}"
+        if "." in raw_filename
+        else ""
+    )
+    filename = sanitize_filename(raw_filename)
+    if original_extension not in allowed_extensions:
+        await file.close()
+        raise HTTPException(
+            400,
+            "Supported flashcard uploads: PDF, DOCX, PPTX, and TXT.",
+        )
+    if (
+        not card_types
+        or len(set(card_types)) != len(card_types)
+        or set(card_types) - FLASHCARD_TYPES
+        or card_count < len(card_types)
+    ):
+        await file.close()
+        raise HTTPException(422, "Choose valid flashcard types and a sufficient card count.")
+
+    try:
+        data = await file.read(MAX_UPLOAD_BYTES + 1)
+    finally:
+        await file.close()
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            413,
+            f"File exceeds the {MAX_UPLOAD_BYTES // (1024 * 1024)}MB upload limit.",
+        )
+    is_valid, content_error = verify_file_content(data, filename)
+    if not is_valid:
+        raise HTTPException(400, content_error)
+    _validate_office_upload(data, filename)
+
+    try:
+        extracted = await run_in_threadpool(
+            extract_document_structured,
+            data,
+            filename,
+        )
+    except Exception as exc:
+        logger.exception("Flashcard upload extraction failed for %s", filename)
+        raise HTTPException(400, "Unable to read the uploaded learning material.") from exc
+    document_text = extracted.get("full_text", "")
+    if not isinstance(document_text, str) or not document_text.strip():
+        logger.warning(
+            "Flashcard upload contained no extractable text filename=%s error=%s",
+            filename,
+            extracted.get("error", "none"),
+        )
+        raise HTTPException(
+            422,
+            "No readable text was found. For scanned PDFs, upload a text-based copy or ensure OCR is available.",
+        )
+
+    source_hash = hashlib.sha256(data).hexdigest()
+    deck_document_name = f"flashcard-upload://{source_hash}/{filename}"
+    return await run_in_threadpool(
+        _create_flashcard_deck,
+        current_user["id"],
+        deck_document_name,
+        document_text,
+        topic,
+        card_count,
+        card_types,
+        [filename],
+    )

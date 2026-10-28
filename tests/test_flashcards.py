@@ -683,153 +683,107 @@ class FlashcardFeatureTests(unittest.TestCase):
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
     @patch.object(learning_tools, "get_lesson_context")
-    def test_endpoint_generates_exact_count_from_only_the_selected_document(
+    def test_upload_endpoint_generates_and_reuses_user_scoped_deck(
         self,
         get_lesson_context,
         generate_cards,
         increment_stat,
     ):
+        source = (
+            "Usability is the ease with which users can complete tasks. "
+            "Reliability is the ability of a system to perform consistently."
+        )
         generate_cards.return_value = [
             {
-                "front": "First concept",
-                "back": "the original core idea used by the lesson",
-                "source_excerpt": (
-                    "First concept is the original core idea used by the lesson."
-                ),
+                "front": "Usability",
+                "back": "the ease with which users can complete tasks",
+                "source_excerpt": "Usability is the ease with which users can complete tasks.",
+                "source_page": 1,
                 "card_type": "term-definition",
+                "generation_method": "ai",
             },
             {
-                "front": "Second concept",
-                "back": "the next important idea introduced in this lesson",
-                "source_excerpt": (
-                    "Second concept is the next important idea introduced in this lesson."
-                ),
+                "front": "Reliability",
+                "back": "the ability of a system to perform consistently",
+                "source_excerpt": "Reliability is the ability of a system to perform consistently.",
+                "source_page": 1,
                 "card_type": "term-definition",
+                "generation_method": "ai",
             },
         ]
-        get_lesson_context.return_value = (
-            "First concept is the original core idea used by the lesson. "
-            "Second concept is the next important idea introduced in this lesson.",
-            ["selected.docx"],
-        )
 
-        request = {
-            "document_name": "selected.docx",
-            "card_count": 2,
-            "card_type": "term-definition",
-        }
-        response = self.client.post("/api/learning/flashcards", json=request)
-        cached_response = self.client.post("/api/learning/flashcards", json=request)
+        def upload():
+            return self.client.post(
+                "/api/learning/flashcards/upload",
+                data={
+                    "topic": "",
+                    "card_count": "2",
+                    "card_types": "term-definition",
+                },
+                files={"file": ("lesson.txt", source.encode("utf-8"), "text/plain")},
+            )
+
+        response = upload()
+        cached_response = upload()
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["total_cards"], 2)
-        self.assertEqual(response.json()["requested_cards"], 2)
-        self.assertEqual(len(response.json()["cards"]), 2)
-        self.assertEqual(response.json()["document_name"], "selected.docx")
-        self.assertEqual(
-            generate_cards.call_args.args[0],
-            get_lesson_context.return_value[0],
-        )
-        self.assertEqual(generate_cards.call_args.args[2:], (2, "term-definition"))
+        self.assertEqual(response.json()["display_name"], "lesson.txt")
+        self.assertTrue(response.json()["document_name"].startswith("flashcard-upload://"))
         self.assertEqual(cached_response.status_code, 200, cached_response.text)
         self.assertEqual(cached_response.json()["cards"], response.json()["cards"])
         generate_cards.assert_called_once()
+        get_lesson_context.assert_not_called()
         self.assertEqual(increment_stat.call_count, 2)
-        conn = self.open_database()
+
+        document_name = response.json()["document_name"]
+        progress = self.client.get(
+            "/api/learning/flashcards/progress",
+            params={"document_name": document_name},
+        )
+        self.assertEqual(progress.status_code, 200, progress.text)
+        saved = self.client.put(
+            "/api/learning/flashcards/progress",
+            json={
+                "document_name": document_name,
+                "front": "Usability",
+                "mastered": True,
+            },
+        )
+        self.assertEqual(saved.status_code, 200, saved.text)
+
+        app.dependency_overrides[get_current_student_user] = lambda: {
+            "id": "different-student",
+            "username": "different-student",
+            "role": "student",
+        }
         try:
-            saved_deck = conn.execute(
-                "SELECT cards_json, is_complete FROM flashcard_decks"
-            ).fetchone()
+            denied = self.client.get(
+                "/api/learning/flashcards/progress",
+                params={"document_name": document_name},
+            )
+            self.assertEqual(denied.status_code, 404)
         finally:
-            conn.close()
-        self.assertTrue(saved_deck["is_complete"])
-        self.assertEqual(len(json.loads(saved_deck["cards_json"])), 2)
+            app.dependency_overrides[get_current_student_user] = lambda: {
+                "id": "flashcard-test-student",
+                "username": "flashcard-student",
+                "role": "student",
+            }
 
-    @patch.object(learning_tools.user_service, "increment_stat")
-    @patch.object(learning_tools, "generate_flashcards_from_document")
-    @patch.object(learning_tools, "get_lesson_context")
-    def test_endpoint_returns_a_partial_verified_deck_with_requested_count(
-        self,
-        get_lesson_context,
-        generate_cards,
-        increment_stat,
-    ):
-        get_lesson_context.return_value = ("SELECTED DOCUMENT ONLY", ["selected.docx"])
-        generate_cards.return_value = [{
-            "front": "Usability",
-            "back": "The ease with which users can complete tasks.",
-            "source_excerpt": "Usability is the ease with which users can complete tasks.",
-            "card_type": "term-definition",
-        }]
+    def test_upload_rejects_unsupported_file_types(self):
+        response = self.client.post(
+            "/api/learning/flashcards/upload",
+            data={"card_count": "1", "card_types": "term-definition"},
+            files={"file": ("notes.exe", b"not a lesson", "application/octet-stream")},
+        )
+        self.assertEqual(response.status_code, 400)
 
+    def test_library_flashcard_generation_endpoint_is_retired(self):
         response = self.client.post(
             "/api/learning/flashcards",
-            json={
-                "document_name": "selected.docx",
-                "card_count": 30,
-                "card_type": "term-definition",
-            },
+            json={"document_name": "lesson.txt"},
         )
-
-        self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(response.json()["total_cards"], 1)
-        self.assertEqual(response.json()["requested_cards"], 30)
-        self.assertEqual(len(response.json()["cards"]), 1)
-        increment_stat.assert_called_once_with("flashcard-test-student", "flashcards_studied", 1)
-
-    @patch.object(learning_tools.user_service, "increment_stat")
-    @patch.object(learning_tools, "generate_flashcards_from_document")
-    @patch.object(learning_tools, "get_lesson_context")
-    def test_endpoint_splits_total_evenly_across_selected_types(
-        self,
-        get_lesson_context,
-        generate_cards,
-        increment_stat,
-    ):
-        selected_types = ["term-definition", "question-answer", "fill-blank"]
-        get_lesson_context.return_value = ("selected source", ["selected.docx"])
-
-        def make_cards(_, __, count, card_types):
-            quotient, remainder = divmod(count, len(card_types))
-            return [
-                {
-                    "front": f"{card_type} {index}",
-                    "back": f"Answer {index}",
-                    "source_excerpt": f"Evidence {index}",
-                    "card_type": card_type,
-                }
-                for position, card_type in enumerate(card_types)
-                for index in range(quotient + (position < remainder))
-            ]
-
-        generate_cards.side_effect = make_cards
-        response = self.client.post(
-            "/api/learning/flashcards",
-            json={
-                "document_name": "selected.docx",
-                "card_count": 10,
-                "card_types": selected_types,
-            },
-        )
-
-        self.assertEqual(response.status_code, 200, response.text)
-        self.assertEqual(response.json()["total_cards"], 10)
-        self.assertEqual(response.json()["requested_cards"], 10)
-        self.assertEqual(generate_cards.call_count, 1)
-        self.assertEqual(generate_cards.call_args.args[2:], (10, selected_types))
-        self.assertEqual(response.json()["card_types"], selected_types)
-        self.assertEqual(
-            {
-                card_type: sum(card["card_type"] == card_type for card in response.json()["cards"])
-                for card_type in selected_types
-            },
-            {"term-definition": 4, "question-answer": 3, "fill-blank": 3},
-        )
-        self.assertEqual(
-            {card["card_type"] for card in response.json()["cards"]},
-            set(selected_types),
-        )
-        increment_stat.assert_called_once()
+        self.assertEqual(response.status_code, 410)
 
     def test_invalid_flashcard_type_is_rejected(self):
         with self.assertRaises(Exception):

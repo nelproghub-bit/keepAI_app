@@ -117,7 +117,7 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
 - **📝 Smart Summaries** - Generate structured study notes
 - **🎯 Practice Quizzes** - Generate identification, multiple-choice, true/false, fill-in-the-blank, and matching questions; mix formats and set a custom count for each (up to 100 total).
-- **🃏 Source-verified flashcards** - Generate up to 100 cards across term-definition, question-answer, concept-example, and fill-in-the-blank formats. Cards retain source excerpts and page references; generated content and mastery progress are saved per student and document.
+- **🃏 Source-verified flashcards** - Upload a PDF, DOCX, PPTX, or TXT file directly to the generator (up to 15 MB). The source is extracted in memory and is not added to the Document Library; generated cards and mastery progress are saved per student and uploaded source.
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 
@@ -176,12 +176,12 @@ The backend provides these REST endpoints:
 - `POST /api/tutor/ask` - Ask questions with RAG
 - `POST /api/learning/summary` - Generate summaries
 - `POST /api/learning/quiz` - Generate practice quizzes
-- `POST /api/learning/flashcards` - Generate source-verified study cards
+- `POST /api/learning/flashcards/upload` - Upload and generate source-verified study cards without adding the source file to the Document Library
 - `GET/PUT /api/learning/flashcards/progress` - Read and save account-specific card mastery
 
 Quiz questions are generated from the selected document and expose a source excerpt for verification. If the AI provider is unavailable, KeepAI builds extractive questions from the selected document when there is enough source material; it reports a clear error rather than filling the quiz with unrelated questions.
 
-Flashcards include a source excerpt and page when available. Answers must be copied from their cited source passage; if the AI is unavailable, the application extracts only explicit definitions or examples and never pads the deck with generic cards. Mastered-card progress is stored per student and document.
+Flashcards include a source excerpt and page when available. Answers must be copied from their cited source passage; if the AI is unavailable, the application extracts only explicit definitions or examples and never pads the deck with generic cards. Uploaded source files are processed for the request and are not indexed or retained in the Document Library. Generated decks and mastery progress remain stored per student so users can revisit and study them.
 
 ## 🔧 Configuration
 
