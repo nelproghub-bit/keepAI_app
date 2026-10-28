@@ -3,3 +3,6 @@
 !.env.example
 data/
 dist/
+
+__pycache__/
+*.pyc

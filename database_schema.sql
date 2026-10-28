@@ -218,6 +218,21 @@ CREATE TABLE IF NOT EXISTS `push_subscriptions` (
         REFERENCES `users` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS `flashcard_progress` (
+    `id` VARCHAR(64) NOT NULL,
+    `user_id` VARCHAR(64) NOT NULL,
+    `document_key` VARCHAR(64) NOT NULL,
+    `card_key` VARCHAR(64) NOT NULL,
+    `card_front` TEXT NOT NULL,
+    `mastered` TINYINT(1) NOT NULL DEFAULT 0,
+    `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_user_card` (`user_id`, `document_key`, `card_key`),
+    KEY `idx_flashcard_progress_user` (`user_id`),
+    CONSTRAINT `fk_flashcard_progress_user` FOREIGN KEY (`user_id`)
+        REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Optional: Seed Default Workspace for Demo Student
 INSERT INTO `workspaces` (`id`, `user_id`, `name`, `description`, `color`, `icon`, `is_active`)
 VALUES (
