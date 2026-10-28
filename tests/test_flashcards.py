@@ -326,17 +326,17 @@ class FlashcardFeatureTests(unittest.TestCase):
             }]
         ),
     )
-    def test_generation_fails_instead_of_returning_fewer_than_requested(self, generate):
-        with self.assertRaises(HTTPException) as error:
-            generate_flashcards_from_document(
-                "Usability is the ease with which users can complete tasks.",
-                "",
-                2,
-                "term-definition",
-            )
+    def test_generation_returns_available_verified_cards_when_fewer_are_requested(self, generate):
+        cards = generate_flashcards_from_document(
+            "Usability is the ease with which users can complete tasks.",
+            "",
+            30,
+            "term-definition",
+        )
 
-        self.assertEqual(error.exception.status_code, 422)
-        self.assertIn("Only 1 distinct", error.exception.detail)
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["front"], "Usability")
+        self.assertEqual(cards[0]["generation_method"], "ai")
 
     @patch.object(learning_tools, "generate")
     def test_generation_never_returns_more_cards_than_requested(self, generate):
@@ -399,6 +399,32 @@ class FlashcardFeatureTests(unittest.TestCase):
             {"term-definition": 4, "question-answer": 3, "fill-blank": 3},
         )
 
+    @patch.object(learning_tools, "_generate_flashcards_for_type")
+    def test_multi_type_generation_keeps_verified_cards_when_a_type_has_no_matches(self, generate_type):
+        def generate_for_type(_, __, count, card_type):
+            if card_type == "question-answer":
+                raise HTTPException(422, "No supported question-answer cards.")
+            return [{
+                "front": f"{card_type} card",
+                "back": "Answer",
+                "source_excerpt": "Evidence",
+                "card_type": card_type,
+                "card_key": card_type,
+            }]
+
+        generate_type.side_effect = generate_for_type
+
+        cards = generate_flashcards_from_document(
+            "Selected lesson text.",
+            "",
+            6,
+            ["term-definition", "question-answer"],
+        )
+
+        self.assertEqual(len(cards), 1)
+        self.assertEqual(cards[0]["card_type"], "term-definition")
+        self.assertEqual(generate_type.call_count, 2)
+
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
     @patch.object(learning_tools, "get_lesson_context")
@@ -425,11 +451,44 @@ class FlashcardFeatureTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["total_cards"], 2)
+        self.assertEqual(response.json()["requested_cards"], 2)
         self.assertEqual(len(response.json()["cards"]), 2)
         self.assertEqual(response.json()["document_name"], "selected.docx")
         self.assertEqual(generate_cards.call_args.args[0], "SELECTED DOCUMENT ONLY")
         self.assertEqual(generate_cards.call_args.args[2:], (2, "term-definition"))
         increment_stat.assert_called_once()
+
+    @patch.object(learning_tools.user_service, "increment_stat")
+    @patch.object(learning_tools, "generate_flashcards_from_document")
+    @patch.object(learning_tools, "get_lesson_context")
+    def test_endpoint_returns_a_partial_verified_deck_with_requested_count(
+        self,
+        get_lesson_context,
+        generate_cards,
+        increment_stat,
+    ):
+        get_lesson_context.return_value = ("SELECTED DOCUMENT ONLY", ["selected.docx"])
+        generate_cards.return_value = [{
+            "front": "Usability",
+            "back": "The ease with which users can complete tasks.",
+            "source_excerpt": "Usability is the ease with which users can complete tasks.",
+            "card_type": "term-definition",
+        }]
+
+        response = self.client.post(
+            "/api/learning/flashcards",
+            json={
+                "document_name": "selected.docx",
+                "card_count": 30,
+                "card_type": "term-definition",
+            },
+        )
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertEqual(response.json()["total_cards"], 1)
+        self.assertEqual(response.json()["requested_cards"], 30)
+        self.assertEqual(len(response.json()["cards"]), 1)
+        increment_stat.assert_called_once_with("flashcard-test-student", "flashcards_studied", 1)
 
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
@@ -468,6 +527,7 @@ class FlashcardFeatureTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["total_cards"], 10)
+        self.assertEqual(response.json()["requested_cards"], 10)
         self.assertEqual(generate_cards.call_count, 1)
         self.assertEqual(generate_cards.call_args.args[2:], (10, selected_types))
         self.assertEqual(response.json()["card_types"], selected_types)

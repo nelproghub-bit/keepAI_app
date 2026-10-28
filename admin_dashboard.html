@@ -2159,10 +2159,12 @@ table.data-table tr:hover {
 
 .settings-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   align-items: start;
   gap: 18px;
 }
+
+#section-settings .settings-card:first-child { grid-column: span 2; }
 
 .settings-card {
   min-width: 0;
@@ -2260,7 +2262,189 @@ table.data-table tr:hover {
 .notification-setting-row strong { color: var(--text-main); font-size: 12px; }
 .notification-setting-row span { margin-top: 4px; color: var(--text-muted); font-size: 10.5px; line-height: 1.5; }
 .settings-note { margin-top: 13px; padding-left: 11px; border-left: 2px solid var(--primary-border); color: var(--text-muted); font-size: 10.5px; line-height: 1.6; }
-.settings-ai-card { grid-column: 1 / -1; }
+.maintenance-settings-card {
+  grid-column: 1 / -1;
+  position: relative;
+  overflow: hidden;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.maintenance-settings-card[data-maintenance-state="active"] {
+  border-color: #e7b66b;
+  box-shadow: inset 3px 0 0 #d97706, var(--shadow-card);
+}
+.maintenance-settings-card[data-maintenance-pending="true"] {
+  border-color: #d97706;
+  box-shadow: inset 3px 0 0 #d97706, 0 10px 24px rgba(161, 98, 7, .1);
+}
+.maintenance-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.maintenance-state-badge {
+  display: inline-flex;
+  min-height: 23px;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  border: 1px solid #a7f3d0;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #166534;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: .045em;
+  line-height: 1.1;
+  text-transform: uppercase;
+}
+.maintenance-state-badge::before {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  content: "";
+}
+.maintenance-state-badge[data-state="active"],
+.maintenance-state-badge[data-state="pending"] {
+  border-color: #f2d3a4;
+  background: #fff7e8;
+  color: #92500a;
+}
+.maintenance-state-badge[data-state="loading"] {
+  border-color: var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+.maintenance-toggle-switch {
+  position: relative;
+  display: inline-flex;
+  width: 46px;
+  height: 26px;
+  flex: 0 0 46px;
+  align-items: center;
+  cursor: pointer;
+}
+.maintenance-toggle-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  clip-path: inset(50%);
+}
+.maintenance-switch-track {
+  position: relative;
+  width: 46px;
+  height: 26px;
+  border: 1px solid #94a3b8;
+  border-radius: 999px;
+  background: #cbd5e1;
+  transition: background .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.maintenance-switch-track::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, .25);
+  content: "";
+  transition: transform .18s ease;
+}
+.maintenance-toggle-switch input:checked + .maintenance-switch-track {
+  border-color: #b45309;
+  background: #d97706;
+}
+.maintenance-toggle-switch input:checked + .maintenance-switch-track::after {
+  transform: translateX(20px);
+}
+.maintenance-toggle-switch input:focus-visible + .maintenance-switch-track {
+  outline: 3px solid rgba(15, 118, 110, .35);
+  outline-offset: 3px;
+}
+.maintenance-toggle-switch input:disabled + .maintenance-switch-track {
+  cursor: wait;
+  opacity: .58;
+}
+.maintenance-impact {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  margin: 14px 0 0;
+  padding: 13px 14px;
+  border: 1px solid #f0d09f;
+  border-radius: 11px;
+  background: #fff8eb;
+  color: #77400d;
+  font-size: 11px;
+  line-height: 1.55;
+  animation: maintenanceNoticeIn .18s ease-out both;
+}
+.maintenance-impact[hidden] { display: none; }
+.maintenance-impact-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  border-radius: 8px;
+  background: #ffedcc;
+  color: #a35209;
+}
+.maintenance-impact-copy strong {
+  display: block;
+  margin-bottom: 2px;
+  color: #713f12;
+  font-size: 11.5px;
+}
+.maintenance-impact-copy span { display: block; }
+.maintenance-settings-card[data-maintenance-pending="true"] .settings-feedback {
+  border-color: #f0d09f;
+  background: #fff8eb;
+  color: #77400d;
+}
+.maintenance-settings-card[data-maintenance-state="active"] .settings-feedback {
+  border-color: #f0d09f;
+  background: #fff8eb;
+  color: #77400d;
+}
+.maintenance-settings-card[data-maintenance-pending="true"] #save-system-maintenance,
+.maintenance-settings-card[data-maintenance-state="active"] #save-system-maintenance {
+  background: linear-gradient(135deg, #b45309, #92400e);
+  border-color: transparent;
+  color: #fff;
+  box-shadow: 0 5px 14px rgba(180, 83, 9, .22);
+}
+.maintenance-settings-card[data-maintenance-pending="true"] #save-system-maintenance:hover:not(:disabled),
+.maintenance-settings-card[data-maintenance-state="active"] #save-system-maintenance:hover:not(:disabled) {
+  background: linear-gradient(135deg, #92400e, #78350f);
+}
+.maintenance-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.maintenance-actions .btn { min-height: 40px; }
+.maintenance-settings-card .settings-feedback[data-state="active"],
+.maintenance-settings-card .settings-feedback[data-state="pending"] {
+  border-color: #f0d09f;
+  background: #fff8eb;
+  color: #77400d;
+}
+.maintenance-settings-card .settings-feedback[data-state="error"] {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+@keyframes maintenanceNoticeIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
 .settings-ai-status { border: 0; }
 
 body.admin-theme-dark,
@@ -2358,6 +2542,77 @@ body.admin-theme-dark {
 
 #dashboard-app.admin-theme-dark .settings-note {
   border-color: #5EEAD4;
+}
+
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"],
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"] {
+  border-color: #795b32;
+  box-shadow: inset 3px 0 0 #fbbf24, var(--shadow-card);
+}
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"],
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"] {
+  border-color: #795b32;
+  box-shadow: inset 3px 0 0 #fbbf24, 0 10px 24px rgba(0, 0, 0, .22);
+}
+body.admin-theme-dark .maintenance-state-badge,
+#dashboard-app.admin-theme-dark .maintenance-state-badge {
+  border-color: #236848;
+  background: #16372a;
+  color: #a7f3d0;
+}
+body.admin-theme-dark .maintenance-state-badge[data-state="active"],
+body.admin-theme-dark .maintenance-state-badge[data-state="pending"],
+#dashboard-app.admin-theme-dark .maintenance-state-badge[data-state="active"],
+#dashboard-app.admin-theme-dark .maintenance-state-badge[data-state="pending"] {
+  border-color: #765528;
+  background: #352a18;
+  color: #fcd38a;
+}
+body.admin-theme-dark .maintenance-state-badge[data-state="loading"],
+#dashboard-app.admin-theme-dark .maintenance-state-badge[data-state="loading"] {
+  border-color: var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-muted);
+}
+body.admin-theme-dark .maintenance-switch-track,
+#dashboard-app.admin-theme-dark .maintenance-switch-track {
+  border-color: #66758a;
+  background: #475569;
+}
+body.admin-theme-dark .maintenance-toggle-switch input:checked + .maintenance-switch-track,
+#dashboard-app.admin-theme-dark .maintenance-toggle-switch input:checked + .maintenance-switch-track {
+  border-color: #fbbf24;
+  background: #b45309;
+}
+body.admin-theme-dark .maintenance-impact,
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"] .settings-feedback,
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"] .settings-feedback,
+body.admin-theme-dark .maintenance-settings-card .settings-feedback[data-state="active"],
+body.admin-theme-dark .maintenance-settings-card .settings-feedback[data-state="pending"],
+#dashboard-app.admin-theme-dark .maintenance-impact,
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"] .settings-feedback,
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"] .settings-feedback,
+#dashboard-app.admin-theme-dark .maintenance-settings-card .settings-feedback[data-state="active"],
+#dashboard-app.admin-theme-dark .maintenance-settings-card .settings-feedback[data-state="pending"] {
+  border-color: #765528;
+  background: #302719;
+  color: #f4d8a6;
+}
+body.admin-theme-dark .maintenance-impact-icon,
+#dashboard-app.admin-theme-dark .maintenance-impact-icon {
+  background: #49351b;
+  color: #fcd38a;
+}
+body.admin-theme-dark .maintenance-impact-copy strong,
+#dashboard-app.admin-theme-dark .maintenance-impact-copy strong {
+  color: #ffe2ad;
+}
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"] #save-system-maintenance,
+body.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"] #save-system-maintenance,
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-pending="true"] #save-system-maintenance,
+#dashboard-app.admin-theme-dark .maintenance-settings-card[data-maintenance-state="active"] #save-system-maintenance {
+  background: linear-gradient(135deg, #b45309, #92400e);
+  color: #fff;
 }
 
 #dashboard-app.admin-theme-dark .dash-main .dash-card,
@@ -2710,6 +2965,12 @@ body.admin-theme-dark .ai-live-badge,
 }
 
 
+@media (max-width: 1200px) {
+  .settings-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  #section-settings .settings-card:first-child { grid-column: auto; }
+  .settings-ai-card { grid-column: 1 / -1; }
+}
+
 @media (max-width: 900px) {
   .settings-grid { grid-template-columns: minmax(0, 1fr); }
   .settings-ai-card { grid-column: auto; }
@@ -2720,6 +2981,8 @@ body.admin-theme-dark .ai-live-badge,
   .settings-row { align-items: flex-start; gap: 12px; }
   .settings-select { width: min(160px, 46%); }
   .settings-actions { align-items: flex-start; flex-direction: column; }
+  .maintenance-actions { width: 100%; }
+  .maintenance-actions .btn { flex: 1 1 auto; }
 }
 
 /* ===============================================================
@@ -2964,6 +3227,7 @@ body.admin-theme-dark .playground-box .form-label,
 </style>
 <link rel="stylesheet" href="assets/css/brand-theme.css">
 <link rel="stylesheet" href="assets/css/app-update-notice.css?v=dialog-3">
+<link rel="stylesheet" href="assets/css/pwa-install-modal.css">
 </head>
 <body>
 
@@ -3666,28 +3930,6 @@ body.admin-theme-dark .playground-box .form-label,
 
         <section class="dash-card settings-card">
           <div class="settings-card-heading">
-            <span class="settings-icon"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></span>
-            <div><h2>System maintenance</h2><p>Temporarily pause public and student access while you perform maintenance.</p></div>
-          </div>
-          <div class="settings-row">
-            <div><label for="system-maintenance-enabled">Maintenance mode</label><p>Visitors see a branded service notice; the admin portal remains available.</p></div>
-            <input id="system-maintenance-enabled" class="settings-checkbox" type="checkbox" disabled>
-          </div>
-          <div class="settings-feedback" id="system-maintenance-feedback" role="status" aria-live="polite">Loading system status…</div>
-          <div class="settings-note">Turning maintenance off automatically publishes a service-restored announcement to the in-app announcement center and sends push notifications where available.</div>
-          <div class="settings-actions">
-            <span id="system-maintenance-updated" class="settings-meta"></span>
-            <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center;">
-              <a href="/maintenance.html" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
-                <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview maintenance page
-              </a>
-              <button type="button" id="save-system-maintenance" class="btn btn-primary" onclick="saveSystemMaintenanceSettings()" disabled>Save maintenance setting</button>
-            </div>
-          </div>
-        </section>
-
-        <section class="dash-card settings-card">
-          <div class="settings-card-heading">
             <span class="settings-icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></span>
             <div><h2>Admin notifications</h2><p>Receive KeepAI announcements on this device.</p></div>
           </div>
@@ -3708,6 +3950,47 @@ body.admin-theme-dark .playground-box .form-label,
             <button type="button" class="btn btn-secondary" onclick="switchDashboardTab('system')">View diagnostics</button>
           </div>
           <div class="settings-note">API keys and model secrets are not displayed here. Update them through your secure server environment.</div>
+        </section>
+
+        <section class="dash-card settings-card maintenance-settings-card" id="system-maintenance-card" data-maintenance-state="loading" data-maintenance-pending="false">
+          <div class="settings-card-heading">
+            <span class="settings-icon"><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i></span>
+            <div>
+              <div class="maintenance-heading-row">
+                <h2>System maintenance</h2>
+                <span class="maintenance-state-badge" id="system-maintenance-badge" data-state="loading">Loading status</span>
+              </div>
+              <p>Temporarily pause public and student access while you perform maintenance.</p>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div>
+              <label for="system-maintenance-enabled">Maintenance mode</label>
+              <p>Students and public visitors see the maintenance page. Admin access stays available.</p>
+            </div>
+            <label class="maintenance-toggle-switch" aria-label="Toggle maintenance mode">
+              <input id="system-maintenance-enabled" type="checkbox" role="switch" aria-label="Maintenance mode" aria-checked="false" disabled>
+              <span class="maintenance-switch-track" aria-hidden="true"></span>
+            </label>
+          </div>
+          <div class="settings-feedback" id="system-maintenance-feedback" role="status" aria-live="polite">Loading system status…</div>
+          <div class="maintenance-impact" id="system-maintenance-impact" role="status" aria-live="polite" hidden>
+            <span class="maintenance-impact-icon"><i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i></span>
+            <span class="maintenance-impact-copy">
+              <strong id="system-maintenance-impact-title">Turning on maintenance will pause student access</strong>
+              <span id="system-maintenance-impact-message">Public and student API requests will be unavailable until maintenance is turned off. Your admin portal session remains available so you can restore access.</span>
+            </span>
+          </div>
+          <div class="settings-note">Turning maintenance off automatically publishes a service-restored announcement to the in-app announcement center and sends push notifications where available.</div>
+          <div class="settings-actions">
+            <span id="system-maintenance-updated" class="settings-meta"></span>
+            <div class="maintenance-actions">
+              <a href="/maintenance.html" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview maintenance page
+              </a>
+              <button type="button" id="save-system-maintenance" class="btn btn-primary" onclick="saveSystemMaintenanceSettings()" disabled>Save maintenance setting</button>
+            </div>
+          </div>
         </section>
       </div>
     </div>
@@ -3903,38 +4186,38 @@ body.admin-theme-dark .playground-box .form-label,
 
 <!-- WEB APP INSTALL MODAL -->
 <div id="pwa-download-modal" class="modal-overlay" onclick="handlePwaOverlayClick(event)">
-  <div class="modal-card" style="max-width: 530px; padding: 0; overflow: hidden; border-radius: 20px;">
-    <div style="background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
-      <button type="button" class="action-btn-circle" onclick="closeAppDownloadModal()" style="position: absolute; top: 12px; right: 12px; color: white; background: rgba(255,255,255,0.15);">
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title">
+    <div class="pwa-install-header">
+      <button type="button" class="action-btn-circle pwa-install-close" onclick="closeAppDownloadModal()" aria-label="Close install dialog">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width: 14px; height: 14px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
       </button>
-      <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
+      <div class="pwa-install-logo">
         <img src="assets/images/keepai-logo.png" alt="KeepAI logo" style="width: 100%; height: 100%; object-fit: contain;">
       </div>
-      <div class="modal-title" style="color: white; margin-bottom: 4px; font-size: 20px;">Install KeepAI Web App</div>
-      <div class="modal-desc" style="color: #f1f5f9; margin-bottom: 0; font-size: 12.5px;">Add KeepAI to your home screen or desktop for quick access.</div>
+      <h3 class="pwa-install-title" id="pwa-install-title">Install KeepAI Web App</h3>
+      <p class="pwa-install-subtitle">Add KeepAI to your home screen or desktop for quick access.</p>
     </div>
 
-    <div style="padding: 22px;">
+    <div class="pwa-install-body">
       <div class="pwa-options-grid">
         <!-- PWA Install -->
         <div class="pwa-option-card">
           <div>
-            <span class="pwa-badge pwa">Web App</span>
-            <div style="font-size: 36px; color: var(--primary-text, var(--primary)); margin-bottom: 8px;">
+            <span class="pwa-badge pwa">Instant Web App</span>
+            <div class="pwa-install-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 40px; height: 40px; display: inline-block;"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
             </div>
-            <div style="font-size: 15px; font-weight: 700; color: var(--text-main); margin-bottom: 4px;">Install Web App</div>
-            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">Add to Home Screen. Fast offline access on all platforms.</div>
+            <h4 class="pwa-option-title">Install Web App</h4>
+            <p class="pwa-option-desc">Add to Home Screen. Fast offline access on all platforms.</p>
           </div>
-          <button type="button" class="btn btn-primary" onclick="triggerPwaInstall()" style="padding: 9px 12px; font-size: 13px; font-weight: 600; border-radius: var(--radius-sm); width: 100%;">
+          <button type="button" class="btn btn-primary pwa-install-action" onclick="triggerPwaInstall()">
             Install Web App
           </button>
         </div>
       </div>
 
       <div class="pwa-tips-box">
-        <strong style="color: var(--text-main); display: block; margin-bottom: 4px;">Installation Tips:</strong>
+        <strong class="pwa-install-tips-title">Installation Tips</strong>
         <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
           <li><strong>Android (Chrome / Edge):</strong> Open the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</li>
           <li><strong>iOS Safari:</strong> Tap Share icon, then tap <strong>"Add to Home Screen"</strong>.</li>
@@ -4564,6 +4847,60 @@ async function adminAnnouncementRequest(path, options = {}) {
   return data;
 }
 
+function updateSystemMaintenancePresentation() {
+  const card = document.getElementById('system-maintenance-card');
+  const toggle = document.getElementById('system-maintenance-enabled');
+  const feedback = document.getElementById('system-maintenance-feedback');
+  const saveButton = document.getElementById('save-system-maintenance');
+  const badge = document.getElementById('system-maintenance-badge');
+  const impact = document.getElementById('system-maintenance-impact');
+  const impactTitle = document.getElementById('system-maintenance-impact-title');
+  const impactMessage = document.getElementById('system-maintenance-impact-message');
+  if (!card || !toggle || !feedback || !saveButton || !badge || !impact) return;
+
+  const savedEnabled = toggle.dataset.savedValue === 'true';
+  const enabled = toggle.checked;
+  const pending = enabled !== savedEnabled;
+  card.dataset.maintenanceState = savedEnabled ? 'active' : 'online';
+  card.dataset.maintenancePending = String(pending);
+  toggle.setAttribute('aria-checked', String(enabled));
+  impact.hidden = !enabled;
+
+  if (pending) {
+    badge.dataset.state = 'pending';
+    badge.textContent = enabled ? 'Ready to enable' : 'Restore pending';
+    feedback.dataset.state = 'pending';
+    feedback.textContent = enabled
+      ? 'Maintenance is not active yet. Save to pause public and student access.'
+      : 'Maintenance is still active. Save to restore public and student access.';
+    saveButton.textContent = enabled ? 'Enable maintenance mode' : 'Restore service';
+  } else if (savedEnabled) {
+    badge.dataset.state = 'active';
+    badge.textContent = 'Maintenance active';
+    feedback.dataset.state = 'active';
+    feedback.textContent = 'Maintenance mode is active. Student and public access is paused; the admin portal remains available.';
+    saveButton.textContent = 'Save maintenance setting';
+  } else {
+    badge.dataset.state = 'success';
+    badge.textContent = 'Services online';
+    feedback.dataset.state = 'success';
+    feedback.textContent = 'Maintenance mode is off. KeepAI is available to students.';
+    saveButton.textContent = 'Save maintenance setting';
+  }
+
+  if (enabled && impactTitle && impactMessage) {
+    if (savedEnabled) {
+      impactTitle.textContent = 'Maintenance mode is currently active';
+      impactMessage.textContent = 'Public and student access is paused. Your admin portal session remains available so you can restore service.';
+    } else {
+      impactTitle.textContent = 'Turning on maintenance will pause student access';
+      impactMessage.textContent = 'Public and student API requests will be unavailable until maintenance is turned off. Your admin portal session remains available so you can restore access.';
+    }
+  }
+
+  saveButton.disabled = !pending || toggle.disabled;
+}
+
 async function loadAdminSettings() {
   const registrationToggle = document.getElementById('student-registration-enabled');
   const registrationFeedback = document.getElementById('student-registration-feedback');
@@ -4599,11 +4936,7 @@ async function loadAdminSettings() {
     maintenanceToggle.checked = maintenance.enabled === true;
     maintenanceToggle.dataset.savedValue = String(maintenanceToggle.checked);
     maintenanceToggle.disabled = false;
-    maintenanceSaveButton.disabled = true;
-    maintenanceFeedback.textContent = maintenanceToggle.checked
-      ? 'Maintenance mode is active. Public and student access is paused; the admin portal remains available.'
-      : 'KeepAI is online and available to students.';
-    maintenanceFeedback.dataset.state = 'success';
+    updateSystemMaintenancePresentation();
 
     const updated = document.getElementById('student-registration-updated');
     if (updated) {
@@ -4631,7 +4964,7 @@ async function loadAdminSettings() {
     }
     if (maintenanceToggle.dataset.changeReady !== 'true') {
       maintenanceToggle.addEventListener('change', () => {
-        maintenanceSaveButton.disabled = String(maintenanceToggle.checked) === maintenanceToggle.dataset.savedValue;
+        updateSystemMaintenancePresentation();
       });
       maintenanceToggle.dataset.changeReady = 'true';
     }
@@ -4643,6 +4976,13 @@ async function loadAdminSettings() {
     maintenanceFeedback.textContent = `System settings could not be loaded: ${error.message}`;
     maintenanceFeedback.dataset.state = 'error';
     maintenanceToggle.disabled = true;
+    const maintenanceCard = document.getElementById('system-maintenance-card');
+    const maintenanceBadge = document.getElementById('system-maintenance-badge');
+    if (maintenanceCard) maintenanceCard.dataset.maintenanceState = 'error';
+    if (maintenanceBadge) {
+      maintenanceBadge.dataset.state = 'loading';
+      maintenanceBadge.textContent = 'Status unavailable';
+    }
   }
 }
 
@@ -4657,6 +4997,11 @@ async function saveSystemMaintenanceSettings() {
   toggle.disabled = true;
   feedback.textContent = 'Saving maintenance setting…';
   feedback.dataset.state = 'loading';
+  const badge = document.getElementById('system-maintenance-badge');
+  if (badge) {
+    badge.dataset.state = 'loading';
+    badge.textContent = 'Saving change';
+  }
   try {
     const result = await adminAnnouncementRequest('/admin/settings/maintenance', {
       method: 'PUT',
@@ -4665,10 +5010,7 @@ async function saveSystemMaintenanceSettings() {
     const maintenance = result.system_maintenance;
     toggle.checked = maintenance.enabled === true;
     toggle.dataset.savedValue = String(toggle.checked);
-    feedback.textContent = toggle.checked
-      ? 'Maintenance mode is active. Public and student access is paused; the admin portal remains available.'
-      : 'Maintenance mode is off. KeepAI is available to students.';
-    feedback.dataset.state = 'success';
+    updateSystemMaintenancePresentation();
 
     const announcement = result.recovery_announcement;
     if (announcement) {
@@ -4690,9 +5032,17 @@ async function saveSystemMaintenanceSettings() {
     console.error('Could not save system maintenance setting:', error);
     feedback.textContent = `Maintenance setting was not saved: ${error.message}`;
     feedback.dataset.state = 'error';
-    saveButton.disabled = false;
+    const card = document.getElementById('system-maintenance-card');
+    if (card) card.dataset.maintenancePending = String(String(toggle.checked) !== toggle.dataset.savedValue);
+    if (badge) {
+      badge.dataset.state = 'pending';
+      badge.textContent = 'Change not saved';
+    }
   } finally {
     toggle.disabled = false;
+    if (toggle.checked !== (toggle.dataset.savedValue === 'true')) {
+      saveButton.disabled = false;
+    }
   }
 }
 

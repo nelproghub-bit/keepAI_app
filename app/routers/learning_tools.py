@@ -1311,12 +1311,6 @@ def _generate_flashcards_for_type(
             "This document does not contain enough clear, verifiable material for the selected flashcard type. Try another card type or a more specific lecture document.",
         )
 
-    if len(cards) < card_count:
-        raise HTTPException(
-            422,
-            f"Only {len(cards)} distinct, source-verified cards are available for the selected type and focus "
-            f"(requested {card_count}). Reduce the count, choose another type, or select a document with more relevant material.",
-        )
     cards = cards[:card_count]
 
     normalized_document = _normalize_flashcard_text(document_text)
@@ -1340,7 +1334,7 @@ def generate_flashcards_from_document(
     card_count: int,
     card_type: Union[str, List[str]],
 ) -> List[Dict[str, Any]]:
-    """Generate an exact total, evenly balanced across the selected card types."""
+    """Generate as many source-verified cards as available across selected types."""
     if not document_text.strip():
         raise HTTPException(404, "No readable text was found in the selected document.")
     selected_types = [card_type] if isinstance(card_type, str) else list(card_type)
@@ -1366,6 +1360,7 @@ def generate_flashcards_from_document(
             selected_types[0],
         )
 
+    generation_errors: List[HTTPException] = []
     with ThreadPoolExecutor(max_workers=2) as executor:
         futures = [
             executor.submit(
@@ -1377,17 +1372,20 @@ def generate_flashcards_from_document(
             )
             for selected_type, count in zip(selected_types, type_counts)
         ]
-        cards = [
-            card
-            for future in futures
-            for card in future.result()
-        ]
+        cards = []
+        for future in futures:
+            try:
+                cards.extend(future.result())
+            except HTTPException as error:
+                generation_errors.append(error)
 
-    if len(cards) != card_count:
+    if not cards:
+        if generation_errors:
+            raise generation_errors[0]
         raise HTTPException(
-            502,
-            f"Flashcard generation returned {len(cards)} cards instead of the requested {card_count}. "
-            "Please try again; incomplete decks are not returned.",
+            422,
+            "No source-verified flashcards could be created for the selected types and focus. "
+            "Try another type or choose a broader focus.",
         )
 
     normalized_document = _normalize_flashcard_text(document_text)
@@ -1492,11 +1490,11 @@ def create_flashcards(
         card_count,
         card_types[0] if len(card_types) == 1 else card_types,
     )
-    if len(cards) != card_count:
+    if not cards:
         raise HTTPException(
-            502,
-            f"Flashcard generation returned {len(cards)} cards instead of the requested {card_count}. "
-            "Please try again; incomplete decks are not returned.",
+            422,
+            "No source-verified flashcards could be created for the selected type and focus. "
+            "Try another type or choose a broader focus.",
         )
     user_service.increment_stat(uid, "flashcards_studied", len(cards))
 
@@ -1514,6 +1512,7 @@ def create_flashcards(
         "card_type": card_types[0],
         "card_types": card_types,
         "total_cards": len(cards),
+        "requested_cards": card_count,
         "generation_mode": generation_mode,
         "cards": cards,
         "sources": sources,

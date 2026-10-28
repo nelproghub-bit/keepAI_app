@@ -26,6 +26,7 @@
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <link rel="stylesheet" href="assets/css/password-visibility.css">
 <link rel="stylesheet" href="assets/css/design-system.css">
+<link rel="stylesheet" href="assets/css/pwa-install-modal.css">
 <script src="assets/js/password-visibility.js" defer></script>
 <!-- Google Identity Services Client SDK -->
 <script src="https://accounts.google.com/gsi/client" async defer></script>
@@ -472,7 +473,7 @@ body {
 <link rel="stylesheet" href="assets/css/responsive-layouts.css">
 <link rel="stylesheet" href="assets/css/brand-theme.css">
 </head>
-<body>
+<body class="install-theme-auto">
 
 <div class="container">
   <div class="auth-card">
@@ -614,40 +615,38 @@ body {
 
 <!-- WEB APP INSTALL MODAL -->
 <div id="pwa-download-modal" class="pwa-modal-overlay" onclick="handlePwaOverlayClick(event)">
-  <div class="pwa-modal-card">
-    <div class="pwa-modal-header">
-      <button type="button" class="pwa-modal-close" onclick="closeAppDownloadModal()" aria-label="Close modal">
+  <div class="pwa-modal-card" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title">
+    <div class="pwa-modal-header pwa-install-header">
+      <button type="button" class="pwa-modal-close pwa-install-close" onclick="closeAppDownloadModal()" aria-label="Close modal">
         <i class="fa-solid fa-xmark"></i>
       </button>
-      <div style="width: 54px; height: 54px; border-radius: 50%; background: white; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);">
-        <img src="/assets/images/keepai-logo.png" alt="KeepAI logo" onerror="this.onerror=null; this.src='/icons/icon-512.png';" style="width: 100%; height: 100%; object-fit: contain;">
+      <div class="pwa-install-logo">
+        <img src="/assets/images/keepai-logo.png" alt="KeepAI logo" onerror="this.onerror=null; this.src='/icons/icon-512.png';">
       </div>
-      <h3 style="font-size: 20px; font-weight: 800; margin-bottom: 4px;">Install KeepAI Web App</h3>
-      <p style="font-size: 12.5px; opacity: 0.9; margin: 0;">Access your notes, workspace, and study assistant anywhere.</p>
+      <h3 class="pwa-install-title" id="pwa-install-title">Install KeepAI Web App</h3>
+      <p class="pwa-install-subtitle">Access your notes, workspace, and study assistant anywhere.</p>
     </div>
 
-    <div class="pwa-modal-body">
+    <div class="pwa-modal-body pwa-install-body">
       <div class="pwa-options-grid">
         <!-- PWA Install -->
         <div class="pwa-option-card">
           <div>
             <span class="pwa-badge pwa"><i class="fa-solid fa-bolt"></i> Instant Web App</span>
-            <div class="pwa-icon-large" style="color: var(--primary-text, var(--primary));">
+            <div class="pwa-icon-large pwa-install-icon">
               <i class="fa-solid fa-laptop-code"></i>
             </div>
             <h4 class="pwa-option-title">Install Web App</h4>
             <p class="pwa-option-desc">Install to home screen or desktop. Works offline with fast updates.</p>
           </div>
-          <button type="button" class="btn-pwa-action btn-web-action" onclick="triggerPwaInstall()">
+          <button type="button" class="btn-pwa-action btn-web-action pwa-install-action" onclick="triggerPwaInstall()">
             <i class="fa-solid fa-plus-circle"></i> Install Web App
           </button>
         </div>
       </div>
 
       <div class="pwa-tips-box">
-        <div style="font-weight: 700; margin-bottom: 4px; color: var(--text-main);">
-          <i class="fa-solid fa-circle-info" style="color: var(--primary-text, var(--primary));"></i> Installation Guide:
-        </div>
+        <strong class="pwa-install-tips-title"><i class="fa-solid fa-circle-info"></i> Installation Guide</strong>
         <ul style="padding-left: 18px; margin: 0; display: flex; flex-direction: column; gap: 4px;">
           <li><strong>Android (Chrome / Edge):</strong> Open the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home Screen"</strong>.</li>
           <li><strong>iOS (iPhone/iPad):</strong> Open in Safari, tap the <strong>Share</strong> button (<i class="fa-solid fa-arrow-up-from-bracket"></i>), then tap <strong>"Add to Home Screen"</strong>.</li>

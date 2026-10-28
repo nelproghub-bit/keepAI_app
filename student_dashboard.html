@@ -1421,6 +1421,19 @@
             flex-wrap: wrap;
         }
 
+        .flashcard-deck-notice {
+            margin-top: 14px;
+            padding: 11px 13px;
+            border: 1px solid var(--primary-border);
+            border-radius: var(--radius-sm);
+            background: var(--primary-light);
+            color: var(--text-body);
+            font-size: 12px;
+            line-height: 1.55;
+        }
+
+        .flashcard-deck-notice[hidden] { display: none !important; }
+
         @media (max-width: 600px) {
             .flashcard {
                 min-height: 300px;
@@ -2301,6 +2314,7 @@
         }
 
     </style>
+    <link rel="stylesheet" href="assets/css/pwa-install-modal.css">
     </head>
 <body>
     <!-- Offline Alert Banner -->
@@ -2672,6 +2686,8 @@
                                 </button>
                             </div>
                         </div>
+
+                        <div id="flashcard-deck-notice" class="flashcard-deck-notice" role="status" hidden></div>
 
                         <div class="flashcard-container" onclick="flipFlashcard()" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();flipFlashcard();}">
                             <div class="flashcard" id="active-flashcard">
@@ -3245,40 +3261,40 @@
 
     <!-- App Download & PWA Install Modal -->
     <div class="modal-overlay" id="pwa-download-modal" onclick="handlePwaOverlayClick(event)">
-        <div class="modal-content" style="max-width: 540px; padding: 0; overflow: hidden; border-radius: 20px;">
-            <div style="background: linear-gradient(135deg, #1C3A5C 0%, #142D4E 100%); color: white; padding: 26px 24px 20px; text-align: center; position: relative;">
-                <button type="button" class="btn-icon" onclick="closeAppDownloadModal()" style="position: absolute; top: 12px; right: 12px; color: white; background: rgba(255,255,255,0.15); border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border: none; cursor: pointer;">
+        <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title">
+            <div class="pwa-install-header">
+                <button type="button" class="btn-icon pwa-install-close" onclick="closeAppDownloadModal()" aria-label="Close install dialog">
                     <i class="fas fa-times"></i>
                 </button>
-                <div style="width: 52px; height: 52px; border-radius: 50%; background: white; margin: 0 auto 10px; display: flex; align-items: center; justify-content: center; padding: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);">
-                    <img src="assets/images/keepai-logo.png" alt="KeepAI logo" style="width: 100%; height: 100%; object-fit: contain;">
+                <div class="pwa-install-logo">
+                    <img src="assets/images/keepai-logo.png" alt="KeepAI logo">
                 </div>
-                <h3 style="font-size: 20px; font-weight: 800; margin: 0 0 4px; color: white;">Install KeepAI</h3>
-                <p style="font-size: 12.5px; opacity: 0.9; margin: 0; color: #f1f5f9;">Add KeepAI to your home screen or desktop for quick access.</p>
+                <h3 class="pwa-install-title" id="pwa-install-title">Install KeepAI Web App</h3>
+                <p class="pwa-install-subtitle">Add KeepAI to your home screen or desktop for quick access.</p>
             </div>
 
-            <div style="padding: 22px;">
-                <div style="display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 18px;" class="pwa-options-grid">
-                    <div style="background: var(--bg-surface); border: 1.5px solid var(--border); border-radius: 14px; padding: 18px 14px; display: flex; flex-direction: column; justify-content: space-between; text-align: center; max-width: 360px; width: 100%; margin: 0 auto;">
+            <div class="pwa-install-body">
+                <div class="pwa-options-grid">
+                    <div class="pwa-option-card">
                         <div>
-                            <span style="display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; background: #e0f2fe; color: #0369a1; padding: 3px 8px; border-radius: 999px; margin-bottom: 10px;">
+                            <span class="pwa-install-badge">
                                 <i class="fas fa-bolt"></i> Instant Web App
                             </span>
-                            <div style="font-size: 36px; color: var(--primary-text, var(--primary)); margin-bottom: 8px;">
+                            <div class="pwa-install-icon">
                                 <i class="fas fa-laptop-code"></i>
                             </div>
-                            <h4 style="font-size: 15px; font-weight: 700; margin: 0 0 4px; color: var(--text-main);">Install Web App</h4>
-                            <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin: 0 0 12px;">Add to Home Screen. Fast offline access on all platforms.</p>
+                            <h4 class="pwa-option-title">Install Web App</h4>
+                            <p class="pwa-option-desc">Add to Home Screen. Fast offline access on all platforms.</p>
                         </div>
-                        <button type="button" class="btn btn-primary" onclick="triggerPwaInstall()" style="padding: 9px 12px; font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 6px;">
+                        <button type="button" class="btn btn-primary pwa-install-action" onclick="triggerPwaInstall()">
                             <i class="fas fa-plus-circle"></i> Install Web App
                         </button>
                     </div>
                 </div>
 
-                <div style="background: var(--bg-subtle); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px; font-size: 11.5px; color: var(--text-muted); line-height: 1.5;">
-                    <strong style="color: var(--text-main);"><i class="fas fa-info-circle" style="color: var(--primary-text, var(--primary));"></i> Install Tips:</strong>
-                    <ul style="padding-left: 18px; margin: 4px 0 0; display: flex; flex-direction: column; gap: 3px;">
+                <div class="pwa-tips-box">
+                    <strong class="pwa-install-tips-title"><i class="fas fa-info-circle"></i> Install Tips</strong>
+                    <ul>
                         <li><strong>Android Chrome / Edge:</strong> Use the browser menu and select <strong>"Install App"</strong> or <strong>"Add to Home screen"</strong>.</li>
                         <li><strong>iOS Safari:</strong> Tap Share (<i class="fas fa-share-square"></i>), then tap <strong>"Add to Home Screen"</strong>.</li>
                         <li><strong>PC / Chrome / Edge:</strong> Click <strong>"Install Web App"</strong> or the install icon in the address bar.</li>
@@ -5279,11 +5295,15 @@
 
                 if (res.ok) {
                     const data = await res.json();
-                    if (!Array.isArray(data.cards) || data.cards.length !== cardCount) {
-                        throw new Error(`The server returned ${data.cards?.length || 0} cards instead of the ${cardCount} requested.`);
+                    if (!Array.isArray(data.cards) || data.cards.length === 0 || data.cards.length > cardCount) {
+                        throw new Error(`The server returned ${data.cards?.length || 0} usable cards for a request of ${cardCount}.`);
                     }
                     const quotient = Math.floor(cardCount / cardTypes.length);
                     const remainder = cardCount % cardTypes.length;
+                    const expectedCounts = new Map(cardTypes.map((type, index) => [
+                        type,
+                        quotient + (index < remainder ? 1 : 0)
+                    ]));
                     const actualCounts = new Map(cardTypes.map(type => [type, 0]));
                     data.cards.forEach(card => {
                         const type = card.card_type || (cardTypes.length === 1 ? cardTypes[0] : '');
@@ -5292,13 +5312,11 @@
                         }
                         actualCounts.set(type, actualCounts.get(type) + 1);
                     });
-                    if (cardTypes.some((type, index) =>
-                        actualCounts.get(type) !== quotient + (index < remainder ? 1 : 0)
-                    )) {
-                        throw new Error('The returned deck did not match the requested type distribution.');
+                    if (cardTypes.some(type => actualCounts.get(type) > expectedCounts.get(type))) {
+                        throw new Error('The returned deck exceeded the requested count for a flashcard type.');
                     }
                     closeModal('flashcard-launch-modal');
-                    await loadFlashcardDeck(data.cards, selectDoc, cardTypes, data.generation_mode);
+                    await loadFlashcardDeck(data.cards, selectDoc, cardTypes, data.generation_mode, cardCount);
                 } else {
                     const errData = await res.json().catch(() => ({}));
                     throw new Error(errData.detail || `Server responded with status ${res.status}`);
@@ -5321,7 +5339,7 @@
             }
         }
 
-        async function loadFlashcardDeck(cards, docName, cardTypes, generationMode) {
+        async function loadFlashcardDeck(cards, docName, cardTypes, generationMode, requestedCount = cards.length) {
             if (!cards || cards.length === 0) {
                 showToast('No source-supported flashcards could be created from this document.', 'warning');
                 return;
@@ -5350,6 +5368,7 @@
                     sourceExcerpt: card.source_excerpt || '',
                     sourcePage: card.source_page,
                     cardKey: card.card_key,
+                    cardType,
                     frontLabel,
                     backLabel
                 };
@@ -5377,6 +5396,19 @@
             const playerArea = document.getElementById('flashcard-player-area');
             const headerEl = playerArea.querySelector('h4');
             if (headerEl) headerEl.textContent = `Study Flashcards ? ${docName}`;
+            const deckNotice = document.getElementById('flashcard-deck-notice');
+            const actualTypeCounts = new Map(selectedTypes.map(type => [type, 0]));
+            activeFlashcardDeck.forEach(card => {
+                actualTypeCounts.set(card.cardType, (actualTypeCounts.get(card.cardType) || 0) + 1);
+            });
+            const unavailableTypes = selectedTypes.filter(type => !actualTypeCounts.get(type));
+            const partialDeck = cards.length < requestedCount;
+            if (deckNotice) {
+                deckNotice.hidden = !partialDeck;
+                deckNotice.textContent = partialDeck
+                    ? `Showing ${cards.length} of ${requestedCount} requested cards. Only source-verified cards are included${unavailableTypes.length ? `; no supported cards were found for: ${unavailableTypes.map(type => typeNames[type] || type).join(', ')}` : ''}. Try a broader focus or another card type for more results.`
+                    : '';
+            }
             visibleFlashcardIndexes = activeFlashcardDeck.map((_, index) => index);
             playerArea.style.display = 'block';
             updateFlashcardDisplay();
@@ -5388,7 +5420,11 @@
                     ? ' Additional cards were extracted from explicit source statements or examples.'
                     : '';
             const typeSummary = selectedTypes.map(type => typeNames[type] || type).join(', ');
-            showToast(`${cards.length} source-verified flashcards ready (${typeSummary}).${sourceMode}`, 'success');
+            if (partialDeck) {
+                showToast(`${cards.length} of ${requestedCount} requested source-verified flashcards are ready (${typeSummary}).${sourceMode}`, 'warning');
+            } else {
+                showToast(`${cards.length} source-verified flashcards ready (${typeSummary}).${sourceMode}`, 'success');
+            }
         }
 
         function closeFlashcardPlayer() {
