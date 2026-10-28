@@ -3677,7 +3677,12 @@ body.admin-theme-dark .playground-box .form-label,
           <div class="settings-note">Turning maintenance off automatically publishes a service-restored announcement to the in-app announcement center and sends push notifications where available.</div>
           <div class="settings-actions">
             <span id="system-maintenance-updated" class="settings-meta"></span>
-            <button type="button" id="save-system-maintenance" class="btn btn-primary" onclick="saveSystemMaintenanceSettings()" disabled>Save maintenance setting</button>
+            <div style="display: inline-flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+              <a href="/maintenance.html" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="text-decoration: none; font-size: 13px; display: inline-flex; align-items: center; gap: 6px;">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i> Preview maintenance page
+              </a>
+              <button type="button" id="save-system-maintenance" class="btn btn-primary" onclick="saveSystemMaintenanceSettings()" disabled>Save maintenance setting</button>
+            </div>
           </div>
         </section>
 

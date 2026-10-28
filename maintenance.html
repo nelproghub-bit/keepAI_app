@@ -2,229 +2,710 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f8fafc">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <meta name="theme-color" content="#0B1E35">
   <meta name="robots" content="noindex, nofollow">
+  <title>System Maintenance | KeepAI Study Assistant</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="assets/js/config.js"></script>
-  <title>Scheduled maintenance | KeepAI</title>
+
   <style>
     :root {
-      color-scheme: light dark;
-      font-family: Inter, "Segoe UI", system-ui, -apple-system, sans-serif;
-      font-synthesis: none;
-      text-rendering: optimizeLegibility;
-      --canvas: #f4f6fa;
-      --surface: #fff;
-      --text: #182230;
-      --muted: #586579;
-      --line: #e3e8ef;
-      --brand: #0F766E;
-      --brand-soft: #fff3f2;
+      --bg-gradient: radial-gradient(circle at 50% -10%, #17375E 0%, #0B1E35 60%, #06111F 100%);
+      --surface-card: rgba(20, 45, 78, 0.72);
+      --surface-card-border: rgba(255, 255, 255, 0.1);
+      --surface-inner: rgba(11, 30, 53, 0.65);
+      --surface-inner-border: rgba(255, 255, 255, 0.08);
+      
+      --text-main: #FFFFFF;
+      --text-secondary: #CBD5E1;
+      --text-muted: #94A3B8;
+      
+      --brand-teal: #0F766E;
+      --brand-teal-light: #14B8A6;
+      --brand-teal-glow: rgba(20, 184, 166, 0.25);
+      
+      --status-amber: #F59E0B;
+      --status-amber-dark: #D97706;
+      --status-amber-glow: rgba(245, 158, 11, 0.25);
+      
+      --status-green: #10B981;
+      --status-green-glow: rgba(16, 185, 129, 0.3);
+      
+      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
+      --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
-      display: grid;
       min-height: 100vh;
-      margin: 0;
-      padding: 28px 18px;
-      place-items: center;
-      background:
-        radial-gradient(ellipse at 50% 0, rgba(15, 118, 110, .08), transparent 48%),
-        var(--canvas);
-      color: var(--text);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      font-family: var(--font-body);
+      background: var(--bg-gradient);
+      background-attachment: fixed;
+      color: var(--text-main);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+      position: relative;
     }
 
-    main {
-      width: min(100%, 560px);
-      padding: clamp(28px, 7vw, 54px);
-      border: 1px solid var(--line);
-      border-radius: 24px;
-      background: var(--surface);
-      box-shadow: 0 24px 70px rgba(24, 34, 48, .1);
+    /* Ambient background lighting */
+    body::before {
+      content: '';
+      position: absolute;
+      width: 520px;
+      height: 520px;
+      top: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: radial-gradient(circle, rgba(15, 118, 110, 0.18) 0%, rgba(245, 158, 11, 0.06) 45%, transparent 70%);
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 0;
+      filter: blur(40px);
+    }
+
+    .maintenance-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 680px;
+      background: var(--surface-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--surface-card-border);
+      border-radius: 28px;
+      padding: 44px 36px;
+      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
       text-align: center;
     }
 
-    .brand {
+    @media (max-width: 640px) {
+      .maintenance-container {
+        padding: 32px 20px;
+        border-radius: 22px;
+      }
+    }
+
+    /* Brand Header */
+    .brand-header {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 36px;
-      color: var(--text);
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: -.3px;
+      gap: 12px;
+      margin-bottom: 28px;
+      text-decoration: none;
     }
 
-    .brand img {
-      width: 38px;
-      height: 38px;
+    .brand-logo {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
       object-fit: contain;
+      background: #FFFFFF;
+      padding: 3px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
 
-    .status-icon {
-      display: grid;
-      width: 72px;
-      height: 72px;
-      margin: 0 auto 22px;
-      place-items: center;
-      border: 1px solid rgba(15, 118, 110, .14);
-      border-radius: 22px;
-      background: var(--brand-soft);
-      color: var(--brand);
+    .brand-info {
+      text-align: left;
     }
 
-    .status-icon svg { width: 34px; height: 34px; }
+    .brand-name {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: -0.4px;
+      line-height: 1.1;
+    }
 
-    .status {
+    .brand-tagline {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--brand-teal-light);
+      letter-spacing: 0.3px;
+      text-transform: uppercase;
+    }
+
+    /* Animated Icon Hero */
+    .hero-badge-wrap {
+      position: relative;
+      width: 96px;
+      height: 96px;
+      margin: 0 auto 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hero-badge-glow {
+      position: absolute;
+      inset: -4px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--status-amber-glow) 30%, transparent 70%);
+      animation: pulseGlow 3s ease-in-out infinite;
+    }
+
+    .hero-badge {
+      position: relative;
+      width: 86px;
+      height: 86px;
+      border-radius: 26px;
+      background: linear-gradient(145deg, #1A365D 0%, #142D4E 100%);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
+      color: var(--status-amber);
+      font-size: 34px;
+      transition: all 0.5s ease;
+    }
+
+    .hero-badge i.gear-animated {
+      animation: gentleRotate 12s linear infinite;
+    }
+
+    @keyframes gentleRotate {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 1; }
+    }
+
+    /* Status Pill */
+    .status-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      margin-bottom: 16px;
-      padding: 7px 11px;
-      border: 1px solid var(--line);
-      border-radius: 99px;
-      color: var(--muted);
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #FBBF24;
       font-size: 11px;
       font-weight: 700;
-      letter-spacing: .45px;
+      letter-spacing: 0.8px;
       text-transform: uppercase;
+      margin-bottom: 18px;
     }
 
     .status-dot {
       width: 8px;
       height: 8px;
       border-radius: 50%;
-      background: #d97706;
-      box-shadow: 0 0 0 3px rgba(217, 119, 6, .12);
+      background: var(--status-amber);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+      animation: pulseDot 1.8s infinite;
     }
 
+    @keyframes pulseDot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Typography */
     h1 {
-      margin: 0;
-      font-size: clamp(26px, 6vw, 34px);
-      letter-spacing: -1px;
+      font-family: var(--font-display);
+      font-size: clamp(24px, 5vw, 32px);
+      font-weight: 800;
+      letter-spacing: -0.6px;
       line-height: 1.2;
+      color: #FFFFFF;
+      margin-bottom: 12px;
     }
 
     .description {
-      max-width: 410px;
-      margin: 14px auto 0;
-      color: var(--muted);
-      font-size: 14px;
-      line-height: 1.75;
+      font-size: 14.5px;
+      line-height: 1.65;
+      color: var(--text-secondary);
+      max-width: 530px;
+      margin: 0 auto 28px;
     }
 
-    .notice {
-      margin-top: 28px;
-      padding: 15px 17px;
-      border: 1px solid var(--line);
-      border-radius: 13px;
-      color: var(--muted);
-      font-size: 12px;
-      line-height: 1.65;
+    /* Assurance Grid */
+    .assurance-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 28px;
       text-align: left;
     }
 
-    .notice strong { color: var(--text); }
-
-    .admin-link {
-      display: inline-flex;
-      margin-top: 24px;
-      padding: 11px 16px;
-      border-radius: 10px;
-      background: var(--brand);
-      color: #fff;
-      font-size: 12px;
-      font-weight: 700;
-      text-decoration: none;
-      transition: background .2s ease, transform .2s ease;
-    }
-
-    .admin-link:hover { background: #115E59; transform: translateY(-1px); }
-
-    #refresh-status {
-      min-height: 18px;
-      margin: 19px 0 0;
-      color: var(--muted);
-      font-size: 11px;
-    }
-
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --canvas: #10141c;
-        --surface: #1a202b;
-        --text: #f1f4f8;
-        --muted: #a8b2c2;
-        --line: #30394a;
-        --brand-soft: #352124;
+    @media (max-width: 600px) {
+      .assurance-grid {
+        grid-template-columns: 1fr;
+        gap: 10px;
       }
+    }
 
-      body { background: radial-gradient(ellipse at 50% 0, rgba(196, 75, 75, .12), transparent 48%), var(--canvas); }
-      main { box-shadow: 0 24px 70px rgba(0, 0, 0, .28); }
+    .assurance-item {
+      background: var(--surface-inner);
+      border: 1px solid var(--surface-inner-border);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .assurance-icon {
+      font-size: 16px;
+      margin-bottom: 2px;
+    }
+
+    .assurance-icon.teal { color: var(--brand-teal-light); }
+    .assurance-icon.blue { color: #60A5FA; }
+    .assurance-icon.amber { color: #FBBF24; }
+
+    .assurance-title {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .assurance-desc {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Real-Time Live Status Card */
+    .live-status-card {
+      background: rgba(11, 30, 53, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      padding: 18px 20px;
+      margin-bottom: 26px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .live-status-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .live-status-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .live-status-badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(245, 158, 11, 0.15);
+      color: #FBBF24;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+    }
+
+    .live-status-message {
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-align: left;
+      line-height: 1.5;
+    }
+
+    .countdown-indicator {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .countdown-indicator strong {
+      color: #FFFFFF;
+      font-weight: 600;
+    }
+
+    /* Buttons & Actions */
+    .action-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px 22px;
+      border-radius: 12px;
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .btn-primary {
+      background: var(--brand-teal);
+      color: #FFFFFF;
+      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: #0D6560;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.45);
+    }
+
+    .btn-primary:active {
+      transform: translateY(0);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.07);
+      color: var(--text-secondary);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #FFFFFF;
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Footer Meta */
+    .maintenance-footer {
+      margin-top: 28px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .maintenance-footer span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* Restored State Animation */
+    .restored-mode .hero-badge {
+      background: linear-gradient(145deg, #064E3B 0%, #065F46 100%);
+      border-color: rgba(16, 185, 129, 0.45);
+      color: #34D399;
+    }
+
+    .restored-mode .hero-badge-glow {
+      background: radial-gradient(circle, var(--status-green-glow) 30%, transparent 70%);
+    }
+
+    .restored-mode .status-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34D399;
+    }
+
+    .restored-mode .status-dot {
+      background: var(--status-green);
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    }
+
+    .restored-mode .live-status-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border-color: rgba(16, 185, 129, 0.35);
+      color: #34D399;
+    }
+
+    /* Progress bar for redirection */
+    .redirect-progress-bar {
+      width: 100%;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-top: 8px;
+      display: none;
+    }
+
+    .redirect-progress-fill {
+      width: 0%;
+      height: 100%;
+      background: linear-gradient(90deg, var(--brand-teal-light), #34D399);
+      transition: width 1.2s ease-in-out;
     }
   </style>
-<link rel="stylesheet" href="assets/css/brand-theme.css">
-<link rel="stylesheet" href="assets/css/responsive-layouts.css">
 </head>
 <body>
-  <main>
-    <div class="brand">
-      <img src="assets/images/keepai-logo.png" alt="">
-      <span>KeepAI</span>
+
+  <main class="maintenance-container" role="main">
+    <!-- Brand Header -->
+    <div class="brand-header">
+      <img src="assets/images/keepai-logo.png" alt="KeepAI Logo" class="brand-logo">
+      <div class="brand-info">
+        <div class="brand-name">KeepAI</div>
+        <div class="brand-tagline">Your Simple AI Study Assistant</div>
+      </div>
     </div>
-    <div class="status-icon" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="9"></circle>
-        <path d="M12 7v5l3 2"></path>
-      </svg>
+
+    <!-- Animated Status Hero Badge -->
+    <div class="hero-badge-wrap">
+      <div class="hero-badge-glow"></div>
+      <div class="hero-badge" id="hero-badge">
+        <i class="fa-solid fa-screwdriver-wrench gear-animated" id="hero-icon"></i>
+      </div>
     </div>
-    <div class="status"><span class="status-dot"></span> Scheduled maintenance</div>
-    <h1>We’ll be back shortly.</h1>
-    <p class="description">
-      KeepAI is temporarily unavailable while we carry out maintenance.
-      Your study materials and progress remain safe.
+
+    <!-- Status Pill -->
+    <div>
+      <div class="status-pill" id="status-pill">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-pill-text">Scheduled Maintenance</span>
+      </div>
+    </div>
+
+    <!-- Main Headings -->
+    <h1 id="maintenance-title">System Maintenance in Progress</h1>
+    <p class="description" id="maintenance-desc">
+      KeepAI is temporarily offline while we perform scheduled infrastructure enhancements, security updates, and AI model performance optimizations to deliver a faster, more reliable study experience.
     </p>
-    <div class="notice">
-      <strong>Thank you for your patience.</strong><br>
-      This page will refresh automatically as soon as KeepAI is available again.
-      Administrators can still access the management portal.
+
+    <!-- Assurance Items -->
+    <div class="assurance-grid">
+      <div class="assurance-item">
+        <div class="assurance-icon teal"><i class="fa-solid fa-shield-halved"></i></div>
+        <div class="assurance-title">Data Safeguarded</div>
+        <div class="assurance-desc">All your study documents, flashcards, quiz scores, and notes are securely preserved.</div>
+      </div>
+      <div class="assurance-item">
+        <div class="assurance-icon blue"><i class="fa-solid fa-arrows-rotate"></i></div>
+        <div class="assurance-title">Auto-Reconnection</div>
+        <div class="assurance-desc">This page checks system status live and will automatically return you to KeepAI once online.</div>
+      </div>
+      <div class="assurance-item">
+        <div class="assurance-icon amber"><i class="fa-solid fa-user-shield"></i></div>
+        <div class="assurance-title">Admin Portal</div>
+        <div class="assurance-desc">Authorized administrators can still sign in to manage operations and platform settings.</div>
+      </div>
     </div>
-    <a class="admin-link" href="/admin_dashboard.html">Administrator sign in</a>
-    <p id="refresh-status" role="status" aria-live="polite">We’re checking service availability automatically.</p>
+
+    <!-- Live Status Monitor Card -->
+    <div class="live-status-card">
+      <div class="live-status-header">
+        <div class="live-status-label">
+          <i class="fa-solid fa-satellite-dish"></i> Live Service Monitor
+        </div>
+        <div class="live-status-badge" id="live-status-badge">Maintenance Active</div>
+      </div>
+      <div class="live-status-message" id="live-status-message">
+        Platform access is currently paused for updates. System diagnostics and health checks are ongoing.
+      </div>
+      <div class="countdown-indicator" id="countdown-indicator">
+        <i class="fa-regular fa-clock"></i> Next automated check in <strong id="countdown-val">12s</strong>
+      </div>
+      <div class="redirect-progress-bar" id="progress-bar">
+        <div class="redirect-progress-fill" id="progress-fill"></div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-row">
+      <button type="button" class="btn btn-primary" id="btn-check-now" onclick="triggerManualCheck()">
+        <i class="fa-solid fa-rotate" id="check-icon"></i> Check Status Now
+      </button>
+      <a href="/admin_dashboard.html" class="btn btn-secondary" id="btn-admin-portal">
+        <i class="fa-solid fa-lock"></i> Administrator Portal
+      </a>
+    </div>
+
+    <!-- Footer Meta -->
+    <footer class="maintenance-footer">
+      <span><i class="fa-solid fa-circle-check" style="color: var(--brand-teal-light);"></i> Westmead International School</span>
+      <span>•</span>
+      <span>KeepAI Platform v2.4</span>
+    </footer>
   </main>
+
   <script>
-    const refreshStatus = document.getElementById('refresh-status');
-    async function checkServiceStatus() {
-      try {
-        const response = await fetch(`${window.API_BASE}/maintenance-status`, { cache: 'no-store' });
-        if (!response.ok) throw new Error(`Status check failed (${response.status}).`);
-        const status = await response.json();
-        if (!status.maintenance) {
-          refreshStatus.textContent = 'KeepAI is available again. Returning you to the app…';
-          const returnTo = new URLSearchParams(window.location.search).get('returnTo');
-          if (returnTo && returnTo.startsWith('/') && !returnTo.startsWith('//')) {
-            const destination = new URL(returnTo, window.location.origin);
-            if (destination.origin === window.location.origin) {
-              window.location.replace(destination.href);
-            } else {
-              window.location.replace('/');
-            }
-          } else if (window.location.pathname === '/maintenance.html') {
-            window.location.replace('/');
-          } else {
-            window.location.reload();
+    (function () {
+      const apiBase = (window.API_BASE || '').replace(/\/$/, '') || '/api';
+      const statusPillText = document.getElementById('status-pill-text');
+      const heroBadge = document.getElementById('hero-badge');
+      const heroIcon = document.getElementById('hero-icon');
+      const mainTitle = document.getElementById('maintenance-title');
+      const mainDesc = document.getElementById('maintenance-desc');
+      const liveBadge = document.getElementById('live-status-badge');
+      const liveMessage = document.getElementById('live-status-message');
+      const countdownVal = document.getElementById('countdown-val');
+      const btnCheck = document.getElementById('btn-check-now');
+      const checkIcon = document.getElementById('check-icon');
+      const progressBar = document.getElementById('progress-bar');
+      const progressFill = document.getElementById('progress-fill');
+
+      let checkIntervalSecs = 12;
+      let secondsRemaining = checkIntervalSecs;
+      let isChecking = false;
+      let timerId = null;
+
+      function sanitizeReturnUrl(raw) {
+        if (!raw) return null;
+        try {
+          const decoded = decodeURIComponent(raw);
+          // Only permit safe relative paths within same origin
+          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.startsWith('/\\')) {
+            return decoded;
           }
-          return;
+          const parsed = new URL(decoded, window.location.origin);
+          if (parsed.origin === window.location.origin && parsed.pathname !== '/maintenance.html') {
+            return parsed.pathname + parsed.search + parsed.hash;
+          }
+        } catch (e) {
+          console.warn('Invalid return URL:', e);
         }
-        refreshStatus.textContent = 'Maintenance is still in progress. We’ll check again shortly.';
-      } catch (error) {
-        console.warn('Could not check maintenance status:', error);
-        refreshStatus.textContent = 'We could not check service status just now. We’ll keep trying.';
+        return null;
       }
-    }
-    window.setInterval(checkServiceStatus, 20000);
-    checkServiceStatus();
+
+      function handleServiceRestored() {
+        if (timerId) clearInterval(timerId);
+
+        document.querySelector('.maintenance-container').classList.add('restored-mode');
+        heroBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
+        heroBadge.classList.remove('gear-animated');
+        statusPillText.textContent = 'Service Restored';
+        liveBadge.textContent = 'Systems Operational';
+        liveBadge.style.color = '#34D399';
+        liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
+        liveBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
+
+        mainTitle.textContent = 'KeepAI is Back Online!';
+        mainDesc.textContent = 'Maintenance has concluded and all services are fully restored. Redirecting you to your study workspace now...';
+        liveMessage.textContent = 'Platform verified healthy. Restoring session...';
+
+        document.getElementById('countdown-indicator').style.display = 'none';
+        btnCheck.disabled = true;
+        btnCheck.style.display = 'none';
+
+        progressBar.style.display = 'block';
+        setTimeout(() => {
+          progressFill.style.width = '100%';
+        }, 50);
+
+        setTimeout(() => {
+          const returnTo = sanitizeReturnUrl(new URLSearchParams(window.location.search).get('returnTo'));
+          if (returnTo) {
+            window.location.replace(returnTo);
+          } else {
+            // Default to student login or dashboard
+            window.location.replace('/student_login.html');
+          }
+        }, 1200);
+      }
+
+      async function checkMaintenanceStatus(manual = false) {
+        if (isChecking) return;
+        isChecking = true;
+
+        if (manual) {
+          btnCheck.disabled = true;
+          checkIcon.classList.add('fa-spin');
+          liveMessage.textContent = 'Verifying platform availability with KeepAI servers...';
+        }
+
+        try {
+          const endpoint = `${apiBase}/maintenance-status`;
+          const response = await fetch(endpoint, {
+            cache: 'no-store',
+            headers: { 'Accept': 'application/json' }
+          });
+
+          if (!response.ok) {
+            throw new Error(`Server returned status ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (data && data.maintenance === false) {
+            handleServiceRestored();
+            return;
+          }
+
+          // Still under maintenance
+          liveBadge.textContent = 'Maintenance Active';
+          liveMessage.textContent = 'Scheduled maintenance is still actively in progress. Our team is finalizing optimizations.';
+          secondsRemaining = checkIntervalSecs;
+          countdownVal.textContent = `${secondsRemaining}s`;
+        } catch (err) {
+          console.warn('KeepAI service check failed:', err);
+          liveMessage.textContent = 'Connecting to KeepAI service... retrying momentarily.';
+          secondsRemaining = checkIntervalSecs;
+          countdownVal.textContent = `${secondsRemaining}s`;
+        } finally {
+          isChecking = false;
+          if (manual) {
+            setTimeout(() => {
+              btnCheck.disabled = false;
+              checkIcon.classList.remove('fa-spin');
+            }, 600);
+          }
+        }
+      }
+
+      window.triggerManualCheck = function () {
+        secondsRemaining = checkIntervalSecs;
+        checkMaintenanceStatus(true);
+      };
+
+      // Interval ticker for countdown
+      timerId = setInterval(() => {
+        secondsRemaining -= 1;
+        if (secondsRemaining <= 0) {
+          secondsRemaining = checkIntervalSecs;
+          countdownVal.textContent = `${secondsRemaining}s`;
+          checkMaintenanceStatus(false);
+        } else {
+          countdownVal.textContent = `${secondsRemaining}s`;
+        }
+      }, 1000);
+
+      // Initial check on page load
+      checkMaintenanceStatus(false);
+    })();
   </script>
 </body>
 </html>

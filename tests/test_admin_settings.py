@@ -149,7 +149,7 @@ class AdminSettingsTests(unittest.TestCase):
         admin_response = self.client.get("/api/admin/settings")
 
         self.assertEqual(page_response.status_code, 503)
-        self.assertIn("We’ll be back shortly.", page_response.text)
+        self.assertIn("System Maintenance", page_response.text)
         self.assertEqual(api_response.status_code, 503)
         self.assertTrue(api_response.json()["maintenance"])
         self.assertEqual(status_response.status_code, 200)

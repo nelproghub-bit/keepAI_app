@@ -1,5 +1,59 @@
 {
   "buildCommand": "node scripts/build-frontend.mjs",
   "outputDirectory": "dist",
-  "cleanUrls": false
+  "cleanUrls": false,
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/maintenance\\.html",
+      "dest": "/maintenance.html"
+    },
+    {
+      "src": "/student_login\\.html",
+      "dest": "/student_login.html"
+    },
+    {
+      "src": "/student_dashboard\\.html",
+      "dest": "/student_dashboard.html"
+    },
+    {
+      "src": "/student_portal\\.html",
+      "dest": "/student_portal.html"
+    },
+    {
+      "src": "/admin_dashboard\\.html",
+      "dest": "/admin_dashboard.html"
+    },
+    {
+      "src": "/admin_panel\\.html",
+      "dest": "/admin_panel.html"
+    },
+    {
+      "src": "/manifest\\.json",
+      "dest": "/manifest.json"
+    },
+    {
+      "src": "/admin-manifest\\.json",
+      "dest": "/admin-manifest.json"
+    },
+    {
+      "src": "/sw\\.js",
+      "dest": "/sw.js"
+    },
+    {
+      "src": "/assets/(.*)",
+      "dest": "/assets/$1"
+    },
+    {
+      "src": "/icons/(.*)",
+      "dest": "/icons/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
