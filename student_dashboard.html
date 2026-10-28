@@ -676,6 +676,37 @@
             overflow-y: auto;
         }
 
+        .announcement-header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .announcement-clear-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 34px;
+            height: 34px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            background: var(--bg-surface);
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: var(--transition-smooth);
+        }
+
+        .announcement-clear-button:hover:not(:disabled) {
+            border-color: var(--danger, #dc2626);
+            color: var(--danger, #dc2626);
+            background: var(--bg-subtle);
+        }
+
+        .announcement-clear-button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
         .announcement-card {
             padding: 14px;
             border: 1px solid var(--border);
@@ -3377,9 +3408,16 @@
         <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="student-announcements-title">
             <div class="modal-header">
                 <h3 id="student-announcements-title">App notifications</h3>
-                <button class="modal-close" type="button" onclick="closeStudentAnnouncements()" aria-label="Close notifications">
-                    <i class="fas fa-times"></i>
-                </button>
+                <div class="announcement-header-actions">
+                    <button class="announcement-clear-button" id="clear-student-announcements" type="button"
+                        onclick="clearStudentAnnouncements()" aria-label="Clear all notifications"
+                        title="Clear all notifications" disabled>
+                        <i class="fas fa-trash" aria-hidden="true"></i>
+                    </button>
+                    <button class="modal-close" type="button" onclick="closeStudentAnnouncements()" aria-label="Close notifications">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
             </div>
             <div class="announcement-list" id="student-announcements-list" aria-live="polite">
                 <p style="color: var(--text-muted);">Loading notifications…</p>
@@ -3691,8 +3729,10 @@
         function renderStudentAnnouncements(announcements) {
             const list = document.getElementById('student-announcements-list');
             if (!list) return;
+            const clearButton = document.getElementById('clear-student-announcements');
+            if (clearButton) clearButton.disabled = announcements.length === 0;
             if (!announcements.length) {
-                list.innerHTML = '<p style="color: var(--text-muted);">There are no app announcements yet.</p>';
+                list.innerHTML = '<p style="color: var(--text-muted);">You have no app notifications.</p>';
                 return;
             }
 
@@ -3717,6 +3757,42 @@
                     </article>
                 `;
             }).join('');
+        }
+
+        async function clearStudentAnnouncements() {
+            const list = document.getElementById('student-announcements-list');
+            const clearButton = document.getElementById('clear-student-announcements');
+            if (!list || !clearButton || clearButton.disabled) return;
+
+            const confirmed = await showConfirmDialog({
+                title: 'Clear all notifications?',
+                message: 'This will remove all current app notifications from your list. New notifications can still arrive.',
+                confirmText: 'Clear all',
+                type: 'danger'
+            });
+            if (!confirmed) return;
+
+            clearButton.disabled = true;
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) throw new Error('Sign in again to clear notifications.');
+                const response = await fetch(`${API_BASE}/announcements`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                if (!response.ok) {
+                    throw new Error(`Could not clear notifications (${response.status}).`);
+                }
+
+                list.innerHTML = '<p style="color: var(--text-muted);">You have no app notifications.</p>';
+                const count = document.getElementById('student-notification-count');
+                if (count) count.hidden = true;
+                showToast('All notifications cleared.', 'success');
+            } catch (error) {
+                console.error('Failed to clear app notifications:', error);
+                clearButton.disabled = false;
+                showToast(error.message || 'Notifications could not be cleared. Please try again.', 'error');
+            }
         }
 
         async function openStudentAnnouncements() {

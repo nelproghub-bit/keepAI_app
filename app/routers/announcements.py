@@ -40,11 +40,14 @@ def list_announcements(current_user: Dict[str, Any] = Depends(get_current_user))
             FROM announcements a
             LEFT JOIN announcement_reads r
                 ON r.announcement_id = a.id AND r.user_id = ?
+            LEFT JOIN announcement_dismissals d
+                ON d.announcement_id = a.id AND d.user_id = ?
             WHERE a.is_active = ?
+              AND d.announcement_id IS NULL
             ORDER BY a.created_at DESC
             LIMIT 100
             """,
-            (current_user["id"], True),
+            (current_user["id"], current_user["id"], True),
         )
         rows = cursor.fetchall()
         announcements = [_serialize_announcement(dict(row)) for row in rows]
@@ -52,6 +55,29 @@ def list_announcements(current_user: Dict[str, Any] = Depends(get_current_user))
             "announcements": announcements,
             "unread_count": sum(not item["is_read"] for item in announcements),
         }
+    finally:
+        conn.close()
+
+
+@router.delete("/announcements")
+def dismiss_all_announcements(current_user: Dict[str, Any] = Depends(get_current_user)):
+    conn = get_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute(
+            """
+            INSERT INTO announcement_dismissals (announcement_id, user_id)
+            SELECT a.id, ?
+            FROM announcements a
+            LEFT JOIN announcement_dismissals d
+                ON d.announcement_id = a.id AND d.user_id = ?
+            WHERE a.is_active = ? AND d.announcement_id IS NULL
+            """,
+            (current_user["id"], current_user["id"], True),
+        )
+        dismissed_count = cursor.rowcount
+        conn.commit()
+        return {"dismissed_count": dismissed_count}
     finally:
         conn.close()
 

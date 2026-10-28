@@ -238,6 +238,14 @@ def init_db():
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS announcement_dismissals (
+            announcement_id VARCHAR(64) NOT NULL,
+            user_id VARCHAR(64) NOT NULL,
+            dismissed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (announcement_id, user_id)
+        )
+    """)
 
     if _active_engine == "postgres":
         cursor.execute("""
