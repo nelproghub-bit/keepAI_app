@@ -106,7 +106,7 @@ def get_progress(user_id: str) -> Dict[str, Any]:
                 subject = (row.get("subject") or "").strip()
                 if subject and event_type in study_event_types and event_type != "study_time" and created_at >= now - timedelta(days=30):
                     subject_counts[subject] = subject_counts.get(subject, 0) + 1
-                if event_type != "study_time" and len(recent_activity) < 10:
+                if event_type != "study_time" and len(recent_activity) < 50:
                     recent_activity.append({
                         "type": event_type,
                         "description": row.get("description") or "Study activity",

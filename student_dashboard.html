@@ -2711,12 +2711,14 @@
                         </div>
 
                         <div class="panel">
-                            <h4 style="font-size: 16px; font-weight: 800; margin-bottom: 14px; color: var(--text-main);">
-                                <i class="fas fa-history me-2" style="color: var(--emerald);"></i>Recent Activity Log
+                            <h4 class="progress-activity-title">
+                                <span class="progress-activity-title-icon" aria-hidden="true"><i class="fas fa-history"></i></span>
+                                <span>Recent Activity Log</span>
                             </h4>
-                            <div id="progress-activity-list" style="display: flex; flex-direction: column; gap: 12px; font-size: 13px;" aria-live="polite">
+                            <div id="progress-activity-list" class="progress-activity-list" aria-live="polite">
                                 <div style="color: var(--text-muted);">Loading your activity…</div>
                             </div>
+                            <nav id="progress-activity-pagination" class="progress-activity-pagination" aria-label="Recent activity pages" hidden></nav>
                         </div>
                     </div>
                 </section>
@@ -4046,11 +4048,21 @@
         function renderRecentActivity(activities) {
             const container = document.getElementById('progress-activity-list');
             if (!container) return;
+            const pagination = document.getElementById('progress-activity-pagination');
+            const pageSize = 5;
             if (!activities.length) {
                 container.innerHTML = '<div style="color: var(--text-muted);">Your completed study actions will appear here.</div>';
+                if (pagination) {
+                    pagination.hidden = true;
+                    pagination.innerHTML = '';
+                }
                 return;
             }
 
+            const pageCount = Math.ceil(activities.length / pageSize);
+            const requestedPage = Number.parseInt(container.dataset.page || '0', 10);
+            const page = Math.min(Math.max(Number.isInteger(requestedPage) ? requestedPage : 0, 0), pageCount - 1);
+            const pageActivities = activities.slice(page * pageSize, (page + 1) * pageSize);
             const icons = {
                 tutor_question: ['fa-robot', 'var(--primary)'],
                 quiz_completed: ['fa-clipboard-check', 'var(--emerald)'],
@@ -4060,7 +4072,8 @@
                 workspace_created: ['fa-folder-plus', 'var(--emerald)'],
                 flashcard_mastered: ['fa-layer-group', 'var(--amber)']
             };
-            container.innerHTML = activities.map(item => {
+            container.dataset.page = String(page);
+            container.innerHTML = pageActivities.map(item => {
                 const [icon, color] = icons[item.type] || ['fa-book-open', 'var(--primary)'];
                 const when = new Date(item.created_at);
                 const time = Number.isNaN(when.getTime()) ? '' : when.toLocaleString([], {
@@ -4071,15 +4084,40 @@
                     ? ` · ${Math.round(Number(item.score_percent))}%`
                     : '';
                 return `
-                    <div style="display: flex; gap: 10px; align-items: flex-start;">
-                        <i class="fas ${icon}" style="color: ${color}; margin-top: 3px;"></i>
-                        <div style="min-width: 0;">
-                            <div>${escapeHTML(item.description)}${subject}${score}</div>
-                            <div style="font-size: 11px; color: var(--text-muted); margin-top: 3px;">${escapeHTML(time)}</div>
+                    <article class="progress-activity-item">
+                        <span class="progress-activity-icon" style="--activity-icon-color: ${color};" aria-hidden="true">
+                            <i class="fas ${icon}"></i>
+                        </span>
+                        <div class="progress-activity-copy">
+                            <div class="progress-activity-description">${escapeHTML(item.description)}${subject}${score}</div>
+                            <time class="progress-activity-time" datetime="${escapeHTML(item.created_at)}">${escapeHTML(time)}</time>
                         </div>
-                    </div>
+                    </article>
                 `;
             }).join('');
+
+            if (!pagination) return;
+            const start = page * pageSize + 1;
+            const end = Math.min((page + 1) * pageSize, activities.length);
+            pagination.hidden = pageCount < 2;
+            pagination.innerHTML = `
+                <span class="progress-activity-range">Showing ${start}–${end} of ${activities.length}</span>
+                <div class="progress-activity-page-controls">
+                    <button type="button" class="progress-activity-page-button" data-activity-page="${page - 1}" ${page === 0 ? 'disabled' : ''} aria-label="Previous page">
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i><span>Previous</span>
+                    </button>
+                    <span class="progress-activity-page-count" aria-current="page">Page ${page + 1} of ${pageCount}</span>
+                    <button type="button" class="progress-activity-page-button" data-activity-page="${page + 1}" ${page === pageCount - 1 ? 'disabled' : ''} aria-label="Next page">
+                        <span>Next</span><i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+            `;
+            pagination.querySelectorAll('[data-activity-page]').forEach(button => {
+                button.addEventListener('click', () => {
+                    container.dataset.page = button.dataset.activityPage;
+                    renderRecentActivity(activities);
+                });
+            });
         }
 
         async function recordProgressActivity(activity) {
