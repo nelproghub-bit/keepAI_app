@@ -148,7 +148,7 @@ button { cursor: pointer; }
 
 .auth-wrapper {
   width: 100%;
-  max-width: 480px;
+  max-width: 460px;
   animation: cardEntrance .55s cubic-bezier(.22,.68,0,1.2) both;
 }
 
@@ -172,7 +172,7 @@ button { cursor: pointer; }
 }
 
 .auth-header {
-  padding: 42px 36px 24px;
+  padding: 44px 40px 28px;
   text-align: center;
   background: linear-gradient(170deg, #F8FFFE 0%, #F0F9F8 55%, #E9F5F4 100%);
   border-bottom: 1px solid #DFF0EE;
@@ -192,14 +192,14 @@ button { cursor: pointer; }
 }
 
 .auth-logo {
-  width: 84px;
-  height: 84px;
+  width: 88px;
+  height: 88px;
   background: white;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 16px;
+  margin: 0 auto 18px;
   box-shadow: 0 0 0 4px rgba(15,118,110,.10), 0 8px 28px rgba(15,23,42,.14);
   overflow: hidden;
   position: relative;
@@ -226,6 +226,17 @@ button { cursor: pointer; }
   text-transform: uppercase;
   color: var(--primary);
   opacity: .85;
+  position: relative;
+  z-index: 1;
+}
+
+.auth-brand {
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  color: var(--text-main);
+  margin-bottom: 5px;
   position: relative;
   z-index: 1;
 }
@@ -288,7 +299,7 @@ button { cursor: pointer; }
 }
 
 .auth-body {
-  padding: 14px 34px 34px;
+  padding: 8px 36px 36px;
   background: white;
 }
 
@@ -307,16 +318,16 @@ button { cursor: pointer; }
 }
 
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .form-group label {
   display: block;
-  font-size: 11.5px;
+  font-size: 11px;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text-body);
   margin-bottom: 6px;
-  letter-spacing: 0.4px;
+  letter-spacing: 0.6px;
   text-transform: uppercase;
 }
 
@@ -324,16 +335,27 @@ button { cursor: pointer; }
   width: 100%;
   padding: 11px 14px;
   font-size: 14px;
-  border: 1px solid var(--border);
+  font-family: inherit;
+  border: 1.5px solid var(--border);
   border-radius: var(--radius-md);
-  background: white;
+  background: #FAFBFC;
   color: var(--text-main);
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+}
+
+.form-group input::placeholder {
+  color: #B0BEC5;
+}
+
+.form-group input:hover {
+  border-color: #B2D8D5;
+  background: white;
 }
 
 .form-group input:focus, .form-group textarea:focus {
   border-color: var(--primary);
-  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+  background: white;
+  box-shadow: var(--shadow-inp);
 }
 
 .btn {
@@ -382,6 +404,14 @@ button { cursor: pointer; }
   opacity: 0.55;
   cursor: not-allowed;
   transform: none;
+}
+
+#auth-container .form-view .btn-primary {
+  width: 100%;
+  padding: 13px 20px;
+  font-size: 14.5px;
+  font-family: inherit;
+  justify-content: center;
 }
 
 .btn-danger {
@@ -2098,16 +2128,22 @@ table.data-table tr:hover {
   }
 }
 
-@media (max-width: 540px) {
+@media (max-width: 600px) {
+  #auth-container {
+    padding: 12px;
+  }
   .auth-wrapper {
     max-width: 100%;
-    padding: 0 4px;
   }
   .auth-header {
-    padding: 24px 16px 16px;
+    padding: 32px 24px 22px;
   }
   .auth-body {
-    padding: 20px 16px;
+    padding: 6px 22px 28px;
+  }
+  .auth-tab {
+    padding: 14px 10px;
+    font-size: 13px;
   }
   .dash-main {
     padding: 14px 12px;
@@ -2154,6 +2190,23 @@ table.data-table tr:hover {
     max-width: 95vw;
     margin: 10px;
     padding: 20px 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  #auth-container {
+    padding: 8px;
+  }
+  .auth-header {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .auth-body {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+  .auth-brand {
+    font-size: 23px;
   }
 }
 
@@ -3249,6 +3302,7 @@ body.admin-theme-dark .playground-box .form-label,
         <div class="auth-logo">
           <img src="assets/images/keepai-logo.png" alt="KeepAI logo">
         </div>
+        <div class="auth-brand">KEEP-AI</div>
         <div class="auth-school">Your Simple AI Study Assistant</div>
         <h1 class="auth-title">Administrator Portal</h1>
         <p class="auth-desc">Secure management console for KeepAI study assistant</p>
