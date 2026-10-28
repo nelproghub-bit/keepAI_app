@@ -44,8 +44,8 @@ Fix: Double-click start_backend.bat first!
 📚 FULL DOCUMENTATION
 
 • FIX_CONNECTION_ERROR.md  - Troubleshooting guide
-• STUDENT_PORTAL_GUIDE.md  - Portal documentation
-• STUDENT_QUICK_START.md   - Dashboard guide
+• ../students/STUDENT_PORTAL_GUIDE.md  - Portal documentation
+• ../students/STUDENT_QUICK_START.md   - Dashboard guide
 • README.md                - Complete documentation
 
 ═══════════════════════════════════════════════════════════════

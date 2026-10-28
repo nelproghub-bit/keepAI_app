@@ -10,7 +10,9 @@ KeepAI now includes a **complete student portal** with registration, login, and 
 - **Student Dashboard**: `student_dashboard.html` - Organize courses, customize AI tutor, manage preferences
 - **Admin Portal**: `index.html` - System configuration and user management
 
-[📖 Student Portal Guide](STUDENT_PORTAL_GUIDE.md) | [📖 Dashboard Quick Start](STUDENT_QUICK_START.md) | [📚 Full Documentation](STUDENT_DASHBOARD_README.md)
+[📖 Student Portal Guide](docs/students/STUDENT_PORTAL_GUIDE.md) | [📖 Dashboard Quick Start](docs/students/STUDENT_QUICK_START.md) | [📚 Full Documentation](docs/students/STUDENT_DASHBOARD_README.md)
+
+See the [documentation index](docs/README.md) for all guides, setup instructions, and development references.
 
 ## 🚀 Quick Start
 
@@ -22,7 +24,7 @@ KeepAI now includes a **complete student portal** with registration, login, and 
 2. **Run database migration (for student dashboard):**
    ```bash
    # If using MySQL/MariaDB
-   mysql -u root -p keepai < migrate_student_dashboard.sql
+   mysql -u root -p keepai < database/migrate_student_dashboard.sql
    
    # SQLite users: tables will be created automatically
    ```
@@ -83,7 +85,7 @@ Local database and document files under `data/` are ignored and no longer tracke
 
 7. **Configure AI provider (Admins only):**
    - Admins: Go to Settings in `index.html`
-   - See [AI_SETUP.md](AI_SETUP.md) for detailed configuration
+   - See [AI setup guide](docs/setup/AI_SETUP.md) for detailed configuration
 
 ## 🤖 AI Provider Support
 
@@ -251,7 +253,7 @@ Frontend (HTML/JS) → FastAPI Backend → AI Provider
 
 ## 📖 Documentation
 
-- [AI Setup Guide](AI_SETUP.md) - Detailed AI provider configuration
+- [AI Setup Guide](docs/setup/AI_SETUP.md) - Detailed AI provider configuration
 - [.env.example](.env.example) - Environment configuration template
 
 ## 🤝 Contributing

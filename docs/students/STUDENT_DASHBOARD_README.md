@@ -204,10 +204,10 @@ Content-Type: application/json
 ### 1. Database Migration
 Run the updated schema to add new tables:
 ```bash
-mysql -u root -p keepai < database_schema.sql
+mysql -u root -p keepai < database/database_schema.sql
 ```
 
-Or manually execute the new table definitions from `database_schema.sql`.
+Or manually execute the new table definitions from `database/database_schema.sql`.
 
 ### 2. Backend Setup
 The workspace router is already integrated. Restart the FastAPI server:

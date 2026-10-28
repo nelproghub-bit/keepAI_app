@@ -172,8 +172,8 @@ Wait for installation to complete, then try again.
 
 **Solution C: Run migration**
 ```bash
-mysql -u root -p keepai < database_schema.sql
-mysql -u root -p keepai < migrate_student_dashboard.sql
+mysql -u root -p keepai < database/database_schema.sql
+mysql -u root -p keepai < database/migrate_student_dashboard.sql
 ```
 
 ---
@@ -198,8 +198,8 @@ mysql -u root -p keepai < migrate_student_dashboard.sql
 
 4. ✅ Migration run (first time only)
    ```bash
-   mysql -u root -p keepai < database_schema.sql
-   mysql -u root -p keepai < migrate_student_dashboard.sql
+   mysql -u root -p keepai < database/database_schema.sql
+   mysql -u root -p keepai < database/migrate_student_dashboard.sql
    ```
 
 5. ✅ Backend server started

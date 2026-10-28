@@ -40,7 +40,7 @@ echo Starting API tests...
 echo.
 
 REM Run the test script
-python test_api.py
+python tests\manual\test_api.py
 
 echo.
 echo ========================================
@@ -50,6 +50,6 @@ echo.
 echo Next steps:
 echo 1. If tests passed, open student_dashboard.html in browser
 echo 2. Login with: arnel / password123
-echo 3. Test the UI manually (see TESTING_GUIDE.md)
+echo 3. Test the UI manually (see docs\development\TESTING_GUIDE.md)
 echo.
 pause

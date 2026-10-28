@@ -4,7 +4,7 @@
 
 ```bash
 # 1. Run migration
-mysql -u root -p keepai < migrate_student_dashboard.sql
+mysql -u root -p keepai < database/migrate_student_dashboard.sql
 
 # 2. Start backend
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
@@ -27,7 +27,7 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 keepAI_app/
 ├── student_dashboard.html          ← Student interface
 ├── index.html                      ← Admin interface
-├── migrate_student_dashboard.sql   ← Migration script
+├── database/migrate_student_dashboard.sql   ← Migration script
 │
 ├── app/
 │   ├── main.py                     ← (modified - added router)
@@ -37,9 +37,9 @@ keepAI_app/
 │       └── workspace_service.py    ← NEW - business logic
 │
 └── docs/
-    ├── STUDENT_QUICK_START.md      ← 3-min setup guide
-    ├── STUDENT_DASHBOARD_README.md ← Full documentation
-    └── CHANGES_SUMMARY.md          ← Implementation details
+    ├── ../students/STUDENT_QUICK_START.md      ← 3-min setup guide
+    ├── ../students/STUDENT_DASHBOARD_README.md ← Full documentation
+    └── ../development/CHANGES_SUMMARY.md          ← Implementation details
 ```
 
 ---
@@ -187,9 +187,9 @@ curl -X POST \
 
 ## 📚 Documentation Links
 
-1. **STUDENT_QUICK_START.md** - Get started in 3 minutes
-2. **STUDENT_DASHBOARD_README.md** - Complete technical docs
-3. **CHANGES_SUMMARY.md** - What was built
+1. **../students/STUDENT_QUICK_START.md** - Get started in 3 minutes
+2. **../students/STUDENT_DASHBOARD_README.md** - Complete technical docs
+3. **../development/CHANGES_SUMMARY.md** - What was built
 4. **README.md** - Main project documentation
 
 ---
@@ -301,9 +301,9 @@ mysql -u root -p -e "SHOW TABLES FROM keepai;"
 
 ## 📞 Help
 
-**Students**: Read STUDENT_QUICK_START.md
-**Developers**: Read STUDENT_DASHBOARD_README.md
-**Issues**: Check CHANGES_SUMMARY.md troubleshooting
+**Students**: Read ../students/STUDENT_QUICK_START.md
+**Developers**: Read ../students/STUDENT_DASHBOARD_README.md
+**Issues**: Check ../development/CHANGES_SUMMARY.md troubleshooting
 
 ---
 

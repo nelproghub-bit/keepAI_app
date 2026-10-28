@@ -21,7 +21,7 @@ Before you start testing, ensure:
 mysql -u root -p -e "SELECT 1;"
 
 # Run the migration
-mysql -u root -p keepai < migrate_student_dashboard.sql
+mysql -u root -p keepai < database/migrate_student_dashboard.sql
 
 # Verify tables were created
 mysql -u root -p -e "USE keepai; SHOW TABLES;"
@@ -763,7 +763,7 @@ If tests fail:
 2. Review browser console
 3. Verify database schema
 4. Confirm API endpoints
-5. Check STUDENT_DASHBOARD_README.md troubleshooting
+5. Check ../students/STUDENT_DASHBOARD_README.md troubleshooting
 
 ---
 

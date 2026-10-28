@@ -254,7 +254,7 @@ Ensure MariaDB/MySQL is running:
 ## 🆘 Need More Help?
 
 1. Check the error message in command window
-2. Read ADMIN_DASHBOARD_GUIDE.md
+2. Read ../admin/ADMIN_DASHBOARD_GUIDE.md
 3. Look at API docs: http://127.0.0.1:8000/docs
 4. Check database connection in XAMPP
 

@@ -140,8 +140,8 @@ DOCUMENTATION
 
 For more details, see:
   • SERVER_STARTUP_GUIDE.md (Complete guide)
-  • ADMIN_DASHBOARD_GUIDE.md (Admin panel guide)
-  • ADMIN_QUICKSTART.md (Quick start)
+  • ../admin/ADMIN_DASHBOARD_GUIDE.md (Admin panel guide)
+  • ../admin/ADMIN_QUICKSTART.md (Quick start)
 
 ================================================================================
 SUPPORT

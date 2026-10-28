@@ -29,20 +29,20 @@ A complete **student-only dashboard** with workspace management and personalized
    - Full CRUD operations
 
 ### Database
-4. **`migrate_student_dashboard.sql`** (Migration script)
+4. **`database/migrate_student_dashboard.sql`** (Migration script)
    - Safe migration for existing databases
    - Adds 3 new tables
    - Updates users table with role column
    - Includes demo data
 
 ### Documentation
-5. **`STUDENT_DASHBOARD_README.md`** (Complete documentation)
+5. **`../students/STUDENT_DASHBOARD_README.md`** (Complete documentation)
    - Feature overview
    - API documentation
    - Security details
    - Usage examples
 
-6. **`STUDENT_QUICK_START.md`** (Quick start guide)
+6. **`../students/STUDENT_QUICK_START.md`** (Quick start guide)
    - 3-minute setup guide
    - Common use cases
    - Troubleshooting
@@ -106,7 +106,7 @@ A complete **student-only dashboard** with workspace management and personalized
    - Added workspaces router import
    - Registered `/api/workspaces` endpoint group
 
-2. **`database_schema.sql`**
+2. **`database/database_schema.sql`**
    - Added role column to users table
    - Added 3 new tables
    - Added demo workspace for existing student
@@ -217,7 +217,7 @@ PUT    /api/workspaces/preferences/me        - Update my preferences
 ### 1. Run Migration
 ```bash
 # MySQL/MariaDB
-mysql -u root -p keepai < migrate_student_dashboard.sql
+mysql -u root -p keepai < database/migrate_student_dashboard.sql
 
 # SQLite - automatic on startup
 ```
@@ -429,7 +429,7 @@ Before deployment, verify:
 ### Minimal Changes
 - Only modified 3 existing files:
   - `app/main.py` (added router)
-  - `database_schema.sql` (added tables)
+  - `database/database_schema.sql` (added tables)
   - `README.md` (added documentation links)
 
 ### No Breaking Changes
@@ -449,11 +449,11 @@ Before deployment, verify:
 ## 📞 Support
 
 ### For Students
-- Read: [STUDENT_QUICK_START.md](STUDENT_QUICK_START.md)
+- Read: [../students/STUDENT_QUICK_START.md](../students/STUDENT_QUICK_START.md)
 - Issues: Check troubleshooting section
 
 ### For Developers
-- Read: [STUDENT_DASHBOARD_README.md](STUDENT_DASHBOARD_README.md)
+- Read: [../students/STUDENT_DASHBOARD_README.md](../students/STUDENT_DASHBOARD_README.md)
 - API docs: In router file
 - Database schema: In SQL files
 

@@ -8,7 +8,7 @@ If you already have KeepAI running, add the new student dashboard tables:
 
 ```bash
 # Using MySQL/MariaDB
-mysql -u root -p keepai < migrate_student_dashboard.sql
+mysql -u root -p keepai < database/migrate_student_dashboard.sql
 
 # Or if using SQLite, the tables will be created automatically on first run
 ```
@@ -146,9 +146,9 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ## 🆘 Need Help?
 
 ### Check These Resources:
-1. [STUDENT_DASHBOARD_README.md](STUDENT_DASHBOARD_README.md) - Full documentation
-2. [README.md](README.md) - General KeepAI documentation
-3. [AI_SETUP.md](AI_SETUP.md) - AI configuration guide
+1. [Student dashboard documentation](STUDENT_DASHBOARD_README.md) - Full student guide
+2. [KeepAI project README](../../README.md) - General project documentation
+3. [../setup/AI_SETUP.md](../setup/AI_SETUP.md) - AI configuration guide
 
 ### Common Issues:
 
