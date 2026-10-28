@@ -3,7 +3,8 @@ import re
 import random
 import hashlib
 import unicodedata
-from typing import Optional, Dict, Any, List
+from concurrent.futures import ThreadPoolExecutor
+from typing import Optional, Dict, Any, List, Union
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel, Field, model_validator
 from app.core.ai_guardrails import PromptGuardrail
@@ -1086,7 +1087,7 @@ def _is_valid_flashcard_candidate(
     return False
 
 
-def generate_flashcards_from_document(
+def _generate_flashcards_for_type(
     document_text: str,
     topic: str,
     card_count: int,
@@ -1114,7 +1115,7 @@ def generate_flashcards_from_document(
         "fill-blank": "Put one exact source sentence on front with exactly one key term replaced by ______, and that exact missing text on back.",
     }
     sections = _flashcard_source_sections(document_text)
-    selected_count = min(card_count, len(sections))
+    selected_count = min(card_count, len(sections), 20)
     if selected_count == 1:
         selected_indices = [0] if len(sections) == 1 else [len(sections) // 2]
     else:
@@ -1333,6 +1334,74 @@ def generate_flashcards_from_document(
     return cards
 
 
+def generate_flashcards_from_document(
+    document_text: str,
+    topic: str,
+    card_count: int,
+    card_type: Union[str, List[str]],
+) -> List[Dict[str, Any]]:
+    """Generate an exact total, evenly balanced across the selected card types."""
+    if not document_text.strip():
+        raise HTTPException(404, "No readable text was found in the selected document.")
+    selected_types = [card_type] if isinstance(card_type, str) else list(card_type)
+    if not selected_types or len(set(selected_types)) != len(selected_types):
+        raise HTTPException(422, "Choose one or more unique supported flashcard types.")
+    if set(selected_types) - FLASHCARD_TYPES:
+        raise HTTPException(422, "Choose one or more supported flashcard types.")
+    if not 1 <= card_count <= 100:
+        raise HTTPException(422, "Choose between 1 and 100 flashcards.")
+    if card_count < len(selected_types):
+        raise HTTPException(422, "Request at least one flashcard for each selected type.")
+
+    quotient, remainder = divmod(card_count, len(selected_types))
+    type_counts = [
+        quotient + (1 if index < remainder else 0)
+        for index in range(len(selected_types))
+    ]
+    if len(selected_types) == 1:
+        return _generate_flashcards_for_type(
+            document_text,
+            topic,
+            type_counts[0],
+            selected_types[0],
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        futures = [
+            executor.submit(
+                _generate_flashcards_for_type,
+                document_text,
+                topic,
+                count,
+                selected_type,
+            )
+            for selected_type, count in zip(selected_types, type_counts)
+        ]
+        cards = [
+            card
+            for future in futures
+            for card in future.result()
+        ]
+
+    if len(cards) != card_count:
+        raise HTTPException(
+            502,
+            f"Flashcard generation returned {len(cards)} cards instead of the requested {card_count}. "
+            "Please try again; incomplete decks are not returned.",
+        )
+
+    normalized_document = _normalize_flashcard_text(document_text)
+    cards.sort(
+        key=lambda card: max(
+            normalized_document.find(
+                _normalize_flashcard_text(card.get("source_excerpt", ""))
+            ),
+            0,
+        )
+    )
+    return cards
+
+
 def _get_flashcard_progress(user_id: str, document_name: str) -> List[str]:
     conn = get_connection()
     try:
@@ -1417,18 +1486,12 @@ def create_flashcards(
     card_types = request.card_types or [request.card_type]
     context, sources = get_lesson_context(uid, request.topic, target_filename=document_name)
 
-    quotient, remainder = divmod(card_count, len(card_types))
-    cards = []
-    for index, card_type in enumerate(card_types):
-        type_count = quotient + (1 if index < remainder else 0)
-        cards.extend(
-            generate_flashcards_from_document(
-                context,
-                request.topic,
-                type_count,
-                card_type,
-            )
-        )
+    cards = generate_flashcards_from_document(
+        context,
+        request.topic,
+        card_count,
+        card_types[0] if len(card_types) == 1 else card_types,
+    )
     if len(cards) != card_count:
         raise HTTPException(
             502,

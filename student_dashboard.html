@@ -2955,7 +2955,7 @@
 
     <!-- ==================== FLASHCARD LAUNCH MODAL ==================== -->
     <div class="modal-overlay" id="flashcard-launch-modal" onclick="handleFlashcardOverlayClick(event)">
-        <div class="modal-content fc-launch-modal-content">
+        <div class="modal-content fc-launch-modal-content" role="dialog" aria-modal="true" aria-labelledby="flashcard-modal-title">
             <!-- Modal Header -->
             <div class="modal-header" style="border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 22px;">
                 <div style="display: flex; align-items: center; gap: 12px;">
@@ -2963,7 +2963,7 @@
                         <i class="fas fa-layer-group"></i>
                     </div>
                     <div>
-                        <h3 style="margin: 0; font-size: 19px; font-weight: 800; color: var(--text-main);">Create Flashcard Deck</h3>
+                        <h3 id="flashcard-modal-title" style="margin: 0; font-size: 19px; font-weight: 800; color: var(--text-main);">Create Flashcard Deck</h3>
                         <p style="margin: 3px 0 0; font-size: 12.5px; color: var(--text-muted);">AI-powered study cards from your uploaded lessons</p>
                     </div>
                 </div>
@@ -2988,7 +2988,8 @@
 
             <!-- Step 2: Flashcard Type -->
             <div class="form-field">
-                <label><i class="fas fa-th-large me-1" style="color: var(--primary-text, var(--primary));"></i> Flashcard Type</label>
+                <label><i class="fas fa-th-large me-1" style="color: var(--primary-text, var(--primary));"></i> Flashcard Types</label>
+                <div style="font-size: 11.5px; color: var(--text-muted); margin: 0 0 8px;">Choose one or more. The requested total is divided as evenly as possible across your selections.</div>
                 <div class="fc-type-grid" id="fc-type-grid" aria-label="Select one or more flashcard types">
                     <button type="button" class="fc-type-card selected" data-type="term-definition" aria-pressed="true" onclick="selectFlashcardType(this, 'term-definition')">
                         <span class="fc-type-selected" aria-hidden="true"><i class="fas fa-check"></i> Selected</span>
@@ -5171,6 +5172,11 @@
                 showToast('Choose at least one flashcard type.', 'info');
                 return;
             }
+            const requestedCount = parseInt(document.getElementById('fc-count-slider')?.value || '10', 10);
+            if (!isSelected && requestedCount < selectedCount + 1) {
+                showToast(`Request at least ${selectedCount + 1} cards to include another type.`, 'info');
+                return;
+            }
             el.classList.toggle('selected', !isSelected);
             el.setAttribute('aria-pressed', String(!isSelected));
             updateFCTypeSummary();
@@ -5295,112 +5301,59 @@
                     await loadFlashcardDeck(data.cards, selectDoc, cardTypes, data.generation_mode);
                 } else {
                     const errData = await res.json().catch(() => ({}));
-                    const errMsg = errData.detail || `Server responded with status ${res.status}`;
-                    
-                    // Check if server reports a specific count of source-verified cards
-                    const match = errMsg.match(/Only\s+(\d+)\s+distinct,\s*source-verified/i);
-                    if (match && parseInt(match[1]) > 0) {
-                        const availableCount = parseInt(match[1]);
-                        if (slider) {
-                            slider.value = availableCount;
-                            updateFCCountDisplay(availableCount);
-                        }
-                        // If available count is at least 2 or close to requested, auto-adapt
-                        if (availableCount >= 2 && availableCount >= Math.min(cardCount * 0.5, 3)) {
-                            if (status) {
-                                status.style.display = 'block';
-                                status.textContent = `Adapting to document length: generating ${availableCount} verified cards…`;
-                            }
-                            const retryRes = await fetch(`${API_BASE}/learning/flashcards`, {
-                                method: 'POST',
-                                headers: {
-                                    'Content-Type': 'application/json',
-                                    'Authorization': token ? `Bearer ${token}` : ''
-                                },
-                                body: JSON.stringify({
-                                    topic: topic,
-                                    document_name: selectDoc,
-                                    card_count: availableCount,
-                                    card_type: cardType
-                                })
-                            });
-                            if (retryRes.ok) {
-                                const retryData = await retryRes.json();
-                                if (Array.isArray(retryData.cards) && retryData.cards.length > 0) {
-                                    closeModal('flashcard-launch-modal');
-                                    showToast(`Loaded deck with ${retryData.cards.length} source-verified cards.`, 'info');
-                                    await loadFlashcardDeck(retryData.cards, selectDoc, cardType, retryData.generation_mode);
-                                    return;
-                                }
-                            }
-                        }
-                    }
-                    throw new Error(errMsg);
+                    throw new Error(errData.detail || `Server responded with status ${res.status}`);
                 }
             } catch (err) {
                 console.error('Flashcard generation error:', err);
-                const countMatch = (err.message || '').match(/Only\s+(\d+)\s+distinct/i);
-                if (countMatch && parseInt(countMatch[1]) > 0) {
-                    const availableCount = parseInt(countMatch[1]);
-                    const slider = document.getElementById('fc-count-slider');
-                    if (slider) {
-                        slider.value = availableCount;
-                        updateFCCountDisplay(availableCount);
-                    }
-                    showToast(`Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available. Count updated to ${availableCount}.`, 'warning');
-                    if (status) {
-                        status.style.display = 'block';
-                        status.innerHTML = `
-                            <div style="font-size: 13px; line-height: 1.5;">
-                                <strong><i class="fas fa-info-circle me-1"></i> Document has ${availableCount} verified card${availableCount === 1 ? '' : 's'} available.</strong><br>
-                                The slider has been updated to ${availableCount}.
-                                <div style="margin-top: 8px;">
-                                    <button type="button" class="btn btn-sm btn-primary" style="padding: 4px 14px; font-size: 12px;" onclick="processFlashcardAction(${availableCount})">
-                                        <i class="fas fa-play me-1"></i> Create ${availableCount} Cards Now
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                        status.setAttribute('role', 'alert');
-                    }
-                } else {
-                    showToast(`Flashcard error: ${err.message || 'Could not reach server'}`, 'error');
-                    if (status) {
-                        status.style.display = 'block';
-                        status.textContent = err.message || 'Flashcards could not be generated. Check your connection and try again.';
-                        status.setAttribute('role', 'alert');
-                    }
+                const message = err.message || 'Flashcards could not be generated. Check your connection and try again.';
+                showToast(`Flashcard error: ${message}`, 'error');
+                if (status) {
+                    status.style.display = 'block';
+                    status.textContent = message;
+                    status.setAttribute('role', 'alert');
                 }
             } finally {
+                window.clearInterval(progressTimer);
+                isGeneratingFlashcards = false;
                 genBtn.disabled = false;
                 genBtn.removeAttribute('aria-busy');
                 genBtn.innerHTML = '<i class="fas fa-magic me-1"></i> Generate Flashcards';
             }
         }
 
-        async function loadFlashcardDeck(cards, docName, cardType, generationMode) {
+        async function loadFlashcardDeck(cards, docName, cardTypes, generationMode) {
             if (!cards || cards.length === 0) {
                 showToast('No source-supported flashcards could be created from this document.', 'warning');
                 return;
             }
 
+            const selectedTypes = Array.isArray(cardTypes) ? cardTypes : [cardTypes];
             const typeLabels = {
                 'term-definition': ['TERM / CONCEPT', 'DEFINITION'],
                 'question-answer': ['QUESTION', 'ANSWER'],
                 'concept-example': ['CONCEPT', 'EXPLICIT EXAMPLE'],
                 'fill-blank': ['COMPLETE THE SENTENCE', 'ANSWER']
             };
-            const [frontLabel, backLabel] = typeLabels[cardType] || ['FRONT', 'BACK'];
+            const typeNames = {
+                'term-definition': 'Term & Definition',
+                'question-answer': 'Q & A',
+                'concept-example': 'Concept & Example',
+                'fill-blank': 'Fill in the Blank'
+            };
             activeFlashcardDocumentName = docName;
-            activeFlashcardDeck = cards.map(card => ({
-                term: card.front,
-                def: card.back,
-                sourceExcerpt: card.source_excerpt || '',
-                sourcePage: card.source_page,
-                cardKey: card.card_key,
-                frontLabel,
-                backLabel
-            }));
+            activeFlashcardDeck = cards.map(card => {
+                const cardType = card.card_type || selectedTypes[0];
+                const [frontLabel, backLabel] = typeLabels[cardType] || ['FRONT', 'BACK'];
+                return {
+                    term: card.front,
+                    def: card.back,
+                    sourceExcerpt: card.source_excerpt || '',
+                    sourcePage: card.source_page,
+                    cardKey: card.card_key,
+                    frontLabel,
+                    backLabel
+                };
+            });
             currentFlashcardIndex = 0;
             showUnmasteredFlashcards = false;
             masteredFlashcardKeys = new Set();
@@ -5429,18 +5382,13 @@
             updateFlashcardDisplay();
             playerArea.scrollIntoView({ behavior: 'smooth' });
 
-            const typeNames = {
-                'term-definition': 'Term & Definition',
-                'question-answer': 'Q & A',
-                'concept-example': 'Concept & Example',
-                'fill-blank': 'Fill in the Blank'
-            };
             const sourceMode = generationMode === 'document_extract'
                 ? ' AI could not provide enough verified cards, so these were extracted from explicit source statements or examples.'
                 : generationMode === 'mixed'
                     ? ' Additional cards were extracted from explicit source statements or examples.'
                     : '';
-            showToast(`${cards.length} ${typeNames[cardType] || ''} source-verified flashcards ready.${sourceMode}`, 'success');
+            const typeSummary = selectedTypes.map(type => typeNames[type] || type).join(', ');
+            showToast(`${cards.length} source-verified flashcards ready (${typeSummary}).${sourceMode}`, 'success');
         }
 
         function closeFlashcardPlayer() {

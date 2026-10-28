@@ -288,6 +288,19 @@ class FlashcardFeatureTests(unittest.TestCase):
                 "",
             )
         )
+        self.assertFalse(
+            _is_valid_flashcard_candidate(
+                "Usability",
+                "the ease with which users can complete tasks",
+                "Usability is the ease with which users can complete tasks.",
+                (
+                    "Usability is the ease with which users can complete tasks. "
+                    "Reliability is the ability of a system to perform consistently."
+                ),
+                "term-definition",
+                "Reliability",
+            )
+        )
 
     def test_extractive_fallback_respects_focus_topic(self):
         source = (
@@ -351,6 +364,41 @@ class FlashcardFeatureTests(unittest.TestCase):
         self.assertEqual([card["front"] for card in cards], ["Usability", "Reliability"])
         self.assertEqual(len({card["card_key"] for card in cards}), 2)
 
+    @patch.object(learning_tools, "_generate_flashcards_for_type")
+    def test_multi_type_generation_splits_exact_total_evenly(self, generate_type):
+        types = ["term-definition", "question-answer", "fill-blank"]
+
+        def generate_for_type(_, __, count, card_type):
+            return [
+                {
+                    "front": f"{card_type} card {index}",
+                    "back": f"Answer {index}",
+                    "source_excerpt": f"Evidence {index}",
+                    "card_type": card_type,
+                    "card_key": f"{card_type}-{index}",
+                }
+                for index in range(count)
+            ]
+
+        generate_type.side_effect = generate_for_type
+
+        cards = learning_tools.generate_flashcards_from_document(
+            "Selected lesson text.",
+            "",
+            10,
+            types,
+        )
+
+        self.assertEqual(len(cards), 10)
+        self.assertEqual(
+            [call.args[2] for call in generate_type.call_args_list],
+            [4, 3, 3],
+        )
+        self.assertEqual(
+            {card_type: sum(card["card_type"] == card_type for card in cards) for card_type in types},
+            {"term-definition": 4, "question-answer": 3, "fill-blank": 3},
+        )
+
     @patch.object(learning_tools.user_service, "increment_stat")
     @patch.object(learning_tools, "generate_flashcards_from_document")
     @patch.object(learning_tools, "get_lesson_context")
@@ -395,7 +443,8 @@ class FlashcardFeatureTests(unittest.TestCase):
         selected_types = ["term-definition", "question-answer", "fill-blank"]
         get_lesson_context.return_value = ("selected source", ["selected.docx"])
 
-        def make_cards(_, __, count, card_type):
+        def make_cards(_, __, count, card_types):
+            quotient, remainder = divmod(count, len(card_types))
             return [
                 {
                     "front": f"{card_type} {index}",
@@ -403,7 +452,8 @@ class FlashcardFeatureTests(unittest.TestCase):
                     "source_excerpt": f"Evidence {index}",
                     "card_type": card_type,
                 }
-                for index in range(count)
+                for position, card_type in enumerate(card_types)
+                for index in range(quotient + (position < remainder))
             ]
 
         generate_cards.side_effect = make_cards
@@ -418,11 +468,16 @@ class FlashcardFeatureTests(unittest.TestCase):
 
         self.assertEqual(response.status_code, 200, response.text)
         self.assertEqual(response.json()["total_cards"], 10)
-        self.assertEqual(
-            [call.args[2] for call in generate_cards.call_args_list],
-            [4, 3, 3],
-        )
+        self.assertEqual(generate_cards.call_count, 1)
+        self.assertEqual(generate_cards.call_args.args[2:], (10, selected_types))
         self.assertEqual(response.json()["card_types"], selected_types)
+        self.assertEqual(
+            {
+                card_type: sum(card["card_type"] == card_type for card in response.json()["cards"])
+                for card_type in selected_types
+            },
+            {"term-definition": 4, "question-answer": 3, "fill-blank": 3},
+        )
         self.assertEqual(
             {card["card_type"] for card in response.json()["cards"]},
             set(selected_types),
@@ -440,8 +495,11 @@ class FlashcardFeatureTests(unittest.TestCase):
         )
 
         self.assertEqual(len(request.card_types), 3)
+        self.assertEqual(FlashcardRequest(card_count=100).card_count, 100)
         with self.assertRaises(Exception):
             FlashcardRequest(card_count=1, card_types=["term-definition", "question-answer"])
+        with self.assertRaises(Exception):
+            FlashcardRequest(card_count=101)
         with self.assertRaises(Exception):
             FlashcardRequest(card_types=["term-definition", "term-definition"])
         with self.assertRaises(Exception):
