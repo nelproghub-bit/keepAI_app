@@ -159,6 +159,15 @@ textarea {
 }
 
 @media (max-width: 700px) {
+  .btn,
+  .button {
+    min-width: 0;
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
   .auth-header,
   .auth-body {
     padding-inline: clamp(14px, 5vw, 24px);
@@ -293,6 +302,25 @@ textarea {
   .confirm-actions > button {
     min-width: 0;
     padding-inline: 12px;
+  }
+}
+
+@media (pointer: coarse) {
+  button,
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  [role="button"],
+  .btn,
+  .button {
+    min-height: 44px;
+  }
+
+  .btn-icon {
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    padding: 10px;
   }
 }
 

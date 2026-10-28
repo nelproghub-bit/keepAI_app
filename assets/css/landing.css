@@ -183,14 +183,14 @@ h1, h2 { font-family: var(--serif); letter-spacing: -1.8px; }
   .brand img { width: 34px; height: 34px; }
   .desktop-nav, .header-actions { display: none; }
   .mobile-menu { position: relative; display: block; margin-left: auto; }
-  .mobile-menu summary { width: 42px; height: 42px; display: grid; place-items: center; border: 1px solid #DCE4EC; border-radius: 9px; background: #fff; cursor: pointer; list-style: none; }
+  .mobile-menu summary { width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #DCE4EC; border-radius: 9px; background: #fff; cursor: pointer; list-style: none; }
   .mobile-menu summary::-webkit-details-marker { display: none; }
   .menu-lines, .menu-lines::before, .menu-lines::after { width: 17px; height: 2px; display: block; border-radius: 2px; background: var(--brand); content: ""; }
   .menu-lines { position: relative; }
   .menu-lines::before { position: absolute; top: -5px; }
   .menu-lines::after { position: absolute; top: 5px; }
   .mobile-menu[open] nav { position: absolute; top: 51px; right: 0; width: min(270px, calc(100vw - 36px)); display: grid; gap: 3px; padding: 9px; border: 1px solid var(--line); border-radius: 11px; background: white; box-shadow: 0 16px 35px #142D4E1c; }
-  .mobile-menu nav a { padding: 12px 11px; border-radius: 7px; color: #52647A; font-size: 13px; font-weight: 600; text-decoration: none; }
+  .mobile-menu nav a { min-height: 44px; display: flex; align-items: center; padding: 12px 11px; border-radius: 7px; color: #52647A; font-size: 13px; font-weight: 600; text-decoration: none; }
   .mobile-menu nav a:hover { background: #F4F7FA; color: var(--brand); }
   .mobile-menu nav .mobile-cta { background: var(--brand); color: white; }
   .hero { grid-template-columns: 1fr; gap: 28px; padding-block: 52px 56px; }
@@ -220,7 +220,7 @@ h1, h2 { font-family: var(--serif); letter-spacing: -1.8px; }
   .hero h1 { font-size: clamp(45px, 13vw, 58px); }
   .hero-description { font-size: 14px; line-height: 1.7; }
   .hero-actions { align-items: flex-start; flex-direction: column; gap: 17px; }
-  .hero-actions .button { min-height: 49px; }
+  .hero-actions .button { width: 100%; min-height: 49px; }
   .hero-note { margin-top: 22px; }
   .hero-visual { min-height: 330px; margin-top: 5px; }
   .workspace-window { width: 100%; }
