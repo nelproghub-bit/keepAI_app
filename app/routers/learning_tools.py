@@ -278,15 +278,6 @@ def generate_grounded_quiz_questions(
                         not isinstance(question, str)
                         or not question.strip()
                         or len(question.strip()) > 500
-                        or not isinstance(choices, list)
-                        or len(choices) != 4
-                        or any(
-                            not isinstance(choice, str)
-                            or not choice.strip()
-                            or len(choice.strip()) > 200
-                            for choice in choices
-                        )
-                        or len({normalize(choice) for choice in choices}) != 4
                         or not isinstance(answer, str)
                         or not answer.strip()
                         or len(answer.strip()) > 200
@@ -299,11 +290,21 @@ def generate_grounded_quiz_questions(
                     if (
                         normalized_evidence not in normalized_chunk
                         or normalize(answer) not in normalized_evidence
-                        or normalize(answer) not in {normalize(choice) for choice in choices}
-                        or any(normalize(choice) not in normalized_context for choice in choices)
                     ):
                         continue
 
+                    if not isinstance(choices, list):
+                        choices = []
+                    source_choices = [
+                        choice.strip()
+                        for choice in choices
+                        if (
+                            isinstance(choice, str)
+                            and choice.strip()
+                            and len(choice.strip()) <= 200
+                            and normalize(choice) in normalized_context
+                        )
+                    ]
                     normalized_question = normalize(question)
                     question_tokens = set(re.findall(r"\w{4,}", normalized_question))
                     if (
@@ -326,6 +327,7 @@ def generate_grounded_quiz_questions(
                             "correct_answer": answer,
                             "explanation": evidence.strip(),
                             "source_excerpt": evidence.strip(),
+                            "choice_suggestions": source_choices,
                             "generation_method": "ai",
                         }
                     )
@@ -351,6 +353,43 @@ def generate_grounded_quiz_questions(
             502,
             "The selected document does not contain enough accurate, unique questions at this difficulty level. Try fewer questions or choose another difficulty.",
         )
+
+    answer_bank: Dict[str, str] = {}
+    for question in questions:
+        for choice in [question["correct_answer"], *question["choice_suggestions"]]:
+            normalized_choice = normalize(choice)
+            if normalized_choice and normalized_choice not in answer_bank:
+                answer_bank[normalized_choice] = choice
+
+    for question in questions:
+        correct_answer = question["correct_answer"]
+        options = [correct_answer]
+        seen_options = {normalize(correct_answer)}
+        for choice in question["choice_suggestions"]:
+            normalized_choice = normalize(choice)
+            if normalized_choice not in seen_options:
+                options.append(choice)
+                seen_options.add(normalized_choice)
+        if len(options) < 4:
+            distractors = [
+                choice
+                for normalized_choice, choice in answer_bank.items()
+                if normalized_choice not in seen_options
+            ]
+            random.shuffle(distractors)
+            for distractor in distractors:
+                options.append(distractor)
+                seen_options.add(normalize(distractor))
+                if len(options) == 4:
+                    break
+        if len(options) != 4:
+            raise HTTPException(
+                502,
+                "The selected document did not provide enough distinct, source-supported answer choices to build the requested quiz. Try a smaller quiz or select a document with more key concepts.",
+            )
+        random.shuffle(options)
+        question["choices"] = options
+        question.pop("choice_suggestions", None)
     return questions
 
 

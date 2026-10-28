@@ -313,6 +313,47 @@ class QuizQuestionTypeTests(unittest.TestCase):
         self.assertEqual(questions[0]["source_excerpt"], evidence)
 
     @patch.object(learning_tools, "generate")
+    def test_generator_repairs_unsupported_choices_from_verified_document_answers(self, generate):
+        source_facts = [
+            "Firewall filters network traffic.",
+            "Encryption protects stored data.",
+            "Authentication verifies user identity.",
+            "Auditing records system activity.",
+        ]
+        generated = []
+        for answer, evidence in (
+            ("Firewall", source_facts[0]),
+            ("Encryption", source_facts[1]),
+            ("Authentication", source_facts[2]),
+            ("Auditing", source_facts[3]),
+        ):
+            generated.append(
+                {
+                    "question": f"What does {answer} do?",
+                    "choices": ["Unsupported option A", "Unsupported option B"],
+                    "correct_answer": answer,
+                    "evidence": evidence,
+                }
+            )
+        generate.return_value = json.dumps(generated)
+
+        questions = generate_grounded_quiz_questions(
+            context=" ".join(source_facts),
+            target_count=4,
+            difficulty="easy",
+        )
+
+        self.assertEqual(len(questions), 4)
+        for question in questions:
+            self.assertEqual(len(question["choices"]), 4)
+            self.assertEqual(len(set(question["choices"])), 4)
+            self.assertIn(question["correct_answer"], question["choices"])
+            self.assertTrue(
+                all(choice in " ".join(source_facts) for choice in question["choices"])
+            )
+            self.assertNotIn("choice_suggestions", question)
+
+    @patch.object(learning_tools, "generate")
     def test_generator_uses_verified_evidence_without_requiring_ai_explanation(self, generate):
         evidence = "Usability is the ease with which users can complete tasks."
         generate.return_value = json.dumps(
