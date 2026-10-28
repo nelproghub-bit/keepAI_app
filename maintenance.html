@@ -1,710 +1,756 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <meta name="theme-color" content="#0B1E35">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1725">
   <meta name="robots" content="noindex, nofollow">
-  <title>System Maintenance | KeepAI Study Assistant</title>
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png">
-  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <title>Maintenance | KeepAI</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="assets/js/config.js"></script>
-
+  <script src="/assets/js/config.js"></script>
   <style>
     :root {
-      --bg-gradient: radial-gradient(circle at 50% -10%, #17375E 0%, #0B1E35 60%, #06111F 100%);
-      --surface-card: rgba(20, 45, 78, 0.72);
-      --surface-card-border: rgba(255, 255, 255, 0.1);
-      --surface-inner: rgba(11, 30, 53, 0.65);
-      --surface-inner-border: rgba(255, 255, 255, 0.08);
-      
-      --text-main: #FFFFFF;
-      --text-secondary: #CBD5E1;
-      --text-muted: #94A3B8;
-      
-      --brand-teal: #0F766E;
-      --brand-teal-light: #14B8A6;
-      --brand-teal-glow: rgba(20, 184, 166, 0.25);
-      
-      --status-amber: #F59E0B;
-      --status-amber-dark: #D97706;
-      --status-amber-glow: rgba(245, 158, 11, 0.25);
-      
-      --status-green: #10B981;
-      --status-green-glow: rgba(16, 185, 129, 0.3);
-      
-      --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-      --font-display: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      color-scheme: dark;
+      --page: #0b1725;
+      --page-glow: rgba(20, 184, 166, 0.13);
+      --card: rgba(19, 34, 52, 0.94);
+      --card-border: #293d51;
+      --surface: #17283b;
+      --surface-border: #30455b;
+      --heading: #f8fafc;
+      --body: #c4d0dc;
+      --muted: #9aaabd;
+      --accent: #5eead4;
+      --accent-strong: #0f766e;
+      --accent-contrast: #ffffff;
+      --warning: #fbbf24;
+      --focus: #5eead4;
+      --shadow: 0 28px 80px rgba(0, 0, 0, 0.38);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root[data-theme="light"] {
+      color-scheme: light;
+      --page: #eef4f7;
+      --page-glow: rgba(15, 118, 110, 0.13);
+      --card: rgba(255, 255, 255, 0.96);
+      --card-border: #d7e2e8;
+      --surface: #f3f7f9;
+      --surface-border: #d9e4e9;
+      --heading: #102434;
+      --body: #43576a;
+      --muted: #5a6f80;
+      --accent: #0f766e;
+      --accent-strong: #0d6560;
+      --accent-contrast: #ffffff;
+      --warning: #a16207;
+      --focus: #0f766e;
+      --shadow: 0 28px 80px rgba(28, 54, 72, 0.15);
     }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) {
+        color-scheme: light;
+        --page: #eef4f7;
+        --page-glow: rgba(15, 118, 110, 0.13);
+        --card: rgba(255, 255, 255, 0.96);
+        --card-border: #d7e2e8;
+        --surface: #f3f7f9;
+        --surface-border: #d9e4e9;
+        --heading: #102434;
+        --body: #43576a;
+        --muted: #5a6f80;
+        --accent: #0f766e;
+        --accent-strong: #0d6560;
+        --accent-contrast: #ffffff;
+        --warning: #a16207;
+        --focus: #0f766e;
+        --shadow: 0 28px 80px rgba(28, 54, 72, 0.15);
+      }
+    }
+
+    * { box-sizing: border-box; }
 
     body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-      font-family: var(--font-body);
-      background: var(--bg-gradient);
-      background-attachment: fixed;
-      color: var(--text-main);
-      -webkit-font-smoothing: antialiased;
-      overflow-x: hidden;
-      position: relative;
-    }
-
-    /* Ambient background lighting */
-    body::before {
-      content: '';
-      position: absolute;
-      width: 520px;
-      height: 520px;
-      top: 15%;
-      left: 50%;
-      transform: translateX(-50%);
-      background: radial-gradient(circle, rgba(15, 118, 110, 0.18) 0%, rgba(245, 158, 11, 0.06) 45%, transparent 70%);
-      border-radius: 50%;
-      pointer-events: none;
-      z-index: 0;
-      filter: blur(40px);
-    }
-
-    .maintenance-container {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 680px;
-      background: var(--surface-card);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid var(--surface-card-border);
-      border-radius: 28px;
-      padding: 44px 36px;
-      box-shadow: 0 30px 80px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.04);
-      text-align: center;
-    }
-
-    @media (max-width: 640px) {
-      .maintenance-container {
-        padding: 32px 20px;
-        border-radius: 22px;
-      }
-    }
-
-    /* Brand Header */
-    .brand-header {
-      display: inline-flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 28px;
-      text-decoration: none;
-    }
-
-    .brand-logo {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
-      object-fit: contain;
-      background: #FFFFFF;
-      padding: 3px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-    }
-
-    .brand-info {
-      text-align: left;
-    }
-
-    .brand-name {
-      font-family: var(--font-display);
-      font-size: 20px;
-      font-weight: 800;
-      color: #FFFFFF;
-      letter-spacing: -0.4px;
-      line-height: 1.1;
-    }
-
-    .brand-tagline {
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--brand-teal-light);
-      letter-spacing: 0.3px;
-      text-transform: uppercase;
-    }
-
-    /* Animated Icon Hero */
-    .hero-badge-wrap {
-      position: relative;
-      width: 96px;
-      height: 96px;
-      margin: 0 auto 24px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .hero-badge-glow {
-      position: absolute;
-      inset: -4px;
-      border-radius: 50%;
-      background: radial-gradient(circle, var(--status-amber-glow) 30%, transparent 70%);
-      animation: pulseGlow 3s ease-in-out infinite;
-    }
-
-    .hero-badge {
-      position: relative;
-      width: 86px;
-      height: 86px;
-      border-radius: 26px;
-      background: linear-gradient(145deg, #1A365D 0%, #142D4E 100%);
-      border: 1px solid rgba(245, 158, 11, 0.35);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.15);
-      color: var(--status-amber);
-      font-size: 34px;
-      transition: all 0.5s ease;
-    }
-
-    .hero-badge i.gear-animated {
-      animation: gentleRotate 12s linear infinite;
-    }
-
-    @keyframes gentleRotate {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    @keyframes pulseGlow {
-      0%, 100% { transform: scale(1); opacity: 0.7; }
-      50% { transform: scale(1.15); opacity: 1; }
-    }
-
-    /* Status Pill */
-    .status-pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 6px 14px;
-      border-radius: 999px;
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.3);
-      color: #FBBF24;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: 0.8px;
-      text-transform: uppercase;
-      margin-bottom: 18px;
-    }
-
-    .status-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--status-amber);
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
-      animation: pulseDot 1.8s infinite;
-    }
-
-    @keyframes pulseDot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    /* Typography */
-    h1 {
-      font-family: var(--font-display);
-      font-size: clamp(24px, 5vw, 32px);
-      font-weight: 800;
-      letter-spacing: -0.6px;
-      line-height: 1.2;
-      color: #FFFFFF;
-      margin-bottom: 12px;
-    }
-
-    .description {
-      font-size: 14.5px;
-      line-height: 1.65;
-      color: var(--text-secondary);
-      max-width: 530px;
-      margin: 0 auto 28px;
-    }
-
-    /* Assurance Grid */
-    .assurance-grid {
       display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin-bottom: 28px;
-      text-align: left;
+      min-width: 320px;
+      min-height: 100vh;
+      min-height: 100svh;
+      margin: 0;
+      padding: clamp(20px, 5vw, 48px);
+      place-items: center;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 50% 0%, var(--page-glow), transparent 54%),
+        var(--page);
+      color: var(--body);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      transition: background-color 180ms ease, color 180ms ease;
     }
 
-    @media (max-width: 600px) {
-      .assurance-grid {
-        grid-template-columns: 1fr;
-        gap: 10px;
-      }
+    button { font: inherit; }
+
+    .maintenance-card {
+      position: relative;
+      width: min(100%, 1020px);
+      padding: clamp(26px, 5vw, 48px);
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      border-radius: 30px;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      animation: enter 500ms cubic-bezier(0.2, 0.75, 0.3, 1) both;
     }
 
-    .assurance-item {
-      background: var(--surface-inner);
-      border: 1px solid var(--surface-inner-border);
-      border-radius: 16px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
+    .maintenance-card::before {
+      position: absolute;
+      top: 0;
+      right: 12%;
+      left: 12%;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      content: "";
+      opacity: 0.8;
     }
 
-    .assurance-icon {
-      font-size: 16px;
-      margin-bottom: 2px;
-    }
-
-    .assurance-icon.teal { color: var(--brand-teal-light); }
-    .assurance-icon.blue { color: #60A5FA; }
-    .assurance-icon.amber { color: #FBBF24; }
-
-    .assurance-title {
-      font-size: 12.5px;
-      font-weight: 700;
-      color: #FFFFFF;
-    }
-
-    .assurance-desc {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      line-height: 1.45;
-    }
-
-    /* Real-Time Live Status Card */
-    .live-status-card {
-      background: rgba(11, 30, 53, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 18px;
-      padding: 18px 20px;
-      margin-bottom: 26px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .live-status-header {
+    .top-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 8px;
+      gap: 16px;
+      margin-bottom: clamp(34px, 5vw, 52px);
     }
 
-    .live-status-label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-muted);
-      display: flex;
+    .maintenance-content {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(290px, 0.85fr);
       align-items: center;
-      gap: 7px;
+      gap: clamp(34px, 6vw, 72px);
     }
 
-    .live-status-badge {
+    .maintenance-copy { min-width: 0; }
+
+    .brand {
+      display: inline-flex;
+      min-width: 0;
+      align-items: center;
+      gap: 12px;
+      color: var(--heading);
+      text-decoration: none;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent);
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--accent) 12%, var(--surface));
+      color: var(--accent);
+    }
+
+    .brand-mark svg { width: 23px; height: 23px; }
+
+    .brand-name {
+      display: block;
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 15px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-caption {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.3;
+    }
+
+    .theme-toggle {
+      display: inline-grid;
+      width: 40px;
+      height: 40px;
+      flex: 0 0 auto;
+      padding: 0;
+      place-items: center;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--body);
+      cursor: pointer;
+      transition: border-color 160ms ease, color 160ms ease, transform 160ms ease;
+    }
+
+    .theme-toggle:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .theme-toggle svg { width: 18px; height: 18px; }
+    .theme-toggle .sun-icon { display: none; }
+    :root[data-theme="light"] .theme-toggle .moon-icon { display: none; }
+    :root[data-theme="light"] .theme-toggle .sun-icon { display: block; }
+
+    @media (prefers-color-scheme: light) {
+      :root:not([data-theme="dark"]) .theme-toggle .moon-icon { display: none; }
+      :root:not([data-theme="dark"]) .theme-toggle .sun-icon { display: block; }
+    }
+
+    .status-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 24px;
+      padding: 7px 12px;
+      border: 1px solid color-mix(in srgb, var(--warning) 34%, transparent);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--warning) 10%, transparent);
+      color: var(--warning);
       font-size: 11px;
       font-weight: 700;
-      padding: 3px 9px;
-      border-radius: 6px;
-      background: rgba(245, 158, 11, 0.15);
-      color: #FBBF24;
-      border: 1px solid rgba(245, 158, 11, 0.25);
+      letter-spacing: 0.07em;
+      text-transform: uppercase;
     }
 
-    .live-status-message {
-      font-size: 13px;
-      color: var(--text-secondary);
-      text-align: left;
+    .status-label[data-state="checking"],
+    .status-label[data-state="error"] {
+      border-color: var(--surface-border);
+      background: var(--surface);
+      color: var(--muted);
+    }
+
+    .status-label[data-state="ready"] {
+      border-color: color-mix(in srgb, var(--accent) 34%, transparent);
+      background: color-mix(in srgb, var(--accent) 10%, transparent);
+      color: var(--accent);
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+      box-shadow: 0 0 0 4px color-mix(in srgb, currentColor 16%, transparent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    h1 {
+      max-width: 520px;
+      margin: 0 0 16px;
+      color: var(--heading);
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: clamp(34px, 5vw, 50px);
+      font-weight: 800;
+      letter-spacing: -0.045em;
+      line-height: 1.08;
+      text-wrap: pretty;
+    }
+
+    .intro {
+      max-width: 490px;
+      margin: 0;
+      color: var(--body);
+      font-size: 15px;
+      line-height: 1.8;
+      text-wrap: pretty;
+    }
+
+    .maintenance-visual {
+      position: relative;
+      display: grid;
+      min-height: 350px;
+      padding: 28px;
+      overflow: hidden;
+      place-items: center;
+      border: 1px solid var(--surface-border);
+      border-radius: 24px;
+      background:
+        radial-gradient(ellipse at 50% 34%, var(--page-glow), transparent 62%),
+        var(--surface);
+      isolation: isolate;
+    }
+
+    .maintenance-visual::before,
+    .maintenance-visual::after {
+      position: absolute;
+      z-index: -1;
+      width: 250px;
+      height: 250px;
+      border: 1px solid color-mix(in srgb, var(--accent) 12%, transparent);
+      border-radius: 50%;
+      content: "";
+    }
+
+    .maintenance-visual::after {
+      width: 320px;
+      height: 320px;
+      border-style: dashed;
+      opacity: 0.65;
+    }
+
+    .service-card {
+      width: min(100%, 330px);
+      padding: 20px;
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      background: color-mix(in srgb, var(--card) 92%, transparent);
+      box-shadow: 0 18px 48px rgba(0, 0, 0, 0.16);
+      backdrop-filter: blur(12px);
+    }
+
+    .service-card-heading {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+
+    .service-kicker {
+      display: block;
+      margin-bottom: 5px;
+      color: var(--muted);
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+    }
+
+    .service-title {
+      margin: 0;
+      color: var(--heading);
+      font-family: "Plus Jakarta Sans", Inter, sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .service-symbol {
+      display: grid;
+      width: 42px;
+      height: 42px;
+      flex: 0 0 auto;
+      place-items: center;
+      border: 1px solid color-mix(in srgb, var(--accent) 24%, transparent);
+      border-radius: 13px;
+      background: color-mix(in srgb, var(--accent) 10%, var(--surface));
+      color: var(--accent);
+    }
+
+    .service-symbol svg { width: 22px; height: 22px; }
+
+    .service-list {
+      display: grid;
+      gap: 10px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+
+    .service-list li {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      padding: 11px 12px;
+      border: 1px solid var(--surface-border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--body);
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .service-list-icon {
+      display: grid;
+      width: 27px;
+      height: 27px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 8px;
+      background: color-mix(in srgb, var(--accent) 11%, transparent);
+      color: var(--accent);
+    }
+
+    .service-list-icon svg { width: 14px; height: 14px; }
+
+    .visual-caption {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 17px 0 0;
+      color: var(--muted);
+      font-size: 10px;
       line-height: 1.5;
     }
 
-    .countdown-indicator {
-      font-size: 11.5px;
-      color: var(--text-muted);
-      text-align: left;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+    .visual-caption .status-dot {
+      width: 6px;
+      height: 6px;
+      flex: 0 0 auto;
+      color: var(--accent);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
     }
 
-    .countdown-indicator strong {
-      color: #FFFFFF;
-      font-weight: 600;
-    }
-
-    /* Buttons & Actions */
-    .action-row {
+    .status-panel {
       display: flex;
-      align-items: center;
-      justify-content: center;
+      align-items: flex-start;
       gap: 12px;
-      flex-wrap: wrap;
+      margin: 26px 0 20px;
+      padding: 15px;
+      border: 1px solid var(--surface-border);
+      border-radius: 15px;
+      background: var(--surface);
+      text-align: left;
     }
 
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      padding: 12px 22px;
-      border-radius: 12px;
-      font-family: var(--font-body);
-      font-size: 13px;
-      font-weight: 600;
-      text-decoration: none;
-      cursor: pointer;
-      border: none;
-      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    .status-panel-icon {
+      display: grid;
+      width: 30px;
+      height: 30px;
+      flex: 0 0 auto;
+      place-items: center;
+      border-radius: 9px;
+      background: color-mix(in srgb, var(--accent) 12%, transparent);
+      color: var(--accent);
     }
 
-    .btn-primary {
-      background: var(--brand-teal);
-      color: #FFFFFF;
-      box-shadow: 0 4px 14px rgba(15, 118, 110, 0.35);
+    .status-panel-icon svg { width: 16px; height: 16px; }
+
+    .status-copy {
+      min-width: 0;
+      padding-top: 1px;
     }
 
-    .btn-primary:hover {
-      background: #0D6560;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(15, 118, 110, 0.45);
+    .status-heading {
+      margin: 0 0 3px;
+      color: var(--heading);
+      font-size: 12px;
+      font-weight: 700;
     }
 
-    .btn-primary:active {
-      transform: translateY(0);
+    .status-message {
+      margin: 0;
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.55;
     }
 
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.07);
-      color: var(--text-secondary);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-    }
+    .status-message[data-state="error"] { color: var(--warning); }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.12);
-      color: #FFFFFF;
-      border-color: rgba(255, 255, 255, 0.2);
-      transform: translateY(-1px);
-    }
-
-    .btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none !important;
-    }
-
-    /* Footer Meta */
-    .maintenance-footer {
-      margin-top: 28px;
-      font-size: 11.5px;
-      color: var(--text-muted);
+    .actions {
       display: flex;
+      justify-content: flex-start;
+    }
+
+    .retry-button {
+      display: inline-flex;
+      min-height: 48px;
+      min-width: min(100%, 210px);
       align-items: center;
       justify-content: center;
-      gap: 16px;
-      flex-wrap: wrap;
+      gap: 9px;
+      padding: 12px 20px;
+      border: 0;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #0f8278, #0b665f);
+      color: #ffffff;
+      box-shadow: 0 7px 18px rgba(15, 118, 110, 0.25);
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: transform 160ms ease, box-shadow 160ms ease, filter 160ms ease;
     }
 
-    .maintenance-footer span {
-      display: inline-flex;
-      align-items: center;
-      gap: 5px;
+    .retry-button:hover:not(:disabled) {
+      transform: translateY(-1px);
+      filter: brightness(1.06);
+      box-shadow: 0 10px 24px rgba(15, 118, 110, 0.32);
     }
 
-    /* Restored State Animation */
-    .restored-mode .hero-badge {
-      background: linear-gradient(145deg, #064E3B 0%, #065F46 100%);
-      border-color: rgba(16, 185, 129, 0.45);
-      color: #34D399;
+    .retry-button:disabled {
+      cursor: wait;
+      opacity: 0.76;
     }
 
-    .restored-mode .hero-badge-glow {
-      background: radial-gradient(circle, var(--status-green-glow) 30%, transparent 70%);
+    .retry-button svg { width: 16px; height: 16px; }
+    .retry-button.is-checking svg { animation: spin 900ms linear infinite; }
+
+    .footer {
+      margin-top: clamp(30px, 4vw, 42px);
+      padding-top: 18px;
+      border-top: 1px solid var(--surface-border);
+      color: var(--muted);
+      font-size: 11px;
+      letter-spacing: 0.02em;
     }
 
-    .restored-mode .status-pill {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: rgba(16, 185, 129, 0.35);
-      color: #34D399;
+    :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
     }
 
-    .restored-mode .status-dot {
-      background: var(--status-green);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+    @keyframes enter {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .restored-mode .live-status-badge {
-      background: rgba(16, 185, 129, 0.15);
-      border-color: rgba(16, 185, 129, 0.35);
-      color: #34D399;
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
     }
 
-    /* Progress bar for redirection */
-    .redirect-progress-bar {
-      width: 100%;
-      height: 4px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 99px;
-      overflow: hidden;
-      margin-top: 8px;
-      display: none;
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 480px) {
+      body { padding: 16px; }
+      .maintenance-card { border-radius: 21px; }
+      .top-row { margin-bottom: 32px; }
+      .maintenance-content { gap: 30px; }
+      .maintenance-visual { min-height: 300px; padding: 20px; border-radius: 19px; }
+      .service-card { padding: 16px; }
+      .footer { margin-top: 28px; }
     }
 
-    .redirect-progress-fill {
-      width: 0%;
-      height: 100%;
-      background: linear-gradient(90deg, var(--brand-teal-light), #34D399);
-      transition: width 1.2s ease-in-out;
+    @media (max-width: 760px) {
+      .maintenance-content { grid-template-columns: 1fr; }
+      .maintenance-visual { min-height: 300px; }
+    }
+
+    @media (min-width: 761px) and (max-height: 680px) {
+      body { padding-block: 24px; }
+      .maintenance-card { padding-block: 30px; }
+      .top-row { margin-bottom: 28px; }
+      .maintenance-visual { min-height: 310px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+      }
     }
   </style>
 </head>
 <body>
-
-  <main class="maintenance-container" role="main">
-    <!-- Brand Header -->
-    <div class="brand-header">
-      <img src="assets/images/keepai-logo.png" alt="KeepAI Logo" class="brand-logo">
-      <div class="brand-info">
-        <div class="brand-name">KeepAI</div>
-        <div class="brand-tagline">Your Simple AI Study Assistant</div>
-      </div>
-    </div>
-
-    <!-- Animated Status Hero Badge -->
-    <div class="hero-badge-wrap">
-      <div class="hero-badge-glow"></div>
-      <div class="hero-badge" id="hero-badge">
-        <i class="fa-solid fa-screwdriver-wrench gear-animated" id="hero-icon"></i>
-      </div>
-    </div>
-
-    <!-- Status Pill -->
-    <div>
-      <div class="status-pill" id="status-pill">
-        <span class="status-dot" id="status-dot"></span>
-        <span id="status-pill-text">Scheduled Maintenance</span>
-      </div>
-    </div>
-
-    <!-- Main Headings -->
-    <h1 id="maintenance-title">System Maintenance in Progress</h1>
-    <p class="description" id="maintenance-desc">
-      KeepAI is temporarily offline while we perform scheduled infrastructure enhancements, security updates, and AI model performance optimizations to deliver a faster, more reliable study experience.
-    </p>
-
-    <!-- Assurance Items -->
-    <div class="assurance-grid">
-      <div class="assurance-item">
-        <div class="assurance-icon teal"><i class="fa-solid fa-shield-halved"></i></div>
-        <div class="assurance-title">Data Safeguarded</div>
-        <div class="assurance-desc">All your study documents, flashcards, quiz scores, and notes are securely preserved.</div>
-      </div>
-      <div class="assurance-item">
-        <div class="assurance-icon blue"><i class="fa-solid fa-arrows-rotate"></i></div>
-        <div class="assurance-title">Auto-Reconnection</div>
-        <div class="assurance-desc">This page checks system status live and will automatically return you to KeepAI once online.</div>
-      </div>
-      <div class="assurance-item">
-        <div class="assurance-icon amber"><i class="fa-solid fa-user-shield"></i></div>
-        <div class="assurance-title">Admin Portal</div>
-        <div class="assurance-desc">Authorized administrators can still sign in to manage operations and platform settings.</div>
-      </div>
-    </div>
-
-    <!-- Live Status Monitor Card -->
-    <div class="live-status-card">
-      <div class="live-status-header">
-        <div class="live-status-label">
-          <i class="fa-solid fa-satellite-dish"></i> Live Service Monitor
-        </div>
-        <div class="live-status-badge" id="live-status-badge">Maintenance Active</div>
-      </div>
-      <div class="live-status-message" id="live-status-message">
-        Platform access is currently paused for updates. System diagnostics and health checks are ongoing.
-      </div>
-      <div class="countdown-indicator" id="countdown-indicator">
-        <i class="fa-regular fa-clock"></i> Next automated check in <strong id="countdown-val">12s</strong>
-      </div>
-      <div class="redirect-progress-bar" id="progress-bar">
-        <div class="redirect-progress-fill" id="progress-fill"></div>
-      </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="action-row">
-      <button type="button" class="btn btn-primary" id="btn-check-now" onclick="triggerManualCheck()">
-        <i class="fa-solid fa-rotate" id="check-icon"></i> Check Status Now
-      </button>
-      <a href="/admin_dashboard.html" class="btn btn-secondary" id="btn-admin-portal">
-        <i class="fa-solid fa-lock"></i> Administrator Portal
+  <main class="maintenance-card">
+    <header class="top-row">
+      <a class="brand" href="/" aria-label="KeepAI home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3.2v2.1M12 18.7v2.1M3.2 12h2.1m13.4 0h2.1M5.8 5.8l1.5 1.5m9.4 9.4 1.5 1.5m0-12.4-1.5 1.5m-9.4 9.4-1.5 1.5"/>
+            <circle cx="12" cy="12" r="5.1"/>
+            <path d="m10.5 12 1 1 2.2-2.4"/>
+          </svg>
+        </span>
+        <span>
+          <span class="brand-name">KeepAI</span>
+          <span class="brand-caption">Your Simple AI Study Assistant</span>
+        </span>
       </a>
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Switch to light theme" title="Switch theme">
+        <svg class="moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M20.2 15.1A8.6 8.6 0 0 1 8.9 3.8 8.8 8.8 0 1 0 20.2 15.1Z"/>
+        </svg>
+        <svg class="sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4"/>
+          <path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/>
+        </svg>
+      </button>
+    </header>
+
+    <div class="maintenance-content">
+      <section class="maintenance-copy" aria-labelledby="maintenance-title">
+        <div class="status-label" id="status-label" data-state="checking" aria-live="polite">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span id="status-label-text">Checking service availability</span>
+        </div>
+
+        <h1 id="maintenance-title">A little maintenance. A better study space.</h1>
+        <p class="intro">KeepAI is temporarily offline while we make a few improvements. We’re working to restore access, so please check back soon.</p>
+
+        <section class="status-panel" aria-live="polite">
+          <span class="status-panel-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M12 7v5l3 2"/>
+            </svg>
+          </span>
+          <div class="status-copy">
+            <h2 class="status-heading">Service status</h2>
+            <p class="status-message" id="status-message" role="status">Check whether KeepAI is available again.</p>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button class="retry-button" id="retry-button" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 7v5h-5"/>
+              <path d="M4.9 9A7.5 7.5 0 0 1 18 6l2 6M4 12l2 6a7.5 7.5 0 0 0 13.1-3"/>
+            </svg>
+            <span>Check again</span>
+          </button>
+        </div>
+      </section>
+
+      <aside class="maintenance-visual" aria-label="KeepAI services are being improved">
+        <div class="service-card">
+          <div class="service-card-heading">
+            <div>
+              <span class="service-kicker">KEEP AI SYSTEMS</span>
+              <h2 class="service-title">Making room to improve</h2>
+            </div>
+            <span class="service-symbol" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z"/>
+                <path d="m19.4 15 .1.1a1.8 1.8 0 1 1-2.5 2.5l-.1-.1a1.8 1.8 0 0 0-3 .9v.2a1.8 1.8 0 1 1-3.6 0v-.2a1.8 1.8 0 0 0-3-.9l-.1.1a1.8 1.8 0 1 1-2.5-2.5l.1-.1a1.8 1.8 0 0 0-.9-3H3.7a1.8 1.8 0 1 1 0-3.6h.2a1.8 1.8 0 0 0 .9-3l-.1-.1a1.8 1.8 0 1 1 2.5-2.5l.1.1a1.8 1.8 0 0 0 3-.9v-.2a1.8 1.8 0 1 1 3.6 0v.2a1.8 1.8 0 0 0 3 .9l.1-.1a1.8 1.8 0 1 1 2.5 2.5l-.1.1a1.8 1.8 0 0 0 .9 3h.2a1.8 1.8 0 1 1 0 3.6h-.2a1.8 1.8 0 0 0-.9 3Z"/>
+              </svg>
+            </span>
+          </div>
+          <ul class="service-list">
+            <li>
+              <span class="service-list-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H20v15H5.5A1.5 1.5 0 0 1 4 17.5z"/><path d="M4 17.5A1.5 1.5 0 0 1 5.5 16H20M8 8h8m-8 3h6"/></svg>
+              </span>
+              Your study workspace
+            </li>
+            <li>
+              <span class="service-list-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 3.5 18h17z"/><path d="M12 9v4m0 3h.01"/></svg>
+              </span>
+              AI learning tools
+            </li>
+          </ul>
+          <p class="visual-caption"><span class="status-dot" aria-hidden="true"></span> We’ll be back as soon as we can.</p>
+        </div>
+      </aside>
     </div>
 
-    <!-- Footer Meta -->
-    <footer class="maintenance-footer">
-      <span><i class="fa-solid fa-circle-check" style="color: var(--brand-teal-light);"></i> Westmead International School</span>
-      <span>•</span>
-      <span>KeepAI Platform v2.4</span>
-    </footer>
+    <footer class="footer">KeepAI <span aria-hidden="true">·</span> Your study space, thoughtfully improved</footer>
   </main>
 
   <script>
-    (function () {
-      const apiBase = (window.API_BASE || '').replace(/\/$/, '') || '/api';
-      const statusPillText = document.getElementById('status-pill-text');
-      const heroBadge = document.getElementById('hero-badge');
-      const heroIcon = document.getElementById('hero-icon');
-      const mainTitle = document.getElementById('maintenance-title');
-      const mainDesc = document.getElementById('maintenance-desc');
-      const liveBadge = document.getElementById('live-status-badge');
-      const liveMessage = document.getElementById('live-status-message');
-      const countdownVal = document.getElementById('countdown-val');
-      const btnCheck = document.getElementById('btn-check-now');
-      const checkIcon = document.getElementById('check-icon');
-      const progressBar = document.getElementById('progress-bar');
-      const progressFill = document.getElementById('progress-fill');
+    (() => {
+      const root = document.documentElement;
+      const button = document.getElementById('retry-button');
+      const statusMessage = document.getElementById('status-message');
+      const statusLabel = document.getElementById('status-label');
+      const statusLabelText = document.getElementById('status-label-text');
+      const defaultMessage = 'Check whether KeepAI is available again.';
+      const returnToParam = new URLSearchParams(window.location.search).get('returnTo');
+      const apiBase = (typeof window.API_BASE === 'string' && window.API_BASE.trim())
+        ? window.API_BASE.replace(/\/+$/, '')
+        : `${window.location.origin}/api`;
+      const colorScheme = window.matchMedia('(prefers-color-scheme: light)');
+      let themeOverride = null;
+      let checking = false;
 
-      let checkIntervalSecs = 12;
-      let secondsRemaining = checkIntervalSecs;
-      let isChecking = false;
-      let timerId = null;
-
-      function sanitizeReturnUrl(raw) {
-        if (!raw) return null;
-        try {
-          const decoded = decodeURIComponent(raw);
-          // Only permit safe relative paths within same origin
-          if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.startsWith('/\\')) {
-            return decoded;
-          }
-          const parsed = new URL(decoded, window.location.origin);
-          if (parsed.origin === window.location.origin && parsed.pathname !== '/maintenance.html') {
-            return parsed.pathname + parsed.search + parsed.hash;
-          }
-        } catch (e) {
-          console.warn('Invalid return URL:', e);
-        }
-        return null;
+      function applyTheme() {
+        const theme = themeOverride || (colorScheme.matches ? 'light' : 'dark');
+        root.dataset.theme = theme;
+        const nextTheme = theme === 'dark' ? 'light' : 'dark';
+        buttonThemeLabel(nextTheme);
       }
 
-      function handleServiceRestored() {
-        if (timerId) clearInterval(timerId);
-
-        document.querySelector('.maintenance-container').classList.add('restored-mode');
-        heroBadge.innerHTML = '<i class="fa-solid fa-circle-check"></i>';
-        heroBadge.classList.remove('gear-animated');
-        statusPillText.textContent = 'Service Restored';
-        liveBadge.textContent = 'Systems Operational';
-        liveBadge.style.color = '#34D399';
-        liveBadge.style.background = 'rgba(16, 185, 129, 0.15)';
-        liveBadge.style.borderColor = 'rgba(16, 185, 129, 0.35)';
-
-        mainTitle.textContent = 'KeepAI is Back Online!';
-        mainDesc.textContent = 'Maintenance has concluded and all services are fully restored. Redirecting you to your study workspace now...';
-        liveMessage.textContent = 'Platform verified healthy. Restoring session...';
-
-        document.getElementById('countdown-indicator').style.display = 'none';
-        btnCheck.disabled = true;
-        btnCheck.style.display = 'none';
-
-        progressBar.style.display = 'block';
-        setTimeout(() => {
-          progressFill.style.width = '100%';
-        }, 50);
-
-        setTimeout(() => {
-          const returnTo = sanitizeReturnUrl(new URLSearchParams(window.location.search).get('returnTo'));
-          if (returnTo) {
-            window.location.replace(returnTo);
-          } else {
-            // Default to student login or dashboard
-            window.location.replace('/student_login.html');
-          }
-        }, 1200);
+      function buttonThemeLabel(theme) {
+        const label = `Switch to ${theme} theme`;
+        const themeButton = document.getElementById('theme-toggle');
+        themeButton.setAttribute('aria-label', label);
+        themeButton.setAttribute('title', label);
       }
 
-      async function checkMaintenanceStatus(manual = false) {
-        if (isChecking) return;
-        isChecking = true;
-
-        if (manual) {
-          btnCheck.disabled = true;
-          checkIcon.classList.add('fa-spin');
-          liveMessage.textContent = 'Verifying platform availability with KeepAI servers...';
+      function getSafeReturnPath() {
+        if (!returnToParam) return '/student_login.html';
+        try {
+          const target = new URL(returnToParam, window.location.origin);
+          if (
+            target.origin === window.location.origin
+            && target.pathname !== '/maintenance.html'
+            && !target.pathname.startsWith('/maintenance.html/')
+          ) {
+            return `${target.pathname}${target.search}${target.hash}`;
+          }
+        } catch {
+          return '/student_login.html';
         }
+        return '/student_login.html';
+      }
+
+      async function requestJson(path) {
+        const response = await fetch(`${apiBase}${path}`, {
+          cache: 'no-store',
+          credentials: 'omit',
+          headers: { Accept: 'application/json' }
+        });
+        if (!response.ok) throw new Error('Service check did not succeed.');
+        return response.json();
+      }
+
+      async function checkAvailability() {
+        if (checking) return;
+        checking = true;
+        button.disabled = true;
+        button.classList.add('is-checking');
+        statusLabel.dataset.state = 'checking';
+        statusLabelText.textContent = 'Checking service availability';
+        statusMessage.dataset.state = 'checking';
+        statusMessage.textContent = 'Checking whether KeepAI is available…';
 
         try {
-          const endpoint = `${apiBase}/maintenance-status`;
-          const response = await fetch(endpoint, {
-            cache: 'no-store',
-            headers: { 'Accept': 'application/json' }
-          });
-
-          if (!response.ok) {
-            throw new Error(`Server returned status ${response.status}`);
-          }
-
-          const data = await response.json();
-
-          if (data && data.maintenance === false) {
-            handleServiceRestored();
+          const maintenance = await requestJson('/maintenance-status');
+          if (maintenance.maintenance !== false) {
+            statusLabel.dataset.state = 'maintenance';
+            statusLabelText.textContent = 'Maintenance in progress';
+            statusMessage.dataset.state = 'ongoing';
+            statusMessage.textContent = 'Maintenance is still in progress. Please try again shortly.';
             return;
           }
 
-          // Still under maintenance
-          liveBadge.textContent = 'Maintenance Active';
-          liveMessage.textContent = 'Scheduled maintenance is still actively in progress. Our team is finalizing optimizations.';
-          secondsRemaining = checkIntervalSecs;
-          countdownVal.textContent = `${secondsRemaining}s`;
-        } catch (err) {
-          console.warn('KeepAI service check failed:', err);
-          liveMessage.textContent = 'Connecting to KeepAI service... retrying momentarily.';
-          secondsRemaining = checkIntervalSecs;
-          countdownVal.textContent = `${secondsRemaining}s`;
-        } finally {
-          isChecking = false;
-          if (manual) {
-            setTimeout(() => {
-              btnCheck.disabled = false;
-              checkIcon.classList.remove('fa-spin');
-            }, 600);
+          const health = await requestJson('/health');
+          if (health.database?.status !== 'connected') {
+            statusLabel.dataset.state = 'error';
+            statusLabelText.textContent = 'Service not ready';
+            statusMessage.dataset.state = 'error';
+            statusMessage.textContent = 'KeepAI is not ready yet. Please try again shortly.';
+            return;
           }
+
+          statusLabel.dataset.state = 'ready';
+          statusLabelText.textContent = 'Service available';
+          statusMessage.dataset.state = 'ready';
+          statusMessage.textContent = 'KeepAI is available. Returning you to the app…';
+          window.location.replace(getSafeReturnPath());
+        } catch {
+          statusLabel.dataset.state = 'error';
+          statusLabelText.textContent = 'Status unavailable';
+          statusMessage.dataset.state = 'error';
+          statusMessage.textContent = 'We couldn’t verify that KeepAI is available. Check your connection and try again.';
+        } finally {
+          checking = false;
+          button.disabled = false;
+          button.classList.remove('is-checking');
         }
       }
 
-      window.triggerManualCheck = function () {
-        secondsRemaining = checkIntervalSecs;
-        checkMaintenanceStatus(true);
-      };
-
-      // Interval ticker for countdown
-      timerId = setInterval(() => {
-        secondsRemaining -= 1;
-        if (secondsRemaining <= 0) {
-          secondsRemaining = checkIntervalSecs;
-          countdownVal.textContent = `${secondsRemaining}s`;
-          checkMaintenanceStatus(false);
-        } else {
-          countdownVal.textContent = `${secondsRemaining}s`;
-        }
-      }, 1000);
-
-      // Initial check on page load
-      checkMaintenanceStatus(false);
+      document.getElementById('theme-toggle').addEventListener('click', () => {
+        themeOverride = root.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme();
+      });
+      colorScheme.addEventListener?.('change', () => {
+        if (!themeOverride) applyTheme();
+      });
+      button.addEventListener('click', checkAvailability);
+      applyTheme();
+      statusMessage.textContent = defaultMessage;
+      checkAvailability();
     })();
   </script>
 </body>

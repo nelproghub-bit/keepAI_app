@@ -146,14 +146,16 @@ class AdminSettingsTests(unittest.TestCase):
         page_response = self.client.get("/student_dashboard.html")
         api_response = self.client.get("/api/auth/registration-status")
         status_response = self.client.get("/api/maintenance-status")
+        session_response = self.client.get("/api/auth/me")
         admin_response = self.client.get("/api/admin/settings")
 
         self.assertEqual(page_response.status_code, 503)
-        self.assertIn("System Maintenance", page_response.text)
+        self.assertIn("A little maintenance. A better study space.", page_response.text)
         self.assertEqual(api_response.status_code, 503)
         self.assertTrue(api_response.json()["maintenance"])
         self.assertEqual(status_response.status_code, 200)
         self.assertTrue(status_response.json()["maintenance"])
+        self.assertEqual(session_response.status_code, 401, session_response.text)
         self.assertEqual(admin_response.status_code, 200, admin_response.text)
 
     @patch("app.routers.admin.send_announcement_push")

@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 import sys
 if sys.platform == "win32":
@@ -11,7 +12,7 @@ if sys.platform == "win32":
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import FileResponse, PlainTextResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse
 from app.routers import health, documents, tutor, learning_tools, auth, workspaces, admin, progress, announcements, push
 from app.core.config import ALLOWED_ORIGINS, ALLOWED_ORIGIN_REGEX
 from app.core.maintenance import (
@@ -22,6 +23,8 @@ from app.core.security_headers import SecurityHeadersMiddleware
 from app.services.knowledge_loader import initialize_knowledge_base
 from app.services.rag_service import sync_initial_documents_to_db
 from app.services.platform_settings import get_system_maintenance_setting
+
+logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="KeepAI API - Simple & Smart Study Assistant",
@@ -65,7 +68,30 @@ app.add_middleware(
 
 @app.get(MAINTENANCE_STATUS_PATH)
 def maintenance_status():
-    return {"maintenance": get_system_maintenance_setting()["enabled"]}
+    try:
+        return JSONResponse(
+            {"maintenance": get_system_maintenance_setting()["enabled"]},
+            headers={"Cache-Control": "no-store"},
+        )
+    except Exception:
+        logger.exception("Could not read the system maintenance status.")
+        return JSONResponse(
+            status_code=503,
+            headers={"Retry-After": "60", "Cache-Control": "no-store"},
+            content={
+                "detail": "KeepAI availability could not be verified. Please try again shortly.",
+                "maintenance": True,
+            },
+        )
+
+
+@app.get("/maintenance.html", include_in_schema=False)
+def maintenance_page():
+    maintenance_path = os.path.join(FRONTEND_DIR, "maintenance.html")
+    return FileResponse(
+        maintenance_path,
+        headers={"Cache-Control": "no-store"},
+    )
 
 
 @app.get("/assets/js/config.js", response_class=PlainTextResponse)

@@ -55,5 +55,6 @@
       "src": "/(.*)",
       "dest": "/index.html"
     }
-  ]
+  ],
+  "trailingSlash": false
 }

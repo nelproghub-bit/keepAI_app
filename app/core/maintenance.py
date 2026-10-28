@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from typing import Union
 
@@ -7,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoin
 
 from app.services.platform_settings import is_system_maintenance_enabled
 
+logger = logging.getLogger(__name__)
 
 PUBLIC_PAGE_PATHS = {
     "/",
@@ -57,7 +59,26 @@ class MaintenanceModeMiddleware(BaseHTTPMiddleware):
         ):
             return await call_next(request)
 
-        if not is_system_maintenance_enabled():
+        try:
+            maintenance_enabled = is_system_maintenance_enabled()
+        except Exception:
+            logger.exception("Could not read the system maintenance setting for %s", path)
+            if path in PUBLIC_PAGE_PATHS:
+                return FileResponse(
+                    self.maintenance_page,
+                    status_code=503,
+                    headers={"Retry-After": "60", "Cache-Control": "no-store"},
+                )
+            return JSONResponse(
+                status_code=503,
+                headers={"Retry-After": "60", "Cache-Control": "no-store"},
+                content={
+                    "detail": "KeepAI is temporarily unavailable. Please try again shortly.",
+                    "maintenance": True,
+                },
+            )
+
+        if not maintenance_enabled:
             return await call_next(request)
 
         if path.startswith("/api/"):

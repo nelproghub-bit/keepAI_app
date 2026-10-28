@@ -8,9 +8,17 @@
     : '/api';
 
   fetch(`${apiBase}/maintenance-status`, { cache: 'no-store' })
-    .then(response => {
-      if (!response.ok) throw new Error(`Maintenance status check failed (${response.status}).`);
-      return response.json();
+    .then(async response => {
+      let status;
+      try {
+        status = await response.json();
+      } catch {
+        throw new Error(`Maintenance status check failed (${response.status}).`);
+      }
+      if (!response.ok && !(response.status === 503 && status?.maintenance === true)) {
+        throw new Error(`Maintenance status check failed (${response.status}).`);
+      }
+      return status;
     })
     .then(status => {
       if (status && status.maintenance) {
