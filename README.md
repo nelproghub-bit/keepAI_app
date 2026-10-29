@@ -7,7 +7,7 @@ A comprehensive learning assistant that supports multiple AI providers for maxim
 KeepAI now includes a **complete student portal** with registration, login, and dashboard!
 
 - **Student Portal**: `student_portal.html` - Register & login with beautiful UI
-- **Student Dashboard**: `student_dashboard.html` - Organize courses, customize AI tutor, manage preferences
+- **Student Dashboard**: `student_dashboard.html` - Organize courses, customize AI tutor, manage preferences, and access learning tools
 - **Admin Portal**: `index.html` - System configuration and user management
 
 [📖 Student Portal Guide](docs/students/STUDENT_PORTAL_GUIDE.md) | [📖 Dashboard Quick Start](docs/students/STUDENT_QUICK_START.md) | [📚 Full Documentation](docs/students/STUDENT_DASHBOARD_README.md)
@@ -104,6 +104,7 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🗂️ Workspace Organization** - Create workspaces with preset or custom course categories
 - **⚙️ Student Settings** - Customize AI tutor mode, theme, and preferences
 - **🎨 Personalization** - Automatically match professional icons to custom workspace categories
+- **🃏 Flashcard study** - The dashboard includes a flashcard player with source excerpts and per-student mastery tracking. Flashcard generation is implemented, but the Learning Tools screen currently has no visible control to launch it.
 - **📣 App Announcements and Push Alerts** - Admins can publish update-required, maintenance, and general notices to all users; users can opt in to receive browser push notifications per device.
 - Admin announcements are published from **Admin Dashboard → Announcements**; they appear in the in-app notification list and are pushed to subscribed devices, including when KeepAI is closed.
 - **📚 Document Collections** - Organize materials by course or subject
@@ -119,7 +120,7 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
 - **📝 Smart Summaries** - Generate structured study notes
 - **🎯 Practice Quizzes** - Generate identification, multiple-choice, true/false, fill-in-the-blank, and matching questions; mix formats and set a custom count for each (up to 100 total).
-- **🃏 Source-verified flashcards** - Upload a PDF, DOCX, PPTX, or TXT file directly to the generator (up to 15 MB). The source is extracted in memory and is not added to the Document Library; generated cards and mastery progress are saved per student and uploaded source.
+- **🃏 Source-verified flashcards** - The flashcard generation endpoint accepts a PDF, DOCX, PPTX, or TXT file (up to 15 MB). The source is extracted in memory and is not added to the Document Library; generated cards and mastery progress are saved per student and uploaded source.
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 
@@ -232,7 +233,7 @@ Frontend (HTML/JS) → FastAPI Backend → AI Provider
 **In Development:**
 - 🔄 Enhanced vector embeddings for all providers
 - 🔄 DOCX/PPTX document support
-- 🔄 Advanced flashcard generation
+- 🔄 Add a visible flashcard launch control to the student dashboard
 - 🔄 User authentication system
 - 🔄 Cloud deployment configurations
 
