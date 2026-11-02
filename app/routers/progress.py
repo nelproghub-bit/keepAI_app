@@ -10,7 +10,7 @@ router = APIRouter(tags=["Progress"])
 
 
 class ProgressActivityRequest(BaseModel):
-    event_type: str = Field(pattern="^(study_time|quiz_completed|flashcard_mastered)$")
+    event_type: str = Field(pattern="^(study_time|quiz_completed)$")
     description: Optional[str] = Field(default=None, max_length=255)
     subject: Optional[str] = Field(default=None, max_length=255)
     duration_seconds: int = Field(default=0, ge=0, le=90)
@@ -35,7 +35,6 @@ def create_progress_activity(
     defaults = {
         "study_time": "Active study time",
         "quiz_completed": "Completed a practice quiz",
-        "flashcard_mastered": "Practiced a flashcard",
     }
     record_activity(
         current_user["id"],

@@ -210,35 +210,6 @@ def init_db():
         )
     """)
     cursor.execute("""
-        CREATE TABLE IF NOT EXISTS flashcard_progress (
-            id VARCHAR(64) PRIMARY KEY,
-            user_id VARCHAR(64) NOT NULL,
-            document_key VARCHAR(64) NOT NULL,
-            card_key VARCHAR(64) NOT NULL,
-            card_front TEXT NOT NULL,
-            mastered BOOLEAN NOT NULL DEFAULT FALSE,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    deck_json_type = (
-        "LONGTEXT" if _active_engine in {"mysql", "mariadb"} else "TEXT"
-    )
-    cursor.execute(f"""
-        CREATE TABLE IF NOT EXISTS flashcard_decks (
-            id VARCHAR(64) PRIMARY KEY,
-            user_id VARCHAR(64) NOT NULL,
-            document_key VARCHAR(64) NOT NULL,
-            source_hash VARCHAR(64) NOT NULL,
-            topic TEXT NOT NULL,
-            requested_count INTEGER NOT NULL,
-            card_types_json TEXT NOT NULL,
-            cards_json {deck_json_type} NOT NULL,
-            is_complete BOOLEAN NOT NULL DEFAULT FALSE,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-    cursor.execute("""
         CREATE TABLE IF NOT EXISTS announcement_dismissals (
             announcement_id VARCHAR(64) NOT NULL,
             user_id VARCHAR(64) NOT NULL,

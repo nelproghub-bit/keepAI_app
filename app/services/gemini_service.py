@@ -242,8 +242,6 @@ class AIService:
             return self._generate_quiz_response(prompt, example)
         elif task_type == 'summarization':
             return self._generate_summary_response(prompt, style)
-        elif task_type == 'flashcard_generation':
-            return self._generate_flashcard_response(prompt, style)
         elif task_type == 'adaptive_review':
             return self._generate_review_response(prompt, style, user_id)
         else:
@@ -341,28 +339,6 @@ D) A theory with no practical use
 • Connect this lesson with what you learned previously
 
 **Want a summary of your specific notes?** Upload your PDF and I will summarize your exact lesson! 📚✨"""
-    
-    def _generate_flashcard_response(self, prompt: str, style: str) -> str:
-        """Generate flashcard-style responses"""
-        topic = self._extract_topic(prompt)
-        
-        return f"""**Flashcard Set: {topic.title()}** 🗂️
-
-**Card 1:**
-**Front:** What is {topic}?
-**Back:** {self._get_concept_explanation(prompt)}
-
-**Card 2:** 
-**Front:** Why is {topic} important?
-**Back:** It helps us solve problems and understand how things work in this subject.
-
-**Card 3:**
-**Front:** How is {topic} used?
-**Back:** Through simple steps that can be applied to real-world situations.
-
-**Study Tip:** Review these cards regularly to test yourself!
-
-**Want more cards?** Upload your lesson file and I can generate cards directly from your notes! 📚⚡"""
     
     def _generate_review_response(self, prompt: str, style: str, user_id: str) -> str:
         """Generate adaptive review responses"""
@@ -655,7 +631,7 @@ I can explain this simply. For answers based directly on your class lessons, upl
 
 📖 **Simple Explanations** - Break down ideas into plain English
 🔍 **Real Examples** - Give everyday applications you can relate to
-📋 **Study Help** - Create summaries, key points, and flashcards
+📋 **Study Help** - Create summaries and key points
 💭 **Questions & Answers** - Answer any question you have about your lessons
 
 **Tip:** Upload your study files and I will answer directly using your class notes.

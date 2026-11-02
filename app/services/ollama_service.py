@@ -208,8 +208,6 @@ class AIService:
             return self._generate_quiz_response(prompt, example)
         elif task_type == 'summarization':
             return self._generate_summary_response(prompt, style)
-        elif task_type == 'flashcard_generation':
-            return self._generate_flashcard_response(prompt, style)
         elif task_type == 'adaptive_review':
             return self._generate_review_response(prompt, style, user_id)
         else:
@@ -306,28 +304,6 @@ D) A theoretical concept only
 • Forms foundation for more advanced topics
 
 **For Detailed Summaries:** Upload your specific lesson materials and I can create comprehensive summaries directly from your course content! 📚✨"""
-    
-    def _generate_flashcard_response(self, prompt: str, style: str) -> str:
-        """Generate flashcard-style responses"""
-        topic = self._extract_topic(prompt)
-        
-        return f"""**Flashcard Set: {topic.title()}** 🗂️
-
-**Card 1:**
-**Front:** What is {topic}?
-**Back:** {self._get_concept_explanation(prompt)}
-
-**Card 2:** 
-**Front:** Why is {topic} important?
-**Back:** It provides systematic approaches for understanding and solving problems in this academic domain.
-
-**Card 3:**
-**Front:** How is {topic} applied?
-**Back:** Through structured methodologies that can be adapted to various contexts and scenarios.
-
-**Study Method:** Review these cards regularly, test yourself, and create additional cards from your course materials!
-
-**Want more cards?** Upload your materials and I'll generate comprehensive flashcard sets from your lessons! 📚⚡"""
     
     def _generate_review_response(self, prompt: str, style: str, user_id: str) -> str:
         """Generate adaptive review responses"""

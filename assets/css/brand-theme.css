@@ -70,7 +70,6 @@ body.admin-theme-dark,
 .admin-role { color: var(--primary-text); }
 .message.ai .msg-avatar { color: var(--primary-text); }
 body.dark-mode .btn-soft { background: var(--primary-light); color: var(--primary-text); }
-body.dark-mode .flashcard-front { background: var(--bg-surface); }
 body.dark-mode .topbar { background: rgba(17, 17, 17, .96); }
 body.dark-mode,
 body.admin-theme-dark,
@@ -81,7 +80,7 @@ body.admin-theme-dark,
 }
 
 body.dark-mode :is(.panel, .card, .modal-card, .modal-content, .dropdown-menu, .notification-dropdown,
-  .workspace-card, .document-card, .tool-card, .flashcard, .quiz-card, .settings-card,
+  .workspace-card, .document-card, .tool-card, .quiz-card, .settings-card,
   .settings-panel, .stat-card, .data-table-wrapper, .toast, .alert, .popover, .tooltip) {
   border-color: var(--border);
   background-color: var(--bg-surface);
@@ -550,4 +549,3 @@ body.dark-mode .ai-live-badge {
   border-color: rgba(5, 150, 105, 0.35) !important;
   color: #34D399 !important;
 }
-

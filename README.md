@@ -134,7 +134,7 @@ Study progress is tied to the signed-in account and stored in the configured dat
 ### Interface Features
 - **Responsive Design** - Works on desktop and mobile
 - **Real-time Status** - Monitor AI connection health
-- **Multiple Learning Modes** - Quizzes and summaries
+- **Available Learning Tools** - Generate summaries and practice quizzes from study materials
 - **Session Persistence** - Save progress locally
 
 ## 🛠️ Setup Options

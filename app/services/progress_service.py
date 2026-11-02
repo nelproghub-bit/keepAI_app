@@ -69,7 +69,6 @@ def get_progress(user_id: str) -> Dict[str, Any]:
             "summary_generated",
             "quiz_generated",
             "quiz_completed",
-            "flashcard_mastered",
         }
         offset = 0
         while True:

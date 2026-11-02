@@ -135,7 +135,6 @@ class KeepAITrainingService:
             'quiz_generation': ['quiz', 'test', 'questions', 'exam', 'multiple choice'],
             'tutor_explanation': ['explain', 'what is', 'how does', 'define', 'describe'],
             'summarization': ['summarize', 'summary', 'key points', 'main ideas'],
-            'flashcard_generation': ['flashcard', 'cards', 'memorize', 'recall'],
             'adaptive_review': ['review', 'study', 'practice', 'prepare'],
             'mistake_explanation': ['wrong', 'mistake', 'error', 'correct', 'fix']
         }

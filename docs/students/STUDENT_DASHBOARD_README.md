@@ -27,7 +27,6 @@ All original KeepAI features accessible from the student dashboard:
 - AI Tutor with RAG
 - Smart Summaries
 - Practice Quizzes
-- Flashcards
 - Study Planner
 - Progress Tracking
 

@@ -139,7 +139,6 @@ python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ### Generate Study Materials
 - **Summaries**: Automatic note generation
 - **Quizzes**: Practice exams from your content
-- **Flashcards**: Memorization aids
 
 ---
 

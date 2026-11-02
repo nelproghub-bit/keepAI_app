@@ -28,13 +28,6 @@
       },
       {
         section: 'learning',
-        selector: '#learning-section .tool-card button[onclick="openFlashcardPlayer()"]',
-        title: 'Review with flashcards',
-        description: 'Launch flashcards to practise key terms and concepts from your learning materials.',
-        tip: 'Use the cards for a quick, focused review session.'
-      },
-      {
-        section: 'learning',
         selector: '#learning-section .tool-card button[onclick*="quiz"]',
         title: 'Check your understanding',
         description: 'Generate a practice quiz from your lessons to test what you have learned.',

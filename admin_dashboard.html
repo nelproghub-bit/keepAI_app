@@ -3792,9 +3792,6 @@ body.admin-theme-dark .playground-box .form-label,
               <button type="button" class="mode-chip" data-mode="quiz" onclick="setPlaygroundMode('quiz', this)">
                 <i class="fa-solid fa-circle-question"></i> <span>Practice Quiz</span>
               </button>
-              <button type="button" class="mode-chip" data-mode="flashcard" onclick="setPlaygroundMode('flashcard', this)">
-                <i class="fa-solid fa-layer-group"></i> <span>Flashcards</span>
-              </button>
             </div>
           </div>
 
@@ -3812,7 +3809,6 @@ body.admin-theme-dark .playground-box .form-label,
               <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(0)">💡 OOP concept</button>
               <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(1)">📝 SQL vs NoSQL</button>
               <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(2)">❓ Python quiz</button>
-              <button type="button" class="quick-prompt-btn" onclick="useSamplePrompt(3)">🗂️ HTTP flashcards</button>
             </div>
           </div>
 
@@ -5661,7 +5657,6 @@ const samplePlaygroundPrompts = [
   { mode: 'tutor', prompt: 'What is object-oriented programming, and why is it useful? Explain in simple terms with an analogy.' },
   { mode: 'summary', prompt: 'Summarize the key differences between SQL (relational) and NoSQL (non-relational) databases.' },
   { mode: 'quiz', prompt: 'Create 3 multiple-choice practice quiz questions on Python lists, loops, and conditions.' },
-  { mode: 'flashcard', prompt: 'Create study flashcards for HTTP status codes (200, 400, 401, 404, 500) with simple definitions.' }
 ];
 
 let lastAiResponseRawText = '';
@@ -5677,7 +5672,7 @@ function setPlaygroundMode(mode, element) {
   }
   const modePill = document.getElementById('ai-mode-pill');
   if (modePill) {
-    const titles = { tutor: 'STUDY TUTOR', summary: 'SIMPLE SUMMARY', quiz: 'PRACTICE QUIZ', flashcard: 'FLASHCARDS' };
+    const titles = { tutor: 'STUDY TUTOR', summary: 'SIMPLE SUMMARY', quiz: 'PRACTICE QUIZ' };
     modePill.textContent = titles[mode] || mode.toUpperCase();
   }
 }

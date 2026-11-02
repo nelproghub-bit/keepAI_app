@@ -45,7 +45,7 @@ class AdminLoginRequest(BaseModel):
 
 class AITestRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=3000)
-    mode: str = "tutor"  # tutor, summary, quiz, flashcard
+    mode: str = "tutor"
 
 class StudentRegistrationSettingRequest(BaseModel):
     enabled: bool
@@ -576,12 +576,6 @@ def test_ai_system(
             "You are KeepAI study assistant. "
             "Generate 3 multiple-choice practice quiz questions with simple questions, 4 options each, and correct answers marked clearly."
         )
-    elif request.mode == "flashcard":
-        system_instruction = (
-            "You are KeepAI study assistant. "
-            "Generate 3 study flashcards (Question & Answer pairs) in simple and clear words."
-        )
-
     try:
         reply = generate(prompt, system=system_instruction)
         return {
