@@ -8,6 +8,10 @@
       "dest": "/api/$1"
     },
     {
+      "src": "^/$",
+      "dest": "/index.html"
+    },
+    {
       "src": "/maintenance\\.html",
       "dest": "/maintenance.html"
     },

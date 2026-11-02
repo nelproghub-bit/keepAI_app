@@ -6,9 +6,10 @@ A comprehensive learning assistant that supports multiple AI providers for maxim
 
 KeepAI now includes a **complete student portal** with registration, login, and dashboard!
 
+- **Landing page**: `index.html` - The KeepAI homepage shown when visitors open the project URL
 - **Student Portal**: `student_portal.html` - Register & login with beautiful UI
 - **Student Dashboard**: `student_dashboard.html` - Organize courses, customize AI tutor, manage preferences, and access learning tools
-- **Admin Portal**: `index.html` - System configuration and user management
+- **Admin Portal**: `admin_dashboard.html` - System configuration and user management
 
 [📖 Student Portal Guide](docs/students/STUDENT_PORTAL_GUIDE.md) | [📖 Dashboard Quick Start](docs/students/STUDENT_QUICK_START.md) | [📚 Full Documentation](docs/students/STUDENT_DASHBOARD_README.md)
 

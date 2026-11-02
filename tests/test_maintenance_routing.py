@@ -29,6 +29,14 @@ client = TestClient(app)
 
 
 class MaintenanceRoutingTests(unittest.TestCase):
+    def test_homepage_route_returns_the_landing_page(self):
+        with patch("app.core.maintenance.is_system_maintenance_enabled", return_value=False):
+            response = client.get("/")
+
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertIn("text/html", response.headers["content-type"])
+        self.assertIn("Make study time", response.text)
+
     def test_direct_page_route_returns_html_when_maintenance_is_disabled(self):
         with patch("app.core.maintenance.is_system_maintenance_enabled", return_value=False):
             response = client.get("/maintenance.html")
@@ -85,6 +93,10 @@ class MaintenanceRoutingTests(unittest.TestCase):
         config_path = PROJECT_ROOT / "vercel.json"
         vercel_config = json.loads(config_path.read_text(encoding="utf-8"))
         routes = vercel_config["routes"]
+        homepage_route = next(
+            index for index, route in enumerate(routes)
+            if route["src"] == "^/$"
+        )
         maintenance_route = next(
             index for index, route in enumerate(routes)
             if route["src"] == r"/maintenance\.html"
@@ -99,7 +111,9 @@ class MaintenanceRoutingTests(unittest.TestCase):
         )
 
         self.assertLess(maintenance_route, fallback_route)
+        self.assertLess(homepage_route, fallback_route)
         self.assertLess(assets_route, fallback_route)
+        self.assertEqual(routes[homepage_route]["dest"], "/index.html")
         self.assertEqual(routes[maintenance_route]["dest"], "/maintenance.html")
         self.assertEqual(routes[assets_route]["dest"], "/assets/$1")
 
