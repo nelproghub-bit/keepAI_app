@@ -104,7 +104,6 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🗂️ Workspace Organization** - Create workspaces with preset or custom course categories
 - **⚙️ Student Settings** - Customize AI tutor mode, theme, and preferences
 - **🎨 Personalization** - Automatically match professional icons to custom workspace categories
-- **🃏 Flashcard study** - The dashboard includes a flashcard player with source excerpts and per-student mastery tracking. Flashcard generation is implemented, but the Learning Tools screen currently has no visible control to launch it.
 - **📣 App Announcements and Push Alerts** - Admins can publish update-required, maintenance, and general notices to all users; users can opt in to receive browser push notifications per device.
 - Admin announcements are published from **Admin Dashboard → Announcements**; they appear in the in-app notification list and are pushed to subscribed devices, including when KeepAI is closed.
 - **📚 Document Collections** - Organize materials by course or subject
@@ -120,7 +119,6 @@ Choose the provider that best fits your needs for privacy, cost, and performance
 - **🤔 AI Tutor** - Ask questions about your documents with RAG
 - **📝 Smart Summaries** - Generate structured study notes
 - **🎯 Practice Quizzes** - Generate identification, multiple-choice, true/false, fill-in-the-blank, and matching questions; mix formats and set a custom count for each (up to 100 total).
-- **🃏 Source-verified flashcards** - The flashcard generation endpoint accepts a PDF, DOCX, PPTX, or TXT file (up to 15 MB). The source is extracted in memory and is not added to the Document Library; generated cards and mastery progress are saved per student and uploaded source.
 - **📋 Study Planner** - Organize study sessions
 - **📊 Progress Tracking** - Monitor learning activity
 
@@ -136,7 +134,7 @@ Study progress is tied to the signed-in account and stored in the configured dat
 ### Interface Features
 - **Responsive Design** - Works on desktop and mobile
 - **Real-time Status** - Monitor AI connection health
-- **Multiple Learning Modes** - Flashcards, quizzes, summaries
+- **Multiple Learning Modes** - Quizzes and summaries
 - **Session Persistence** - Save progress locally
 
 ## 🛠️ Setup Options
@@ -179,12 +177,8 @@ The backend provides these REST endpoints:
 - `POST /api/tutor/ask` - Ask questions with RAG
 - `POST /api/learning/summary` - Generate summaries
 - `POST /api/learning/quiz` - Generate practice quizzes
-- `POST /api/learning/flashcards/upload` - Upload and generate source-verified study cards without adding the source file to the Document Library
-- `GET/PUT /api/learning/flashcards/progress` - Read and save account-specific card mastery
 
 Quiz questions are generated from the selected document and expose a source excerpt for verification. If the AI provider is unavailable, KeepAI builds extractive questions from the selected document when there is enough source material; it reports a clear error rather than filling the quiz with unrelated questions.
-
-Flashcards include a source excerpt and page when available. Answers must be copied from their cited source passage; if the AI is unavailable, the application extracts only explicit definitions or examples and never pads the deck with generic cards. Uploaded source files are processed for the request and are not indexed or retained in the Document Library. Generated decks and mastery progress remain stored per student so users can revisit and study them.
 
 ## 🔧 Configuration
 
@@ -233,7 +227,6 @@ Frontend (HTML/JS) → FastAPI Backend → AI Provider
 **In Development:**
 - 🔄 Enhanced vector embeddings for all providers
 - 🔄 DOCX/PPTX document support
-- 🔄 Add a visible flashcard launch control to the student dashboard
 - 🔄 User authentication system
 - 🔄 Cloud deployment configurations
 
